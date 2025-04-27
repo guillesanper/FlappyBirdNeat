@@ -2,9 +2,6 @@ package com.neat.flappybirdneat.game;
 
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -95,45 +92,11 @@ public class FlappyBirdGame {
     }
 
     /**
-     * Dibuja el estado actual del juego en el canvas
-     * @param gc El GraphicsContext donde dibujar
-     */
-    public void draw(GraphicsContext gc) {
-        // Dibujar fondo
-        gc.setFill(Color.SKYBLUE);
-        gc.fillRect(0, 0, canvasWidth, canvasHeight);
-
-        // Dibujar el suelo
-        gc.setFill(Color.SANDYBROWN);
-        gc.fillRect(0, canvasHeight - 20, canvasWidth, 20);
-
-        // Dibujar tubos
-        for (Pipe pipe : pipes) {
-            gc.setFill(Color.GREEN);
-
-            // Parte superior del tubo
-            gc.fillRect(pipe.getX(), 0, pipe.getWidth(), pipe.getGapY());
-
-            // Parte inferior del tubo
-            double gapBottom = pipe.getGapY() + pipe.getGapSize();
-            gc.fillRect(pipe.getX(), gapBottom, pipe.getWidth(), canvasHeight - gapBottom - 20); // -20 para el suelo
-
-            // Dibujar borde del tubo (opcional para hacerlo más visual)
-            gc.setStroke(Color.DARKGREEN);
-            gc.setLineWidth(2);
-            // Borde tubo superior
-            gc.strokeRect(pipe.getX(), 0, pipe.getWidth(), pipe.getGapY());
-            // Borde tubo inferior
-            gc.strokeRect(pipe.getX(), gapBottom, pipe.getWidth(), canvasHeight - gapBottom - 20);
-        }
-    }
-
-    /**
      * Obtiene el próximo tubo al que se enfrentará el agente
      * @param agent El agente para el que se busca el próximo tubo
      * @return El próximo tubo o null si no hay ninguno
      */
-    public Pipe getNextPipe(FlappyBirdAgent agent) {
+    private Pipe getNextPipe(FlappyBirdAgent agent) {
         for (Pipe pipe : pipes) {
             if (pipe.getX() + pipe.getWidth() > 50) { // 50 es x del pájaro
                 return pipe;

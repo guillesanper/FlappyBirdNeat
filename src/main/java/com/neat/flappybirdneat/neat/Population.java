@@ -9,8 +9,6 @@ public class Population {
     private int generation;
     private double bestFitness;
     private double mutationRate;
-    private double elitismRate = 0.1;
-
 
     public Population(int size) {
         agents = new FlappyBirdAgent[size];
@@ -27,26 +25,16 @@ public class Population {
         bestAgent = new FlappyBirdAgent(4, 8, 1);
     }
 
-    // En Population.java, modifica el método naturalSelection
-
     public void naturalSelection() {
         FlappyBirdAgent[] newAgents = new FlappyBirdAgent[agents.length];
 
-        // Elitismo: conservar los mejores individuos
+        // Elitismo: el mejor agente pasa directamente
         setBestAgent();
-
-        // Ordenar agentes por fitness
-        Arrays.sort(agents, (a1, a2) -> Double.compare(a2.getFitness(), a1.getFitness()));
-
-        // Copiar elite directamente
-        int eliteSize = (int)(agents.length * elitismRate); // elitismRate es un nuevo campo de la clase
-        for (int i = 0; i < eliteSize; i++) {
-            newAgents[i] = new FlappyBirdAgent(4, 8, 1);
-            newAgents[i].getBrain().setBrain(agents[i].getBrain());
-        }
+        newAgents[0] = new FlappyBirdAgent(4, 8, 1);
+        newAgents[0].getBrain().setBrain(bestAgent.getBrain());
 
         // Selección, cruce y mutación para el resto
-        for (int i = eliteSize; i < agents.length; i++) {
+        for (int i = 1; i < agents.length; i++) {
             // Selección por ruleta
             FlappyBirdAgent parent1 = selectParent();
             FlappyBirdAgent parent2 = selectParent();
@@ -117,30 +105,10 @@ public class Population {
         return bestFitness;
     }
 
-    public double getElitismRate() { return elitismRate; }
-
-    public void setElitismRate(double elitismRate) { this.elitismRate = elitismRate; }
-
     /**
      * @return El mejor agente encontrado hasta ahora
      */
     public FlappyBirdAgent getBestAgent() {
         return bestAgent;
-    }
-
-    // En Population.java
-    public Population deepCopy() {
-        Population copy = new Population(agents.length);
-
-        // Copiar agentes individualmente
-        for (int i = 0; i < agents.length; i++) {
-            agents[i] = new FlappyBirdAgent(this.agents[i]);
-        }
-
-        // Copiar otros atributos relevantes
-        copy.bestFitness = this.bestFitness;
-        // Copiar cualquier otro atributo necesario
-
-        return copy;
     }
 }

@@ -122,15 +122,4 @@ public class FlappyBirdAgent {
     public float getY() {
         return y;
     }
-
-    public FlappyBirdAgent(FlappyBirdAgent other) {
-        // Deep copy of the neural network
-        this.brain = new NeuralNetwork(other.brain);
-
-        // Copy primitive fields
-        this.fitness = other.fitness;
-        this.isDead = other.isDead;
-        this.y = other.y;
-        this.velocity = other.velocity;
-    }
 }

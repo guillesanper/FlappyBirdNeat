@@ -209,24 +209,4 @@ public class NeuralNetwork {
 
         return child;
     }
-
-    public NeuralNetwork(NeuralNetwork other) {
-        this.inputSize = other.inputSize;
-        this.hiddenSize = other.hiddenSize;
-        this.outputSize = other.outputSize;
-
-        // Deep copy of weights and biases
-        this.weightsInputHidden = new double[other.weightsInputHidden.length][];
-        for (int i = 0; i < other.weightsInputHidden.length; i++) {
-            this.weightsInputHidden[i] = other.weightsInputHidden[i].clone();
-        }
-
-        this.weightsHiddenOutput = new double[other.weightsHiddenOutput.length][];
-        for (int i = 0; i < other.weightsHiddenOutput.length; i++) {
-            this.weightsHiddenOutput[i] = other.weightsHiddenOutput[i].clone();
-        }
-
-        this.biasHidden = other.biasHidden.clone();
-        this.biasOutput = other.biasOutput.clone();
-    }
 }
