@@ -77,7 +77,7 @@ public class SimulationRunner {
 
         // Actualizar historial
         int aliveCount = countAliveAgents();
-        historyManager.addGenerationData(population.getBestFitness(), aliveCount,population);
+        historyManager.addGenerationData(population.getBestFitness(), aliveCount,population,game.getPipes());
     }
 
     private int countAliveAgents() {
@@ -93,7 +93,8 @@ public class SimulationRunner {
         GenerationData data = new GenerationData(
                 population.getBestFitness(),
                 countAliveAgents(),
-                population.deepCopy()
+                population.deepCopy(),
+                new ArrayList<>(game.getPipes())
         );
         generationHistory.add(data);
     }

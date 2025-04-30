@@ -1,5 +1,6 @@
 package com.neat.flappybirdneat.history;
 
+import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.Population;
 
 import java.util.ArrayList;
@@ -26,8 +27,8 @@ public class HistoryManager {
         currentRun = new RunHistory();
     }
 
-    public void addGenerationData(double bestFitness, int aliveCount, Population pop) {
-        GenerationData data = new GenerationData(bestFitness, aliveCount, pop.deepCopy());
+    public void addGenerationData(double bestFitness, int aliveCount, Population pop, List<Pipe> savedPipes) {
+        GenerationData data = new GenerationData(bestFitness, aliveCount, pop.deepCopy(),new ArrayList<>(savedPipes));
         currentRun.addGenerationData(data);
 
         // Registrar el mejor de todos los tiempos

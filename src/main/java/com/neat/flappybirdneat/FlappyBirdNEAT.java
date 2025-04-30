@@ -841,6 +841,7 @@ public class FlappyBirdNEAT extends Application {
 
         // Dibujar nubes decorativas
         gc.setFill(Color.WHITE);
+        gc.setFill(Color.WHITE);
         gc.fillOval(100, 100, 80, 40);
         gc.fillOval(300, 150, 100, 50);
         gc.fillOval(600, 80, 120, 60);

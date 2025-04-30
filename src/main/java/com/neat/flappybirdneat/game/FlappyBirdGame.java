@@ -33,6 +33,10 @@ public class FlappyBirdGame {
         reset();
     }
 
+    public void setPipes(List<Pipe> pipes) {
+        this.pipes = pipes;
+    }
+
     /**
      * Reinicia el estado del juego
      */

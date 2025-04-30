@@ -118,7 +118,7 @@ public class SimulationController {
         double avgFitness = totalFitness / populationSize;
 
         // Guardar esta generación en el historial
-        historyManager.addGenerationData(population.getBestFitness(), aliveCount.get(), population);
+        historyManager.addGenerationData(population.getBestFitness(), aliveCount.get(), population,game.getPipes());
 
         // Guardar historial para gráficos
         bestFitnessHistory.add(population.getBestFitness());
@@ -197,7 +197,7 @@ public class SimulationController {
                     final double currentBestFitness = population.getBestFitness();
 
                     // Guardar esta generación en el historial siempre
-                    historyManager.addGenerationData(currentBestFitness, aliveCount.get(), population);
+                    historyManager.addGenerationData(currentBestFitness, aliveCount.get(), population,game.getPipes());
 
                     if (currentBestFitness > globalBestFitness) {
                         globalBestFitness = currentBestFitness;
@@ -268,6 +268,7 @@ public class SimulationController {
     // Método para reproducir la generación con el mejor individuo
     public void playBestHistoricalGeneration() {
         GenerationData bestGenData = historyManager.getBestGeneration();
+        game.setPipes(bestGenData.getSavedPipes());
         if (bestGenData != null) {
             playHistoricalGeneration(bestGenData.getSavedPopulation());
         }

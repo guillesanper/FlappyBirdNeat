@@ -87,7 +87,7 @@ public class NEATAlgorithm {
         avgFitnessHistory.add(avgFitness);
 
         // Guardar en historial
-        historyManager.addGenerationData(population.getBestFitness(), countAliveAgents(),population);
+        historyManager.addGenerationData(population.getBestFitness(), countAliveAgents(),population, game.getPipes());
 
         // Evolucionar población
         population.naturalSelection();
