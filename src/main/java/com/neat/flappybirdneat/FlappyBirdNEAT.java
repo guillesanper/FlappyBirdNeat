@@ -14,11 +14,13 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.scene.control.Slider;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.TextField;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
@@ -29,7 +31,6 @@ import javafx.stage.Stage;
  */
 public class FlappyBirdNEAT extends Application {
     // Configuración principal
-    private static final int POPULATION_SIZE = 50;
     private static final int CANVAS_WIDTH = 800;
     private static final int CANVAS_HEIGHT = 600;
 
@@ -37,10 +38,12 @@ public class FlappyBirdNEAT extends Application {
     private Population population;
     private FlappyBirdGame game;
     private int currentGeneration = 1;
-    private boolean gamePaused = false;
+    private boolean gamePaused = true; // Inicialmente pausado
     private int gameSpeed = 1; // Velocidad normal
     private boolean showAllAgents = true;
     private boolean autoRestartOnExtinction = true;
+    private int populationSize = 50; // Valor predeterminado
+    private int maxGenerations = 50; // Valor predeterminado
 
     // Variables para la interfaz gráfica
     private Canvas canvas;
@@ -51,10 +54,16 @@ public class FlappyBirdNEAT extends Application {
     private Label bestFitnessLabel;
     private Label speedLabel;
     private AnimationTimer gameLoop;
+    private TextField populationSizeField;
+    private TextField maxGenerationsField;
 
     // Ventana de visualización de la red neuronal
     private NeuralNetworkWindow networkWindow;
     private boolean showNeuralNetwork = false;
+    private boolean gameStarted = false;
+
+    // Control de tiempo y simulación
+    private static final long BASE_FRAME_TIME = 16_666_667; // ~60 FPS en nanosegundos
 
     /**
      * Método principal para iniciar la aplicación JavaFX
@@ -65,10 +74,6 @@ public class FlappyBirdNEAT extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        // Inicializar población y juego
-        population = new Population(POPULATION_SIZE);
-        game = new FlappyBirdGame(CANVAS_WIDTH, CANVAS_HEIGHT);
-
         // Inicializar ventana de red neuronal
         networkWindow = new NeuralNetworkWindow(600, 400);
 
@@ -83,10 +88,31 @@ public class FlappyBirdNEAT extends Application {
         // Panel de información
         generationLabel = new Label("Generación: 1");
         generationLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
-        aliveLabel = new Label("Vivos: " + POPULATION_SIZE);
+        aliveLabel = new Label("Vivos: 0");
         scoreLabel = new Label("Puntuación: 0");
         bestFitnessLabel = new Label("Mejor Fitness: 0");
         speedLabel = new Label("Velocidad: 1x");
+
+        // Configuración inicial
+        HBox configPanel = new HBox(10);
+        configPanel.setPadding(new Insets(10));
+
+        Label popSizeLabel = new Label("Tamaño población:");
+        populationSizeField = new TextField(String.valueOf(populationSize));
+        populationSizeField.setPrefWidth(60);
+
+        Label maxGenLabel = new Label("Máx generaciones:");
+        maxGenerationsField = new TextField(String.valueOf(maxGenerations));
+        maxGenerationsField.setPrefWidth(60);
+
+        Button startButton = new Button("Iniciar Simulación");
+        startButton.setOnAction(e -> startSimulation());
+
+        configPanel.getChildren().addAll(
+                popSizeLabel, populationSizeField,
+                maxGenLabel, maxGenerationsField,
+                startButton
+        );
 
         // Botones de control
         Button pauseButton = new Button("Pausar / Continuar");
@@ -94,12 +120,12 @@ public class FlappyBirdNEAT extends Application {
 
         // Control de velocidad
         Label speedSliderLabel = new Label("Velocidad de simulación:");
-        Slider speedSlider = new Slider(1, 10, 1);
+        Slider speedSlider = new Slider(1, 20, 1); // Aumentado hasta 100x
         speedSlider.setShowTickMarks(true);
         speedSlider.setShowTickLabels(true);
-        speedSlider.setMajorTickUnit(1);
-        speedSlider.setBlockIncrement(1);
-        speedSlider.setSnapToTicks(true);
+        speedSlider.setMajorTickUnit(20);
+        speedSlider.setMinorTickCount(4);
+        speedSlider.setBlockIncrement(5);
         speedSlider.valueProperty().addListener((obs, oldValue, newValue) -> {
             gameSpeed = newValue.intValue();
             speedLabel.setText("Velocidad: " + gameSpeed + "x");
@@ -109,7 +135,7 @@ public class FlappyBirdNEAT extends Application {
         Button nextGenButton = new Button("Siguiente generación");
         nextGenButton.setOnAction(e -> {
             // Solo permitir saltar a la siguiente generación si está pausado
-            if (gamePaused) {
+            if (gamePaused && gameStarted) {
                 nextGeneration();
             }
         });
@@ -163,7 +189,11 @@ public class FlappyBirdNEAT extends Application {
                 showNetworkButton
         );
 
+        root.setTop(configPanel);
         root.setRight(infoPanel);
+
+        // Dibujar el fondo inicial
+        drawEmptyScene();
 
         Scene scene = new Scene(root, CANVAS_WIDTH + 200, CANVAS_HEIGHT);
         primaryStage.setTitle("Flappy Bird NEAT");
@@ -182,69 +212,153 @@ public class FlappyBirdNEAT extends Application {
     }
 
     /**
+     * Inicia la simulación con los parámetros configurados
+     */
+    private void startSimulation() {
+        try {
+            populationSize = Integer.parseInt(populationSizeField.getText());
+            maxGenerations = Integer.parseInt(maxGenerationsField.getText());
+
+            if (populationSize <= 0 || maxGenerations <= 0) {
+                System.out.println("Los valores deben ser mayores que cero");
+                return;
+            }
+
+            // Inicializar población y juego
+            population = new Population(populationSize);
+            game = new FlappyBirdGame(CANVAS_WIDTH, CANVAS_HEIGHT);
+            currentGeneration = 1;
+            gamePaused = false;
+            gameStarted = true;
+
+            aliveLabel.setText("Vivos: " + populationSize + "/" + populationSize);
+
+            System.out.println("Simulación iniciada con " + populationSize +
+                    " agentes y " + maxGenerations + " generaciones máximas");
+        } catch (NumberFormatException e) {
+            System.out.println("Por favor, introduce valores numéricos válidos");
+        }
+    }
+
+    /**
      * Inicia el bucle principal del juego
      */
     private void startGameLoop() {
         gameLoop = new AnimationTimer() {
             private long lastUpdate = 0;
+            private long accumulatedTime = 0;
 
             @Override
             public void handle(long now) {
-                // Control de velocidad de simulación
-                if (now - lastUpdate < 1_000_000_000 / (60 * gameSpeed)) {
+                if (!gameStarted) {
+                    drawEmptyScene();
                     return;
                 }
+
+                if (lastUpdate == 0) {
+                    lastUpdate = now;
+                    return;
+                }
+
+                long deltaTime = now - lastUpdate;
                 lastUpdate = now;
 
-                if (!gamePaused) {
-                    // Limpiar pantalla
-                    gc.setFill(Color.SKYBLUE);
-                    gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                if (gamePaused) {
+                    // Si está pausado, solo dibujar la escena estática
+                    drawGame();
+                    drawPausedOverlay();
+                    return;
+                }
 
+                // Acumular tiempo transcurrido
+                accumulatedTime += deltaTime;
+
+                // Determinar cuántas actualizaciones de lógica de juego debemos ejecutar
+                // basados en la velocidad de juego seleccionada
+                long timePerFrame = BASE_FRAME_TIME / gameSpeed;
+
+                int updateCount = 0;
+                int maxUpdates = 10; // Limitar las actualizaciones por frame para evitar congelación
+
+                // Ejecutar actualizaciones de lógica hasta ponerse al día con el tiempo acumulado
+                while (accumulatedTime >= timePerFrame && updateCount < maxUpdates) {
                     // Actualizar juego
                     game.update(population.getAgents());
 
-                    // Actualizar visualización de red neuronal si está activa
-                    if (showNeuralNetwork && networkWindow.isShowing()) {
-                        FlappyBirdAgent bestAgent = population.getBestAgent();
-                        if (!bestAgent.isDead()) {
-                            Pipe nextPipe = getNextPipe(bestAgent);
-                            networkWindow.update(bestAgent, nextPipe);
-                        }
+                    accumulatedTime -= timePerFrame;
+                    updateCount++;
+                }
+
+                // Si se acumula demasiado tiempo, resetearlo para evitar "efecto de recuperación"
+                if (updateCount >= maxUpdates) {
+                    accumulatedTime = 0;
+                }
+
+                // Actualizar visualización de red neuronal si está activa
+                if (showNeuralNetwork && networkWindow.isShowing()) {
+                    FlappyBirdAgent bestAgent = population.getBestAgent();
+                    if (!bestAgent.isDead()) {
+                        Pipe nextPipe = getNextPipe(bestAgent);
+                        networkWindow.update(bestAgent, nextPipe);
                     }
+                }
 
-                    // Dibujar escena
-                    drawGame();
+                // Dibujar escena
+                drawGame();
 
-                    // Actualizar información
-                    updateInfo();
+                // Actualizar información
+                updateInfo();
 
-                    // Comprobar si todos los agentes están muertos
-                    boolean allDead = true;
-                    for (FlappyBirdAgent agent : population.getAgents()) {
-                        if (!agent.isDead()) {
-                            allDead = false;
-                            break;
-                        }
+                // Comprobar si todos los agentes están muertos
+                boolean allDead = true;
+                for (FlappyBirdAgent agent : population.getAgents()) {
+                    if (!agent.isDead()) {
+                        allDead = false;
+                        break;
                     }
+                }
 
-                    // Si todos están muertos, pasar a la siguiente generación o reiniciar
-                    if (allDead) {
-                        if (currentGeneration >= 50 && autoRestartOnExtinction) {
-                            // Reiniciar después de 50 generaciones para evitar estancamiento
-                            resetSimulation();
-                        } else {
-                            nextGeneration();
-                        }
+                // Si todos están muertos, pasar a la siguiente generación o reiniciar
+                if (allDead) {
+                    if (currentGeneration >= maxGenerations && autoRestartOnExtinction) {
+                        // Reiniciar después de alcanzar máx generaciones
+                        resetSimulation();
+                    } else if (currentGeneration < maxGenerations) {
+                        nextGeneration();
+                    } else {
+                        // Pausar al llegar al máximo de generaciones
+                        gamePaused = true;
                     }
-                } else {
-                    // Si está pausado, seguir dibujando la escena estática
-                    drawGame();
-                    drawPausedOverlay();
                 }
             }
         };
         gameLoop.start();
+    }
+
+    /**
+     * Dibuja una escena vacía con instrucciones iniciales
+     */
+    private void drawEmptyScene() {
+        gc.setFill(Color.SKYBLUE);
+        gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Dibujar nubes decorativas
+        gc.setFill(Color.WHITE);
+        gc.fillOval(100, 100, 80, 40);
+        gc.fillOval(300, 150, 100, 50);
+        gc.fillOval(600, 80, 120, 60);
+
+        // Dibujar suelo
+        gc.setFill(Color.SADDLEBROWN);
+        gc.fillRect(0, CANVAS_HEIGHT - 20, CANVAS_WIDTH, 20);
+
+        // Instrucciones
+        gc.setFill(Color.WHITE);
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(1.5);
+        gc.setFont(Font.font("System", FontWeight.BOLD, 30));
+        gc.fillText("Configure y presione 'Iniciar Simulación'", 100, CANVAS_HEIGHT/2);
+        gc.strokeText("Configure y presione 'Iniciar Simulación'", 100, CANVAS_HEIGHT/2);
     }
 
     /**
@@ -370,8 +484,8 @@ public class FlappyBirdNEAT extends Application {
             }
         }
 
-        generationLabel.setText("Generación: " + currentGeneration);
-        aliveLabel.setText("Vivos: " + aliveCount + "/" + POPULATION_SIZE);
+        generationLabel.setText("Generación: " + currentGeneration + "/" + maxGenerations);
+        aliveLabel.setText("Vivos: " + aliveCount + "/" + populationSize);
         scoreLabel.setText("Puntuación: " + game.getScore());
         bestFitnessLabel.setText("Mejor Fitness: " + String.format("%.2f", population.getBestFitness()));
     }
@@ -400,18 +514,20 @@ public class FlappyBirdNEAT extends Application {
      * Cambia el estado de pausa/ejecución del juego
      */
     private void togglePause() {
-        gamePaused = !gamePaused;
+        if (gameStarted) {
+            gamePaused = !gamePaused;
+        }
     }
 
     /**
      * Reinicia toda la simulación
      */
     private void resetSimulation() {
-        population = new Population(POPULATION_SIZE);
-        game.reset();
-        currentGeneration = 1;
-
-        // Si estaba pausado, reanudar
-        gamePaused = false;
+        if (gameStarted) {
+            population = new Population(populationSize);
+            game.reset();
+            currentGeneration = 1;
+            gamePaused = true; // Pausar al reiniciar
+        }
     }
 }
