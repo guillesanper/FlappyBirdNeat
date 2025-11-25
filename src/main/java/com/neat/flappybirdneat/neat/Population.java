@@ -134,12 +134,19 @@ public class Population {
 
         // Copiar agentes individualmente
         for (int i = 0; i < agents.length; i++) {
-            agents[i] = new FlappyBirdAgent(this.agents[i]);
+            copy.agents[i] = new FlappyBirdAgent(this.agents[i]);
         }
 
         // Copiar otros atributos relevantes
+        copy.generation = this.generation;
         copy.bestFitness = this.bestFitness;
-        // Copiar cualquier otro atributo necesario
+        copy.mutationRate = this.mutationRate;
+        copy.elitismRate = this.elitismRate;
+
+        // Copiar el mejor agente
+        if (this.bestAgent != null) {
+            copy.bestAgent = new FlappyBirdAgent(this.bestAgent);
+        }
 
         return copy;
     }

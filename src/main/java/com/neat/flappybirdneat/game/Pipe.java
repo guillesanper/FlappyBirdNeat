@@ -1,19 +1,22 @@
 package com.neat.flappybirdneat.game;
 
+import java.io.Serializable;
 import java.util.Random;
 
 /**
  * Clase que representa un obstáculo (tubo) en el juego Flappy Bird.
  * Define la posición, tamaño y comportamiento de los tubos.
  */
-public class Pipe {
+public class Pipe implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private float x;
     private float gapY;
     private float gapSize;
     private float width;
     private static final float SPEED = 3;
 
-    private final Random random = new Random();
+    private transient Random random;
 
     /**
      * Constructor
@@ -21,10 +24,19 @@ public class Pipe {
      * @param canvasHeight Altura del área de juego
      */
     public Pipe(float x, int canvasHeight) {
+        this.random = new Random();
         this.x = x;
         this.width = 80;
         this.gapSize = 150;
         this.gapY = (float) (random.nextDouble() * (canvasHeight - 200 - gapSize) + 100);
+    }
+
+    /**
+     * Método llamado después de la deserialización para reinicializar campos transient
+     */
+    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+        in.defaultReadObject();
+        this.random = new Random();
     }
 
     /**

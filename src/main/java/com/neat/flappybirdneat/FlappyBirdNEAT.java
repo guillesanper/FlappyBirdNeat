@@ -141,25 +141,38 @@ public class FlappyBirdNEAT extends Application {
 
         // Sección superior con información y controles principales
         HBox topControls = new HBox(20);
-        VBox infoBox = new VBox(5);
+        VBox infoBox = new VBox(8);
         VBox controlBox = new VBox(10);
+
+        // Título de estadísticas
+        Label statsTitle = new Label("📊 Estadísticas en Tiempo Real");
+        statsTitle.setFont(Font.font("System", FontWeight.BOLD, 18));
+        statsTitle.setTextFill(Color.DARKBLUE);
 
         // Etiquetas de información
         genLabel = new Label();
-        genLabel.textProperty().bind(Bindings.concat("Generación: ",
+        genLabel.textProperty().bind(Bindings.concat("🔄 Generación: ",
                 simulationController.currentGenerationProperty().asString()));
 
         bestFitnessLabel = new Label();
-        bestFitnessLabel.textProperty().bind(Bindings.concat("Mejor Fitness: ",
+        bestFitnessLabel.textProperty().bind(Bindings.concat("🏆 Mejor Fitness: ",
                 Bindings.format("%.2f", simulationController.bestFitnessProperty())));
 
         avgFitnessLabel = new Label();
-        avgFitnessLabel.textProperty().bind(Bindings.concat("Fitness Promedio: ",
+        avgFitnessLabel.textProperty().bind(Bindings.concat("📈 Fitness Promedio: ",
                 Bindings.format("%.2f", simulationController.averageFitnessProperty())));
 
         aliveLabel = new Label();
-        aliveLabel.textProperty().bind(Bindings.concat("Agentes Vivos: ",
-                simulationController.aliveCountProperty().asString(), "/", POPULATION_SIZE));
+        aliveLabel.textProperty().bind(Bindings.concat("💚 Agentes Vivos: ",
+                simulationController.aliveCountProperty().asString(), " / ", POPULATION_SIZE));
+
+        // Label para estado de simulación
+        Label statusLabel = new Label();
+        statusLabel.textProperty().bind(
+                Bindings.when(simulationController.runningProperty())
+                        .then("⚡ Estado: SIMULACIÓN RÁPIDA EN CURSO...")
+                        .otherwise("⏸ Estado: Pausado")
+        );
 
         // Fuentes y estilos
         Font labelFont = Font.font("System", FontWeight.BOLD, 14);
@@ -167,23 +180,64 @@ public class FlappyBirdNEAT extends Application {
         bestFitnessLabel.setFont(labelFont);
         avgFitnessLabel.setFont(labelFont);
         aliveLabel.setFont(labelFont);
+        statusLabel.setFont(labelFont);
 
-        infoBox.getChildren().addAll(genLabel, bestFitnessLabel, avgFitnessLabel, aliveLabel);
+        // Cambiar color según estado
+        simulationController.runningProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                statusLabel.setTextFill(Color.GREEN);
+            } else {
+                statusLabel.setTextFill(Color.ORANGE);
+            }
+        });
+
+        // Panel con borde para información
+        VBox infoPanel = new VBox(5);
+        infoPanel.setPadding(new Insets(10));
+        infoPanel.setStyle("-fx-background-color: #f0f0f0; -fx-background-radius: 5;");
+        infoPanel.getChildren().addAll(statsTitle, genLabel, bestFitnessLabel, avgFitnessLabel, aliveLabel, statusLabel);
+
+        infoBox.getChildren().add(infoPanel);
 
         // Controles de simulación rápida
-        Label fastSimLabel = new Label("Simulación Rápida");
+        VBox fastSimPanel = new VBox(10);
+        fastSimPanel.setPadding(new Insets(10));
+        fastSimPanel.setStyle("-fx-background-color: #e8f4f8; -fx-background-radius: 5; -fx-border-color: #4CAF50; -fx-border-radius: 5; -fx-border-width: 2;");
+
+        Label fastSimLabel = new Label("⚡ Simulación Rápida (Modo Headless)");
         fastSimLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+        fastSimLabel.setTextFill(Color.DARKGREEN);
+
+        Label fastSimDescription = new Label("Entrena rápidamente sin visualización");
+        fastSimDescription.setFont(Font.font("System", 12));
+        fastSimDescription.setTextFill(Color.GRAY);
 
         HBox genInputBox = new HBox(10);
-        Label genToRunLabel = new Label("Generaciones a ejecutar:");
-        TextField genToRunField = new TextField("10");
-        genToRunField.setPrefWidth(60);
-        genInputBox.getChildren().addAll(genToRunLabel, genToRunField);
+        Label genToRunLabel = new Label("Generaciones:");
+        genToRunLabel.setFont(Font.font("System", FontWeight.BOLD, 13));
+        TextField genToRunField = new TextField("50");
+        genToRunField.setPrefWidth(80);
+        genToRunField.setStyle("-fx-font-size: 14px;");
+
+        // Botones de acceso rápido
+        Button quick10Btn = new Button("10");
+        Button quick50Btn = new Button("50");
+        Button quick100Btn = new Button("100");
+        Button quick500Btn = new Button("500");
+
+        quick10Btn.setOnAction(e -> genToRunField.setText("10"));
+        quick50Btn.setOnAction(e -> genToRunField.setText("50"));
+        quick100Btn.setOnAction(e -> genToRunField.setText("100"));
+        quick500Btn.setOnAction(e -> genToRunField.setText("500"));
+
+        genInputBox.getChildren().addAll(genToRunLabel, genToRunField, quick10Btn, quick50Btn, quick100Btn, quick500Btn);
         genInputBox.setAlignment(Pos.CENTER_LEFT);
 
         HBox buttonBox = new HBox(10);
-        Button runButton = new Button("Ejecutar Simulación Rápida");
-        stopButton = new Button("Detener");
+        Button runButton = new Button("▶ Iniciar Entrenamiento");
+        runButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
+        stopButton = new Button("⏹ Detener");
+        stopButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
         stopButton.setDisable(true);
 
         // Vincular estado del botón de parada
@@ -197,9 +251,14 @@ public class FlappyBirdNEAT extends Application {
 
         // Barra de progreso
         progressBar = new ProgressBar(0);
-        progressBar.setPrefWidth(300);
+        progressBar.setPrefWidth(350);
+        progressBar.setStyle("-fx-accent: #4CAF50;");
 
-        controlBox.getChildren().addAll(fastSimLabel, genInputBox, buttonBox, progressBar);
+        Label progressLabel = new Label("Progreso:");
+        progressLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+
+        fastSimPanel.getChildren().addAll(fastSimLabel, fastSimDescription, genInputBox, buttonBox, progressLabel, progressBar);
+        controlBox.getChildren().add(fastSimPanel);
 
         // Acciones de los botones
         runButton.setOnAction(e -> {
@@ -281,22 +340,60 @@ public class FlappyBirdNEAT extends Application {
             updateChart();
         });
 
-        Button exportDataButton = new Button("Exportar Datos");
+        Button exportDataButton = new Button("Exportar Datos a CSV");
         exportDataButton.setOnAction(e -> {
             exportSimulationData();
         });
 
-        Button toggleAgentsButton = new Button("Alternar vista (todos/mejor)");
-        toggleAgentsButton.setOnAction(e -> {
-            showAllAgents = !showAllAgents;
-            if (showAllAgents) {
-                toggleAgentsButton.setText("Mostrar solo el mejor");
+        Button playBestButton = new Button("▶ Ver Mejor Individuo");
+        playBestButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;");
+        playBestButton.setOnAction(e -> {
+            if (simulationController.getHistoryManager().getBestGeneration() != null) {
+                // Pausar simulación actual si está corriendo
+                simulationController.stopSimulation();
+
+                double bestFitnessEver = simulationController.getHistoryManager().getBestFitnessEver();
+                boolean isOptimal = bestFitnessEver >= SimulationController.getOptimalFitnessThreshold();
+
+                // Mostrar alerta informativa
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Reproducir Mejor Individuo");
+
+                if (isOptimal) {
+                    alert.setHeaderText("🎯 ¡AGENTE ÓPTIMO ENCONTRADO! 🎯");
+                    alert.setContentText("Fitness alcanzado: " + String.format("%.2f", bestFitnessEver) + "\n\n" +
+                            "¡Este agente ha alcanzado el umbral óptimo!\n" +
+                            "Es probablemente el mejor agente posible.\n\n" +
+                            "Cambia a la pestaña 'Simulación Visual' para verlo en acción.\n" +
+                            "El agente aparecerá marcado en rojo con un borde dorado brillante.");
+                } else {
+                    alert.setHeaderText("Mejor fitness encontrado: " + String.format("%.2f", bestFitnessEver));
+                    alert.setContentText("Se reproducirá el mejor agente encontrado.\n\n" +
+                            "Cambia a la pestaña 'Simulación Visual' para verlo en acción.\n" +
+                            "El agente aparecerá marcado en rojo con un borde dorado.");
+                }
+
+                alert.showAndWait();
+
+                // Reproducir el mejor agente
+                simulationController.playBestAgentOnly();
+
+                // Cambiar a pestaña de simulación
+                TabPane tabPane = (TabPane) genLabel.getScene().getRoot();
+                tabPane.getSelectionModel().select(1);
+
+                // Desactivar mostrar todos los agentes para ver solo el mejor
+                showAllAgents = false;
             } else {
-                toggleAgentsButton.setText("Mostrar todos los agentes");
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Sin datos");
+                alert.setHeaderText("No hay datos disponibles");
+                alert.setContentText("Ejecuta primero una simulación para encontrar el mejor individuo.");
+                alert.showAndWait();
             }
         });
 
-        additionalControls.getChildren().addAll(resetButton, exportDataButton);
+        additionalControls.getChildren().addAll(resetButton, exportDataButton, playBestButton);
         additionalControls.setPadding(new Insets(10, 0, 0, 0));
         additionalControls.setAlignment(Pos.CENTER_LEFT);
 
@@ -456,18 +553,40 @@ public class FlappyBirdNEAT extends Application {
 
     /**
      * Actualiza el gráfico con los datos actuales
+     * Optimizado para no recrear todo, solo añadir nuevos puntos
      */
     private void updateChart() {
-        bestFitnessSeries.getData().clear();
-        avgFitnessSeries.getData().clear();
+        List<Double> bestHistory = simulationController.getBestFitnessHistory();
+        List<Double> avgHistory = simulationController.getAvgFitnessHistory();
 
-        for (int i = 0; i < simulationController.getBestFitnessHistory().size(); i++) {
+        // Si el tamaño cambió, necesitamos actualizar
+        int currentBestSize = bestFitnessSeries.getData().size();
+        int currentAvgSize = avgFitnessSeries.getData().size();
+
+        // Añadir solo los nuevos puntos en lugar de recrear todo
+        for (int i = currentBestSize; i < bestHistory.size(); i++) {
             bestFitnessSeries.getData().add(
-                    new XYChart.Data<>(i, simulationController.getBestFitnessHistory().get(i)));
+                    new XYChart.Data<>(i, bestHistory.get(i)));
+        }
 
-            if (i < simulationController.getAvgFitnessHistory().size()) {
+        for (int i = currentAvgSize; i < avgHistory.size(); i++) {
+            avgFitnessSeries.getData().add(
+                    new XYChart.Data<>(i, avgHistory.get(i)));
+        }
+
+        // Si se reinició la simulación (el tamaño disminuyó), reconstruir todo
+        if (bestHistory.size() < currentBestSize || avgHistory.size() < currentAvgSize) {
+            bestFitnessSeries.getData().clear();
+            avgFitnessSeries.getData().clear();
+
+            for (int i = 0; i < bestHistory.size(); i++) {
+                bestFitnessSeries.getData().add(
+                        new XYChart.Data<>(i, bestHistory.get(i)));
+            }
+
+            for (int i = 0; i < avgHistory.size(); i++) {
                 avgFitnessSeries.getData().add(
-                        new XYChart.Data<>(i, simulationController.getAvgFitnessHistory().get(i)));
+                        new XYChart.Data<>(i, avgHistory.get(i)));
             }
         }
     }
@@ -791,12 +910,24 @@ public class FlappyBirdNEAT extends Application {
                 // Dibujar el estado actual
                 drawGame();
 
-                // Si todos están muertos, pasar a siguiente generación
+                // Si todos están muertos
                 if (allDead) {
-                    simulationController.nextGeneration();
-                    updateChart();
-                    updateRunHistoryComboBox(); // Actualizar el selector de historiales
-                    updateHistoryDetails();    // Actualizar detalles del historial
+                    // Si estamos en modo replay, simplemente reiniciar el agente
+                    if (simulationController.isReplayMode()) {
+                        // Reiniciar el juego y el agente para volver a reproducir
+                        simulationController.getGame().reset();
+                        for (FlappyBirdAgent agent : simulationController.getPopulation().getAgents()) {
+                            agent.reset();
+                        }
+                        System.out.println("Mejor agente murió. Fitness alcanzado: " +
+                                String.format("%.2f", simulationController.getPopulation().getAgents()[0].getFitness()));
+                    } else {
+                        // Modo normal: pasar a siguiente generación
+                        simulationController.nextGeneration();
+                        updateChart();
+                        updateRunHistoryComboBox(); // Actualizar el selector de historiales
+                        updateHistoryDetails();    // Actualizar detalles del historial
+                    }
                 }
 
                 // Actualizar ventana de red neuronal si está activa
@@ -871,9 +1002,13 @@ public class FlappyBirdNEAT extends Application {
         // Dibujar pájaros (agentes)
         FlappyBirdAgent bestOverall = population.getBestAgent();
 
+        // En modo replay o con población de 1, el único agente es el mejor
+        boolean isSingleAgentMode = population.getAgents().length == 1;
+
         for (FlappyBirdAgent agent : population.getAgents()) {
             if (!agent.isDead()) {
-                if (agent == bestOverall) {
+                // Si es el mejor agente O estamos en modo replay con 1 agente
+                if (agent == bestOverall || isSingleAgentMode || simulationController.isReplayMode()) {
                     // El mejor agente de todas las generaciones se dibuja en rojo
                     gc.setFill(Color.RED);
                     gc.fillOval(50, agent.getY(), 30, 30);
@@ -894,14 +1029,28 @@ public class FlappyBirdNEAT extends Application {
 
                     // Indicador visual de que es el mejor agente
                     gc.setStroke(Color.GOLD);
-                    gc.setLineWidth(2);
+                    gc.setLineWidth(3);
                     gc.strokeOval(45, agent.getY() - 5, 40, 40);
+
+                    // Efecto de brillo adicional
+                    gc.setStroke(new Color(1, 0.84, 0, 0.5));
+                    gc.setLineWidth(6);
+                    gc.strokeOval(42, agent.getY() - 8, 46, 46);
                 } else if (showAllAgents) {
                     // El resto en amarillo, semitransparente para ver mejor
                     gc.setFill(new Color(1, 1, 0, 0.3));
                     gc.fillOval(50, agent.getY(), 30, 30);
                 }
             }
+        }
+
+        // Texto indicador si estamos en modo replay
+        if (simulationController.isReplayMode()) {
+            gc.setFill(new Color(0, 0, 0, 0.7));
+            gc.fillRect(10, 10, 350, 40);
+            gc.setFill(Color.GOLD);
+            gc.setFont(Font.font("System", FontWeight.BOLD, 20));
+            gc.fillText("★ REPRODUCIENDO MEJOR AGENTE ★", 20, 35);
         }
 
         // Dibujar suelo
