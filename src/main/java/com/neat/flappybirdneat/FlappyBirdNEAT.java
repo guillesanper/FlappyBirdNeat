@@ -7,6 +7,7 @@ import com.neat.flappybirdneat.neat.Population;
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.FlappyBirdGameUI;
 import com.neat.flappybirdneat.view.NeuralNetworkWindow;
+import com.neat.flappybirdneat.view.GeneticOperatorsConfigWindow;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -70,6 +71,7 @@ public class FlappyBirdNEAT extends Application {
     private LineChart<Number, Number> fitnessChart;
     private XYChart.Series<Number, Number> bestFitnessSeries;
     private XYChart.Series<Number, Number> avgFitnessSeries;
+    private XYChart.Series<Number, Number> bestAbsoluteSeries;
 
     // UI components
     private Label genLabel;
@@ -265,17 +267,24 @@ public class FlappyBirdNEAT extends Application {
             try {
                 int generations = Integer.parseInt(genToRunField.getText().trim());
                 if (generations > 0) {
-                    simulationController.runFastSimulation(generations);
+                    // Guardar configuración y reiniciar antes de iniciar
+                    simulationController.updateOperatorsConfig();
+                    simulationController.resetSimulation();
+                    updateChart(); // Limpiar gráfico
+
+                    // Unbind antes de establecer manualmente y guardar generación inicial
+                    progressBar.progressProperty().unbind();
                     progressBar.setProgress(0);
+                    final int startGeneration = simulationController.currentGenerationProperty().getValue();
+
+                    simulationController.runFastSimulation(generations);
+
                     // Actualizar la barra de progreso
                     progressBar.progressProperty().bind(
-                            Bindings.divide(
-                                    Bindings.subtract(
-                                            simulationController.currentGenerationProperty(),
-                                            simulationController.currentGenerationProperty().getValue()
-                                    ),
-                                    generations
-                            )
+                            Bindings.createDoubleBinding(() -> {
+                                int current = simulationController.currentGenerationProperty().getValue();
+                                return Math.min(1.0, (double)(current - startGeneration) / generations);
+                            }, simulationController.currentGenerationProperty())
                     );
 
                     // Añade un listener para cuando termine la simulación rápida
@@ -336,6 +345,8 @@ public class FlappyBirdNEAT extends Application {
 
         Button resetButton = new Button("Reiniciar Simulación");
         resetButton.setOnAction(e -> {
+            // Guardar configuración actual antes de reiniciar
+            simulationController.updateOperatorsConfig();
             simulationController.resetSimulation();
             updateChart();
         });
@@ -393,7 +404,15 @@ public class FlappyBirdNEAT extends Application {
             }
         });
 
-        additionalControls.getChildren().addAll(resetButton, exportDataButton, playBestButton);
+        Button configOperatorsButton = new Button("⚙ Configurar Operadores Genéticos");
+        configOperatorsButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;");
+        configOperatorsButton.setOnAction(e -> {
+            GeneticOperatorsConfigWindow configWindow = new GeneticOperatorsConfigWindow(
+                    simulationController.getPopulation(), simulationController);
+            configWindow.show();
+        });
+
+        additionalControls.getChildren().addAll(resetButton, exportDataButton, playBestButton, configOperatorsButton);
         additionalControls.setPadding(new Insets(10, 0, 0, 0));
         additionalControls.setAlignment(Pos.CENTER_LEFT);
 
@@ -538,11 +557,15 @@ public class FlappyBirdNEAT extends Application {
         avgFitnessSeries = new XYChart.Series<>();
         avgFitnessSeries.setName("Fitness Promedio");
 
-        fitnessChart.getData().addAll(bestFitnessSeries, avgFitnessSeries);
+        bestAbsoluteSeries = new XYChart.Series<>();
+        bestAbsoluteSeries.setName("Mejor Absoluto");
+
+        fitnessChart.getData().addAll(bestFitnessSeries, avgFitnessSeries, bestAbsoluteSeries);
 
         // Aplicar estilos a las líneas
         bestFitnessSeries.getNode().setStyle("-fx-stroke: red; -fx-stroke-width: 2px;");
         avgFitnessSeries.getNode().setStyle("-fx-stroke: blue; -fx-stroke-width: 1.5px;");
+        bestAbsoluteSeries.getNode().setStyle("-fx-stroke: green; -fx-stroke-width: 2.5px; -fx-stroke-dash-array: 5 5;");
 
         // Inicializar con datos actuales
         updateChart();
@@ -574,10 +597,21 @@ public class FlappyBirdNEAT extends Application {
                     new XYChart.Data<>(i, avgHistory.get(i)));
         }
 
+        // Actualizar mejor absoluto
+        List<Double> absoluteHistory = simulationController.getBestAbsoluteFitnessHistory();
+        int currentAbsoluteSize = bestAbsoluteSeries.getData().size();
+
+        // Añadir solo los nuevos puntos
+        for (int i = currentAbsoluteSize; i < absoluteHistory.size(); i++) {
+            bestAbsoluteSeries.getData().add(
+                    new XYChart.Data<>(i, absoluteHistory.get(i)));
+        }
+
         // Si se reinició la simulación (el tamaño disminuyó), reconstruir todo
         if (bestHistory.size() < currentBestSize || avgHistory.size() < currentAvgSize) {
             bestFitnessSeries.getData().clear();
             avgFitnessSeries.getData().clear();
+            bestAbsoluteSeries.getData().clear();
 
             for (int i = 0; i < bestHistory.size(); i++) {
                 bestFitnessSeries.getData().add(
@@ -587,6 +621,11 @@ public class FlappyBirdNEAT extends Application {
             for (int i = 0; i < avgHistory.size(); i++) {
                 avgFitnessSeries.getData().add(
                         new XYChart.Data<>(i, avgHistory.get(i)));
+            }
+
+            for (int i = 0; i < absoluteHistory.size(); i++) {
+                bestAbsoluteSeries.getData().add(
+                        new XYChart.Data<>(i, absoluteHistory.get(i)));
             }
         }
     }
@@ -948,8 +987,9 @@ public class FlappyBirdNEAT extends Application {
      */
     private Pipe getNextPipe(FlappyBirdAgent agent) {
         FlappyBirdGame game = simulationController.getGame();
+        final float BIRD_X_POSITION = 50; // Posición X fija del pájaro
         for (Pipe pipe : game.getPipes()) {
-            if (pipe.getX() + pipe.getWidth() > 50) { // 50 es x del pájaro
+            if (pipe.getX() + pipe.getWidth() > BIRD_X_POSITION) {
                 return pipe;
             }
         }
@@ -979,24 +1019,23 @@ public class FlappyBirdNEAT extends Application {
 
         // Dibujar tubos
         for (Pipe pipe : game.getPipes()) {
-            // Tubo superior
+            // Tubo superior (desde arriba hasta inicio del gap)
             gc.setFill(Color.GREEN);
-            gc.fillRect(pipe.getX(), 0, pipe.getWidth(), pipe.getGapY() - pipe.getGapSize()/2);
+            double gapTop = pipe.getGapY() - pipe.getGapSize() / 2;
+            gc.fillRect(pipe.getX(), 0, pipe.getWidth(), gapTop);
 
             // Borde del tubo superior
             gc.setFill(Color.DARKGREEN);
-            gc.fillRect(pipe.getX() - 3, pipe.getGapY() - pipe.getGapSize()/2 - 20,
-                    pipe.getWidth() + 6, 20);
+            gc.fillRect(pipe.getX() - 3, gapTop - 20, pipe.getWidth() + 6, 20);
 
-            // Tubo inferior
+            // Tubo inferior (desde fin del gap hasta el suelo)
             gc.setFill(Color.GREEN);
-            gc.fillRect(pipe.getX(), pipe.getGapY() + pipe.getGapSize()/2,
-                    pipe.getWidth(), CANVAS_HEIGHT - (pipe.getGapY() + pipe.getGapSize()/2));
+            double gapBottom = pipe.getGapY() + pipe.getGapSize() / 2;
+            gc.fillRect(pipe.getX(), gapBottom, pipe.getWidth(), CANVAS_HEIGHT - gapBottom);
 
             // Borde del tubo inferior
             gc.setFill(Color.DARKGREEN);
-            gc.fillRect(pipe.getX() - 3, pipe.getGapY() + pipe.getGapSize()/2,
-                    pipe.getWidth() + 6, 20);
+            gc.fillRect(pipe.getX() - 3, gapBottom, pipe.getWidth() + 6, 20);
         }
 
         // Dibujar pájaros (agentes)

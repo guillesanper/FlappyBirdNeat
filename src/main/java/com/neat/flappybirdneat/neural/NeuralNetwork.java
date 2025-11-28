@@ -229,4 +229,20 @@ public class NeuralNetwork {
         this.biasHidden = other.biasHidden.clone();
         this.biasOutput = other.biasOutput.clone();
     }
+
+    // Getters para acceder a la estructura de la red
+    public int getInputSize() { return inputSize; }
+    public int getHiddenSize() { return hiddenSize; }
+    public int getOutputSize() { return outputSize; }
+
+    // Getters y setters para pesos y bias (para estrategias de cruce)
+    public double[][] getWeightsInputHidden() { return weightsInputHidden; }
+    public double[][] getWeightsHiddenOutput() { return weightsHiddenOutput; }
+    public double[] getBiasHidden() { return biasHidden; }
+    public double[] getBiasOutput() { return biasOutput; }
+
+    public void setWeightsInputHidden(double[][] weights) { this.weightsInputHidden = weights; }
+    public void setWeightsHiddenOutput(double[][] weights) { this.weightsHiddenOutput = weights; }
+    public void setBiasHidden(double[] bias) { this.biasHidden = bias; }
+    public void setBiasOutput(double[] bias) { this.biasOutput = bias; }
 }

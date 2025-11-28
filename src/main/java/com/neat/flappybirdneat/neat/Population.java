@@ -2,6 +2,10 @@ package com.neat.flappybirdneat.neat;
 
 import java.util.Arrays;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
+import com.neat.flappybirdneat.neat.selection.*;
+import com.neat.flappybirdneat.neat.scaling.*;
+import com.neat.flappybirdneat.neat.mutation.*;
+import com.neat.flappybirdneat.neat.crossover.*;
 
 public class Population {
     private FlappyBirdAgent[] agents;
@@ -11,92 +15,121 @@ public class Population {
     private double mutationRate;
     private double elitismRate = 0.1;
 
+    // Operadores genéticos configurables
+    private Seleccion seleccionStrategy;
+    private Escalado escaladoStrategy;
+    private MutacionStrategy mutacionStrategy;
+    private CruceStrategy cruceStrategy;
 
     public Population(int size) {
         agents = new FlappyBirdAgent[size];
         for (int i = 0; i < size; i++) {
-            // 4 entradas: posición Y, velocidad, distancia al tubo, altura del tubo
-            // 1 salida: saltar o no
             agents[i] = new FlappyBirdAgent(4, 8, 1);
         }
         generation = 1;
         bestFitness = 0;
         mutationRate = 0.1;
-
-        // Inicializar el mejor agente
         bestAgent = new FlappyBirdAgent(4, 8, 1);
-    }
 
-    // En Population.java, modifica el método naturalSelection
+        // Inicializar estrategias por defecto
+        seleccionStrategy = new SeleccionRuleta();
+        escaladoStrategy = null;
+        mutacionStrategy = new MutacionGaussiana();
+        cruceStrategy = new CruceUniforme();
+    }
 
     public void naturalSelection() {
         FlappyBirdAgent[] newAgents = new FlappyBirdAgent[agents.length];
 
-        // Elitismo: conservar los mejores individuos
-        setBestAgent();
+        // Guardar fitness original
+        double[] originalFitness = new double[agents.length];
+        for (int i = 0; i < agents.length; i++) {
+            originalFitness[i] = agents[i].getFitness();
+        }
 
-        // Ordenar agentes por fitness
+        // Aplicar escalado si está configurado
+        if (escaladoStrategy != null) {
+            escaladoStrategy.escalarFitness(agents);
+        }
+
+        // Elitismo
+        setBestAgent();
         Arrays.sort(agents, (a1, a2) -> Double.compare(a2.getFitness(), a1.getFitness()));
 
-        // Copiar elite directamente
-        int eliteSize = (int)(agents.length * elitismRate); // elitismRate es un nuevo campo de la clase
+        int eliteSize = (int)(agents.length * elitismRate);
         for (int i = 0; i < eliteSize; i++) {
             newAgents[i] = new FlappyBirdAgent(4, 8, 1);
             newAgents[i].getBrain().setBrain(agents[i].getBrain());
+            newAgents[i].setFitness(agents[i].getFitness());
         }
 
-        // Selección, cruce y mutación para el resto
-        for (int i = eliteSize; i < agents.length; i++) {
-            // Selección por ruleta
-            FlappyBirdAgent parent1 = selectParent();
-            FlappyBirdAgent parent2 = selectParent();
+        // Calcular probabilidades
+        Seleccionable[] seleccionables = calcularProbabilidades();
 
-            // Cruzar padres
-            FlappyBirdAgent child = new FlappyBirdAgent(4, 8, 1);
-            child.getBrain().setBrain(NeuralNetwork.crossover(
+        // Selección
+        int[] selected = seleccionStrategy.getSeleccion(seleccionables, agents.length - eliteSize);
+
+        // Cruce y mutación
+        for (int i = 0; i < selected.length; i += 2) {
+            int idx1 = selected[i];
+            int idx2 = (i + 1 < selected.length) ? selected[i + 1] : selected[i];
+
+            FlappyBirdAgent parent1 = agents[idx1];
+            FlappyBirdAgent parent2 = agents[idx2];
+
+            FlappyBirdAgent child1 = new FlappyBirdAgent(4, 8, 1);
+            child1.getBrain().setBrain(cruceStrategy.crossover(
                     parent1.getBrain(), parent2.getBrain()));
+            mutacionStrategy.mutate(child1.getBrain(), mutationRate);
+            newAgents[eliteSize + i] = child1;
 
-            // Mutar hijo
-            child.getBrain().mutate(mutationRate);
+            if (eliteSize + i + 1 < agents.length) {
+                FlappyBirdAgent child2 = new FlappyBirdAgent(4, 8, 1);
+                child2.getBrain().setBrain(cruceStrategy.crossover(
+                        parent2.getBrain(), parent1.getBrain()));
+                mutacionStrategy.mutate(child2.getBrain(), mutationRate);
+                newAgents[eliteSize + i + 1] = child2;
+            }
+        }
 
-            newAgents[i] = child;
+        // Restaurar fitness original
+        for (int i = 0; i < agents.length; i++) {
+            agents[i].setFitness(originalFitness[i]);
         }
 
         agents = newAgents;
         generation++;
+        mutacionStrategy.update(generation);
     }
 
-    private FlappyBirdAgent selectParent() {
-        // Implementar selección por ruleta
-        double totalFitness = Arrays.stream(agents)
-                .mapToDouble(FlappyBirdAgent::getFitness)
-                .sum();
-
-        double randomValue = Math.random() * totalFitness;
-        double sum = 0;
-
-        for (FlappyBirdAgent agent : agents) {
-            sum += agent.getFitness();
-            if (sum > randomValue) {
-                return agent;
-            }
+    private Seleccionable[] calcularProbabilidades() {
+        Seleccionable[] seleccionables = new Seleccionable[agents.length];
+        double totalFitness = 0;
+        for (int i = 0; i < agents.length; i++) {
+            totalFitness += Math.max(0, agents[i].getFitness());
         }
+        if (totalFitness == 0) totalFitness = 1.0;
 
-        // Si algo sale mal, devuelve el primer agente
-        return agents[0];
+        double accProb = 0;
+        for (int i = 0; i < agents.length; i++) {
+            double prob = Math.max(0, agents[i].getFitness()) / totalFitness;
+            seleccionables[i] = new Seleccionable(i, agents[i].getFitness());
+            seleccionables[i].setProb(prob);
+            seleccionables[i].setAccProb(accProb);
+            accProb += prob;
+        }
+        return seleccionables;
     }
 
     private void setBestAgent() {
         double maxFitness = 0;
         int maxIndex = 0;
-
         for (int i = 0; i < agents.length; i++) {
             if (agents[i].getFitness() > maxFitness) {
                 maxFitness = agents[i].getFitness();
                 maxIndex = i;
             }
         }
-
         if (maxFitness > bestFitness) {
             bestFitness = maxFitness;
             bestAgent = new FlappyBirdAgent(4, 8, 1);
@@ -104,50 +137,67 @@ public class Population {
         }
     }
 
+    // Setters para configurar operadores
+    public void setSeleccionStrategy(Seleccion strategy) {
+        this.seleccionStrategy = strategy;
+    }
+
+    public void setEscaladoStrategy(Escalado strategy) {
+        this.escaladoStrategy = strategy;
+    }
+
+    public void setMutacionStrategy(MutacionStrategy strategy) {
+        this.mutacionStrategy = strategy;
+    }
+
+    public void setCruceStrategy(CruceStrategy strategy) {
+        this.cruceStrategy = strategy;
+    }
+
+    public void setSeleccionStrategy(String tipo) {
+        this.seleccionStrategy = SeleccionFactory.getMetodoSeleccion(tipo);
+    }
+
+    public void setEscaladoStrategy(String tipo) {
+        this.escaladoStrategy = EscaladoFactory.getMetodoEscalado(tipo);
+    }
+
+    public void setMutacionStrategy(String tipo) {
+        this.mutacionStrategy = MutacionFactory.getMetodoMutacion(tipo);
+    }
+
+    public void setCruceStrategy(String tipo) {
+        this.cruceStrategy = CruceFactory.getMetodoCruce(tipo);
+    }
+
     // Getters
-    public FlappyBirdAgent[] getAgents() {
-        return agents;
-    }
-
-    public int getGeneration() {
-        return generation;
-    }
-
-    public double getBestFitness() {
-        return bestFitness;
-    }
-
+    public FlappyBirdAgent[] getAgents() { return agents; }
+    public int getGeneration() { return generation; }
+    public double getBestFitness() { return bestFitness; }
     public double getElitismRate() { return elitismRate; }
-
     public void setElitismRate(double elitismRate) { this.elitismRate = elitismRate; }
+    public FlappyBirdAgent getBestAgent() { return bestAgent; }
+    public Seleccion getSeleccionStrategy() { return seleccionStrategy; }
+    public Escalado getEscaladoStrategy() { return escaladoStrategy; }
+    public MutacionStrategy getMutacionStrategy() { return mutacionStrategy; }
+    public CruceStrategy getCruceStrategy() { return cruceStrategy; }
 
-    /**
-     * @return El mejor agente encontrado hasta ahora
-     */
-    public FlappyBirdAgent getBestAgent() {
-        return bestAgent;
-    }
-
-    // En Population.java
     public Population deepCopy() {
         Population copy = new Population(agents.length);
-
-        // Copiar agentes individualmente
         for (int i = 0; i < agents.length; i++) {
             copy.agents[i] = new FlappyBirdAgent(this.agents[i]);
         }
-
-        // Copiar otros atributos relevantes
         copy.generation = this.generation;
         copy.bestFitness = this.bestFitness;
         copy.mutationRate = this.mutationRate;
         copy.elitismRate = this.elitismRate;
-
-        // Copiar el mejor agente
         if (this.bestAgent != null) {
             copy.bestAgent = new FlappyBirdAgent(this.bestAgent);
         }
-
+        copy.seleccionStrategy = this.seleccionStrategy;
+        copy.escaladoStrategy = this.escaladoStrategy;
+        copy.mutacionStrategy = this.mutacionStrategy;
+        copy.cruceStrategy = this.cruceStrategy;
         return copy;
     }
 }

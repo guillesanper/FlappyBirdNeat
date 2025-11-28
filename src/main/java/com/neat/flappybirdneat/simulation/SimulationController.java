@@ -1,5 +1,6 @@
 package com.neat.flappybirdneat.simulation;
 
+import com.neat.flappybirdneat.config.GeneticOperatorsConfig;
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.history.GenerationData;
 import com.neat.flappybirdneat.history.HistoryManager;
@@ -18,7 +19,7 @@ import java.util.List;
  */
 public class SimulationController {
     // Fitness considerado óptimo - si se alcanza, se detiene el entrenamiento automáticamente
-    private static final double OPTIMAL_FITNESS_THRESHOLD = 10000.0;
+    private static final double OPTIMAL_FITNESS_THRESHOLD = 80000.0;
 
     // Propiedades observables para actualizar la UI
     private final IntegerProperty currentGeneration = new SimpleIntegerProperty(1);
@@ -29,9 +30,8 @@ public class SimulationController {
 
     // Datos para gráficos
     private final List<Double> bestFitnessHistory = new ArrayList<>();
-
-
     private final List<Double> avgFitnessHistory = new ArrayList<>();
+    private final List<Double> bestAbsoluteFitnessHistory = new ArrayList<>();
 
     // Referencias al juego y población
     private Population population;
@@ -40,6 +40,7 @@ public class SimulationController {
     private int canvasWidth;
     private int canvasHeight;
     private HistoryManager historyManager;
+    private GeneticOperatorsConfig operatorsConfig;
 
     // Parámetros de simulación
     private boolean fastMode = false;
@@ -55,6 +56,7 @@ public class SimulationController {
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
         this.historyManager = new HistoryManager();
+        this.operatorsConfig = new GeneticOperatorsConfig();
 
         resetSimulation();
     }
@@ -64,6 +66,7 @@ public class SimulationController {
      */
     public void resetSimulation() {
         population = new Population(populationSize);
+        operatorsConfig.applyTo(population); // Aplicar operadores configurados
         game = new FlappyBirdGame(canvasWidth, canvasHeight);
 
         currentGeneration.set(1);
@@ -73,10 +76,12 @@ public class SimulationController {
 
         bestFitnessHistory.clear();
         avgFitnessHistory.clear();
+        bestAbsoluteFitnessHistory.clear();
 
         // Añadir valores iniciales al historial
         bestFitnessHistory.add(0.0);
         avgFitnessHistory.add(0.0);
+        bestAbsoluteFitnessHistory.add(0.0);
 
         // Iniciar un nuevo historial de ejecución
         historyManager.startNewRun();
@@ -114,19 +119,29 @@ public class SimulationController {
      * Evoluciona a la siguiente generación
      */
     public void nextGeneration() {
-        // Calcular fitness promedio antes de evolucionar
+        // Calcular fitness promedio y mejor de esta generación antes de evolucionar
         double totalFitness = 0;
+        double bestFitnessThisGen = Double.NEGATIVE_INFINITY;
         for (FlappyBirdAgent agent : population.getAgents()) {
-            totalFitness += agent.getFitness();
+            double fitness = agent.getFitness();
+            totalFitness += fitness;
+            if (fitness > bestFitnessThisGen) {
+                bestFitnessThisGen = fitness;
+            }
         }
         double avgFitness = totalFitness / populationSize;
 
         // Guardar esta generación en el historial
-        historyManager.addGenerationData(population.getBestFitness(), aliveCount.get(), population,game.getPipes());
+        historyManager.addGenerationData(bestFitnessThisGen, aliveCount.get(), population, game.getPipes());
 
         // Guardar historial para gráficos
-        bestFitnessHistory.add(population.getBestFitness());
+        bestFitnessHistory.add(bestFitnessThisGen);
         avgFitnessHistory.add(avgFitness);
+
+        // Actualizar mejor fitness absoluto
+        double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty() ? 0.0 :
+                                  bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
+        bestAbsoluteFitnessHistory.add(Math.max(bestFitnessThisGen, previousAbsolute));
 
         // Evolucionar población
         population.naturalSelection();
@@ -139,7 +154,7 @@ public class SimulationController {
 
         // Actualizar propiedades
         currentGeneration.set(currentGeneration.get() + 1);
-        bestFitness.set(population.getBestFitness());
+        bestFitness.set(bestFitnessThisGen); // Mejor de esta generación, no el histórico
         aliveCount.set(populationSize);
 
         System.out.println("Generación " + currentGeneration.get() +
@@ -196,11 +211,16 @@ public class SimulationController {
 
                     // Calcular estadísticas solo al final de la generación
                     double totalFitness = 0;
+                    double bestFitnessThisGen = Double.NEGATIVE_INFINITY;
                     for (FlappyBirdAgent agent : population.getAgents()) {
-                        totalFitness += agent.getFitness();
+                        double fitness = agent.getFitness();
+                        totalFitness += fitness;
+                        if (fitness > bestFitnessThisGen) {
+                            bestFitnessThisGen = fitness;
+                        }
                     }
                     final double avgFitness = totalFitness / populationSize;
-                    final double currentBestFitness = population.getBestFitness();
+                    final double currentBestFitness = bestFitnessThisGen; // Mejor de esta generación
 
                     // Guardar esta generación en el historial
                     historyManager.addGenerationData(currentBestFitness, alive, population, game.getPipes());
@@ -219,6 +239,11 @@ public class SimulationController {
                         // Guardar datos para gráficos
                         bestFitnessHistory.add(currentBestFitness);
                         avgFitnessHistory.add(avgFitness);
+
+                        // Mantener el mejor absoluto
+                        double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty() ? 0.0 :
+                                                  bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
+                        bestAbsoluteFitnessHistory.add(Math.max(currentBestFitness, previousAbsolute));
 
                         Platform.runLater(() -> {
                             bestFitness.set(bestFit);
@@ -243,6 +268,11 @@ public class SimulationController {
                     // Guardar datos para gráficos (siempre)
                     bestFitnessHistory.add(currentBestFitness);
                     avgFitnessHistory.add(avgFitness);
+
+                    // Mantener el mejor absoluto
+                    double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty() ? 0.0 :
+                                              bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
+                    bestAbsoluteFitnessHistory.add(Math.max(currentBestFitness, previousAbsolute));
 
                     // Actualizar UI solo cada N generaciones o en la última
                     if (i % UI_UPDATE_INTERVAL == 0 || i == generations - 1) {
@@ -431,6 +461,20 @@ public class SimulationController {
         this.population = population;
     }
 
+    /**
+     * Actualiza la configuración guardada con los operadores actuales
+     */
+    public void updateOperatorsConfig() {
+        operatorsConfig.updateFrom(population);
+    }
+
+    /**
+     * Obtiene la configuración de operadores genéticos
+     */
+    public GeneticOperatorsConfig getOperatorsConfig() {
+        return operatorsConfig;
+    }
+
     // Getters para propiedades observables
     public IntegerProperty currentGenerationProperty() { return currentGeneration; }
     public DoubleProperty bestFitnessProperty() { return bestFitness; }
@@ -441,6 +485,7 @@ public class SimulationController {
     // Getters para datos y objetos
     public List<Double> getBestFitnessHistory() { return bestFitnessHistory; }
     public List<Double> getAvgFitnessHistory() { return avgFitnessHistory; }
+    public List<Double> getBestAbsoluteFitnessHistory() { return bestAbsoluteFitnessHistory; }
     public Population getPopulation() { return population; }
     public FlappyBirdGame getGame() { return game; }
     public boolean isFastMode() { return fastMode; }

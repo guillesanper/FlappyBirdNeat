@@ -18,6 +18,10 @@ public class FlappyBirdGame {
     private int frameCount;
     private static final int PIPE_SPACING = 120;
 
+    // Constantes para el pájaro
+    private static final float BIRD_X_POSITION = 50;
+    private static final float BIRD_SIZE = 30;
+
     private final int canvasWidth;
     private final int canvasHeight;
 
@@ -80,7 +84,7 @@ public class FlappyBirdGame {
                 if (nextPipe != null) {
                     agent.think(
                             agent.getY(),
-                            nextPipe.getX() - 50, // 50 es el ancho del pájaro
+                            nextPipe.getX() - BIRD_X_POSITION, // Distancia horizontal al tubo
                             nextPipe.getGapY(),
                             nextPipe.getGapSize()
                     );
@@ -115,18 +119,19 @@ public class FlappyBirdGame {
         for (Pipe pipe : pipes) {
             gc.setFill(Color.GREEN);
 
-            // Parte superior del tubo
-            gc.fillRect(pipe.getX(), 0, pipe.getWidth(), pipe.getGapY());
+            // Parte superior del tubo (desde arriba hasta inicio del gap)
+            double gapTop = pipe.getGapY() - pipe.getGapSize() / 2;
+            gc.fillRect(pipe.getX(), 0, pipe.getWidth(), gapTop);
 
-            // Parte inferior del tubo
-            double gapBottom = pipe.getGapY() + pipe.getGapSize();
+            // Parte inferior del tubo (desde fin del gap hasta el suelo)
+            double gapBottom = pipe.getGapY() + pipe.getGapSize() / 2;
             gc.fillRect(pipe.getX(), gapBottom, pipe.getWidth(), canvasHeight - gapBottom - 20); // -20 para el suelo
 
             // Dibujar borde del tubo (opcional para hacerlo más visual)
             gc.setStroke(Color.DARKGREEN);
             gc.setLineWidth(2);
             // Borde tubo superior
-            gc.strokeRect(pipe.getX(), 0, pipe.getWidth(), pipe.getGapY());
+            gc.strokeRect(pipe.getX(), 0, pipe.getWidth(), gapTop);
             // Borde tubo inferior
             gc.strokeRect(pipe.getX(), gapBottom, pipe.getWidth(), canvasHeight - gapBottom - 20);
         }
@@ -139,7 +144,7 @@ public class FlappyBirdGame {
      */
     public Pipe getNextPipe(FlappyBirdAgent agent) {
         for (Pipe pipe : pipes) {
-            if (pipe.getX() + pipe.getWidth() > 50) { // 50 es x del pájaro
+            if (pipe.getX() + pipe.getWidth() > BIRD_X_POSITION) {
                 return pipe;
             }
         }
@@ -159,7 +164,7 @@ public class FlappyBirdGame {
 
         // Colisión con tubos
         for (Pipe pipe : pipes) {
-            if (pipe.collides(50, agent.getY(), 30)) { // x, y, tamaño del pájaro
+            if (pipe.collides(BIRD_X_POSITION, agent.getY(), BIRD_SIZE)) {
                 agent.setDead(true);
                 return;
             }
