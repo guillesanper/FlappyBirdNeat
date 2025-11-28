@@ -87,20 +87,21 @@ public class NeuralNetworkWindow {
         gc.setFont(Font.font("System", FontWeight.BOLD, 18));
         gc.fillText("Red Neuronal del Mejor Agente", 20, 30);
 
-        // Preparar entradas para la visualización
-        double[] inputs = new double[4];
+        // Obtener los inputs y outputs que la red realmente usó en su última decisión
+        // (almacenados en el state tracking de la red neuronal)
+        double[] inputs = agent.getBrain().getLastInputs();
+        double[] outputs = agent.getBrain().getLastOutputs();
+
+        // Si no hay datos (primera ejecución), usar valores por defecto
+        if (inputs == null || outputs == null) {
+            inputs = new double[]{0.5, 0.5, 0.5, 0.5};
+            outputs = new double[]{0.5};
+        }
+
+        // Información adicional para mostrar al usuario
         double distanceToNextPipe = nextPipe != null ? nextPipe.getX() - 50 : 500;
         double heightOfNextPipe = nextPipe != null ? nextPipe.getGapY() : 300;
         double gapSize = nextPipe != null ? nextPipe.getGapSize() : 150;
-
-        // Normalizar entradas como se hace en FlappyBirdAgent.think()
-        inputs[0] = agent.getY() / 600.0;
-        inputs[1] = 0.5; // No tenemos acceso directo a la velocidad, así que usamos un valor neutral
-        inputs[2] = distanceToNextPipe / 800.0;
-        inputs[3] = heightOfNextPipe / 600.0;
-
-        // Calcular la salida (simulando la decisión del agente)
-        double[] outputs = agent.getBrain().feedForward(inputs);
 
         // Dibujar la red neuronal
         NeuralNetworkVisualizer.drawNetwork(

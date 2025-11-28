@@ -15,6 +15,11 @@ public class NeuralNetwork {
     private double[] biasHidden;
     private double[] biasOutput;
 
+    // State tracking for visualization
+    private double[] lastInputs;
+    private double[] lastHiddenActivations;
+    private double[] lastOutputs;
+
     private final Random random = new Random();
 
     /**
@@ -65,6 +70,9 @@ public class NeuralNetwork {
      * @return Valores de salida
      */
     public double[] feedForward(double[] inputs) {
+        // Store input state for visualization
+        lastInputs = inputs.clone();
+
         // Activación de la capa oculta
         double[] hiddenLayer = new double[hiddenSize];
         for (int i = 0; i < hiddenSize; i++) {
@@ -75,6 +83,9 @@ public class NeuralNetwork {
             hiddenLayer[i] = sigmoid(sum);
         }
 
+        // Store hidden layer state for visualization
+        lastHiddenActivations = hiddenLayer.clone();
+
         // Activación de la capa de salida
         double[] outputs = new double[outputSize];
         for (int i = 0; i < outputSize; i++) {
@@ -84,6 +95,9 @@ public class NeuralNetwork {
             }
             outputs[i] = sigmoid(sum);
         }
+
+        // Store output state for visualization
+        lastOutputs = outputs.clone();
 
         return outputs;
     }
@@ -245,4 +259,9 @@ public class NeuralNetwork {
     public void setWeightsHiddenOutput(double[][] weights) { this.weightsHiddenOutput = weights; }
     public void setBiasHidden(double[] bias) { this.biasHidden = bias; }
     public void setBiasOutput(double[] bias) { this.biasOutput = bias; }
+
+    // Getters for visualization (returns last computation state)
+    public double[] getLastInputs() { return lastInputs; }
+    public double[] getLastHiddenActivations() { return lastHiddenActivations; }
+    public double[] getLastOutputs() { return lastOutputs; }
 }

@@ -123,6 +123,13 @@ public class FlappyBirdAgent {
         return y;
     }
 
+    /**
+     * @return Velocidad vertical del agente
+     */
+    public float getVelocity() {
+        return velocity;
+    }
+
     public FlappyBirdAgent(FlappyBirdAgent other) {
         // Deep copy of the neural network
         this.brain = new NeuralNetwork(other.brain);

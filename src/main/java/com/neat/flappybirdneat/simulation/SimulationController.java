@@ -352,6 +352,9 @@ public class SimulationController {
         // Clonar la población para no modificar el original histórico
         this.population = savedPopulation.deepCopy();
 
+        // Aplicar la configuración de operadores guardada
+        operatorsConfig.applyTo(this.population);
+
         // Reiniciar los agentes
         for (FlappyBirdAgent agent : this.population.getAgents()) {
             agent.reset();
@@ -377,6 +380,9 @@ public class SimulationController {
 
         // Crear una nueva población con solo el mejor agente
         Population singleAgentPop = new Population(1);
+
+        // Aplicar la configuración de operadores guardada
+        operatorsConfig.applyTo(singleAgentPop);
 
         // Copiar el mejor agente y también establecerlo como el mejor de la población
         FlappyBirdAgent clonedBestAgent = new FlappyBirdAgent(bestAgent);

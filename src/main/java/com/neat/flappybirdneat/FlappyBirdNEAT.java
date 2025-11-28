@@ -267,8 +267,7 @@ public class FlappyBirdNEAT extends Application {
             try {
                 int generations = Integer.parseInt(genToRunField.getText().trim());
                 if (generations > 0) {
-                    // Guardar configuración y reiniciar antes de iniciar
-                    simulationController.updateOperatorsConfig();
+                    // Reiniciar antes de iniciar (la config ya está guardada)
                     simulationController.resetSimulation();
                     updateChart(); // Limpiar gráfico
 
@@ -345,8 +344,7 @@ public class FlappyBirdNEAT extends Application {
 
         Button resetButton = new Button("Reiniciar Simulación");
         resetButton.setOnAction(e -> {
-            // Guardar configuración actual antes de reiniciar
-            simulationController.updateOperatorsConfig();
+            // Reiniciar con la configuración guardada
             simulationController.resetSimulation();
             updateChart();
         });
@@ -407,6 +405,8 @@ public class FlappyBirdNEAT extends Application {
         Button configOperatorsButton = new Button("⚙ Configurar Operadores Genéticos");
         configOperatorsButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;");
         configOperatorsButton.setOnAction(e -> {
+            // Asegurar que la población actual tenga la configuración guardada antes de abrir el modal
+            simulationController.getOperatorsConfig().applyTo(simulationController.getPopulation());
             GeneticOperatorsConfigWindow configWindow = new GeneticOperatorsConfigWindow(
                     simulationController.getPopulation(), simulationController);
             configWindow.show();

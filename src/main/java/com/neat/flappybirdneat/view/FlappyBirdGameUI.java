@@ -312,10 +312,20 @@ public class FlappyBirdGameUI {
 
                     // Actualizar visualización de red neuronal si está activa
                     if (showNeuralNetwork && networkWindow.isShowing()) {
-                        FlappyBirdAgent bestAgent = population.getBestAgent();
-                        if (!bestAgent.isDead()) {
-                            Pipe nextPipe = getNextPipe(bestAgent);
-                            networkWindow.update(bestAgent, nextPipe);
+                        // Encontrar el mejor agente ACTIVO (que está realmente jugando)
+                        FlappyBirdAgent bestActiveAgent = null;
+                        double bestActiveFitness = -1;
+                        for (FlappyBirdAgent agent : population.getAgents()) {
+                            if (!agent.isDead() && agent.getFitness() > bestActiveFitness) {
+                                bestActiveFitness = agent.getFitness();
+                                bestActiveAgent = agent;
+                            }
+                        }
+
+                        // Si hay un agente vivo, visualizar su red neuronal
+                        if (bestActiveAgent != null) {
+                            Pipe nextPipe = getNextPipe(bestActiveAgent);
+                            networkWindow.update(bestActiveAgent, nextPipe);
                         }
                     }
 

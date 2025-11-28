@@ -32,6 +32,13 @@ public class GeneticOperatorsConfig {
         population.setEscaladoStrategy(escaladoStrategy);
         population.setMutacionStrategy(mutacionStrategy);
         population.setCruceStrategy(cruceStrategy);
+
+        // Debug: mostrar qué configuración se está aplicando
+        System.out.println("🔧 Aplicando configuración de operadores genéticos:");
+        System.out.println("  - Cruce: " + (cruceStrategy != null ? cruceStrategy.getClass().getSimpleName() : "null"));
+        System.out.println("  - Selección: " + (seleccionStrategy != null ? seleccionStrategy.getClass().getSimpleName() : "null"));
+        System.out.println("  - Mutación: " + (mutacionStrategy != null ? mutacionStrategy.getClass().getSimpleName() : "null"));
+        System.out.println("  - Escalado: " + (escaladoStrategy != null ? escaladoStrategy.getClass().getSimpleName() : "Ninguno"));
     }
 
     /**
@@ -42,6 +49,13 @@ public class GeneticOperatorsConfig {
         this.escaladoStrategy = population.getEscaladoStrategy();
         this.mutacionStrategy = population.getMutacionStrategy();
         this.cruceStrategy = population.getCruceStrategy();
+
+        // Debug: mostrar qué configuración se está guardando
+        System.out.println("💾 Guardando configuración de operadores genéticos:");
+        System.out.println("  - Cruce: " + (cruceStrategy != null ? cruceStrategy.getClass().getSimpleName() : "null"));
+        System.out.println("  - Selección: " + (seleccionStrategy != null ? seleccionStrategy.getClass().getSimpleName() : "null"));
+        System.out.println("  - Mutación: " + (mutacionStrategy != null ? mutacionStrategy.getClass().getSimpleName() : "null"));
+        System.out.println("  - Escalado: " + (escaladoStrategy != null ? escaladoStrategy.getClass().getSimpleName() : "Ninguno"));
     }
 
     // Getters
