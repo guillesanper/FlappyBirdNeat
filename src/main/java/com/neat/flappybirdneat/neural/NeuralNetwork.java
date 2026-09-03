@@ -6,7 +6,7 @@ import java.util.Random;
  * Implementación de una red neuronal feedforward con una capa oculta.
  * Incluye funcionalidades para mutación y cruce genético.
  */
-public class NeuralNetwork {
+public class NeuralNetwork implements Brain {
     private int inputSize;
     private int hiddenSize;
     private int outputSize;
@@ -81,6 +81,7 @@ public class NeuralNetwork {
      * @param inputs Valores de entrada
      * @return Valores de salida
      */
+    @Override
     public double[] feedForward(double[] inputs) {
         // Store input state for visualization
         lastInputs = inputs.clone();
