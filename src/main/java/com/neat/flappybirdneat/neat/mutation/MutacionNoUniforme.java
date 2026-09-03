@@ -33,13 +33,11 @@ public class MutacionNoUniforme implements MutacionStrategy {
 
     @Override
     public void mutate(NeuralNetwork network, double mutationRate) {
-        // Calcular magnitud actual
+        // Calcular magnitud actual y aplicarla realmente a los pesos
         double t = (double) generacionActual / maxGeneraciones;
         double magnitudeActual = magnitudeInicial * Math.pow(1 - t, beta);
 
-        // Usar mutación gaussiana con magnitud decreciente
-        // Nota: Necesitamos un método en NeuralNetwork que acepte magnitud como parámetro
-        network.mutate(mutationRate);
+        network.mutate(mutationRate, magnitudeActual);
     }
 
     @Override

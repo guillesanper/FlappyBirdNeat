@@ -112,15 +112,24 @@ public class NeuralNetwork {
     }
 
     /**
-     * Aplica mutaciones aleatorias a los pesos y bias
+     * Aplica mutaciones aleatorias a los pesos y bias con magnitud fija (0.1)
      * @param mutationRate Probabilidad de mutación (0-1)
      */
     public void mutate(double mutationRate) {
+        mutate(mutationRate, 0.1);
+    }
+
+    /**
+     * Aplica mutaciones aleatorias a los pesos y bias con magnitud configurable.
+     * @param mutationRate Probabilidad de mutación (0-1)
+     * @param magnitude Desviación estándar del ruido gaussiano aplicado
+     */
+    public void mutate(double mutationRate, double magnitude) {
         // Mutar pesos de capa de entrada a capa oculta
         for (int i = 0; i < inputSize; i++) {
             for (int j = 0; j < hiddenSize; j++) {
                 if (random.nextDouble() < mutationRate) {
-                    weightsInputHidden[i][j] += random.nextGaussian() * 0.1;
+                    weightsInputHidden[i][j] += random.nextGaussian() * magnitude;
                 }
             }
         }
@@ -128,12 +137,12 @@ public class NeuralNetwork {
         // Mutar pesos de capa oculta a capa de salida
         for (int i = 0; i < hiddenSize; i++) {
             if (random.nextDouble() < mutationRate) {
-                biasHidden[i] += random.nextGaussian() * 0.1;
+                biasHidden[i] += random.nextGaussian() * magnitude;
             }
 
             for (int j = 0; j < outputSize; j++) {
                 if (random.nextDouble() < mutationRate) {
-                    weightsHiddenOutput[i][j] += random.nextGaussian() * 0.1;
+                    weightsHiddenOutput[i][j] += random.nextGaussian() * magnitude;
                 }
             }
         }
@@ -141,7 +150,7 @@ public class NeuralNetwork {
         // Mutar bias de capa de salida
         for (int i = 0; i < outputSize; i++) {
             if (random.nextDouble() < mutationRate) {
-                biasOutput[i] += random.nextGaussian() * 0.1;
+                biasOutput[i] += random.nextGaussian() * magnitude;
             }
         }
     }
