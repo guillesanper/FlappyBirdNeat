@@ -1,5 +1,7 @@
 # FlappyBirdNEAT
 
+[![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
+
 A neuroevolution playground built with **Java 21** and **JavaFX 17**: a population of Flappy Bird agents, each controlled by a small neural network, learns to play through a genetic algorithm. The simulation runs live in a JavaFX canvas, with configurable genetic operators, generation history/replay, and fitness charts.
 
 > Despite the project name, the current engine evolves the **weights** of a fixed-topology network (a classic genetic algorithm), not the network topology itself. True [NEAT](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) (topology + weight evolution, speciation) is on the roadmap — see [Algorithms implemented](#algorithms-implemented) below.
@@ -11,7 +13,7 @@ A neuroevolution playground built with **Java 21** and **JavaFX 17**: a populati
 - **Language:** Java 21
 - **UI:** JavaFX 17 (Canvas-based rendering, `LineChart` for fitness curves)
 - **Build:** Maven (`javafx-maven-plugin`, `maven-shade-plugin` for a fat jar)
-- **Testing:** JUnit 5 (dependency present; test suite is a work in progress — see roadmap)
+- **Testing:** JUnit 5, run via `mvn test`; CI runs the suite on every push/PR (see badge above)
 
 ## Getting started
 
@@ -60,7 +62,7 @@ All genetic operators are implemented as interchangeable strategies (Strategy pa
 ## Known limitations / in-progress cleanup
 
 - `view/FlappyBirdGameUI` (used for replaying a saved generation in its own window) and the inline canvas drawing in `FlappyBirdNEAT` (used for the live training loop) currently duplicate drawing logic. They serve different call sites (popup replay vs. main loop) so they haven't been merged yet; unifying them into a shared renderer is a follow-up.
-- No automated tests or CI yet (planned).
+- Test coverage focuses on the genetic operators, `NeuralNetwork.feedForward`/mutation, and one full `Population.naturalSelection()` generation; UI/JavaFX classes are not covered.
 - Root-level `*.md` design notes are historical/development notes in Spanish, kept for reference.
 
 ## Saving and loading

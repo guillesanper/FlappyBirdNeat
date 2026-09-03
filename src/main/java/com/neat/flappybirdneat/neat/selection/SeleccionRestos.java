@@ -24,10 +24,12 @@ public class SeleccionRestos extends Seleccion {
             }
         }
 
-        // Completar con torneo determinista si quedan espacios
+        // Completar con torneo determinista si quedan espacios, compartiendo el generador
+        // aleatorio para que el resultado siga siendo reproducible con una semilla fija.
         if (metidos != tamPoblacion) {
-            int[] nuevaSeleccion = new SeleccionTorneoDeterministico()
-                    .getSeleccion(list, tamPoblacion - metidos);
+            SeleccionTorneoDeterministico torneo = new SeleccionTorneoDeterministico();
+            torneo.setRandom(this.rand);
+            int[] nuevaSeleccion = torneo.getSeleccion(list, tamPoblacion - metidos);
 
             if (tamPoblacion - metidos >= 0)
                 System.arraycopy(nuevaSeleccion, 0, seleccion, metidos, tamPoblacion - metidos);

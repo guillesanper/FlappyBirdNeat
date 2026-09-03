@@ -1,6 +1,7 @@
 package com.neat.flappybirdneat.neat;
 
 import java.util.Arrays;
+import java.util.Random;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 import com.neat.flappybirdneat.neat.selection.*;
 import com.neat.flappybirdneat.neat.scaling.*;
@@ -14,6 +15,7 @@ public class Population {
     private double bestFitness;
     private double mutationRate;
     private double elitismRate = 0.1;
+    private final Random random;
 
     // Operadores genéticos configurables
     private Seleccion seleccionStrategy;
@@ -22,20 +24,39 @@ public class Population {
     private CruceStrategy cruceStrategy;
 
     public Population(int size) {
+        this(size, new Random());
+    }
+
+    /**
+     * Constructor con generador aleatorio inyectado, para reproducibilidad (tests, semillas fijas).
+     * El mismo generador se propaga a los agentes iniciales y a las estrategias por defecto,
+     * de modo que dos poblaciones creadas con la misma semilla evolucionan de forma idéntica.
+     * @param size Tamaño de la población
+     * @param random Generador aleatorio a usar
+     */
+    public Population(int size, Random random) {
+        this.random = random;
         agents = new FlappyBirdAgent[size];
         for (int i = 0; i < size; i++) {
-            agents[i] = new FlappyBirdAgent(4, 8, 1);
+            agents[i] = new FlappyBirdAgent(4, 8, 1, random);
         }
         generation = 1;
         bestFitness = 0;
         mutationRate = 0.1;
-        bestAgent = new FlappyBirdAgent(4, 8, 1);
+        bestAgent = new FlappyBirdAgent(4, 8, 1, random);
 
         // Inicializar estrategias por defecto
         seleccionStrategy = new SeleccionRuleta();
         escaladoStrategy = null;
         mutacionStrategy = new MutacionGaussiana();
         cruceStrategy = new CruceUniforme();
+        applyRandomToStrategies();
+    }
+
+    private void applyRandomToStrategies() {
+        if (seleccionStrategy != null) seleccionStrategy.setRandom(random);
+        if (cruceStrategy != null) cruceStrategy.setRandom(random);
+        if (mutacionStrategy != null) mutacionStrategy.setRandom(random);
     }
 
     public void naturalSelection() {
@@ -58,7 +79,7 @@ public class Population {
 
         int eliteSize = (int)(agents.length * elitismRate);
         for (int i = 0; i < eliteSize; i++) {
-            newAgents[i] = new FlappyBirdAgent(4, 8, 1);
+            newAgents[i] = new FlappyBirdAgent(4, 8, 1, random);
             newAgents[i].getBrain().setBrain(agents[i].getBrain());
             newAgents[i].setFitness(agents[i].getFitness());
         }
@@ -77,14 +98,14 @@ public class Population {
             FlappyBirdAgent parent1 = agents[idx1];
             FlappyBirdAgent parent2 = agents[idx2];
 
-            FlappyBirdAgent child1 = new FlappyBirdAgent(4, 8, 1);
+            FlappyBirdAgent child1 = new FlappyBirdAgent(4, 8, 1, random);
             child1.getBrain().setBrain(cruceStrategy.crossover(
                     parent1.getBrain(), parent2.getBrain()));
             mutacionStrategy.mutate(child1.getBrain(), mutationRate);
             newAgents[eliteSize + i] = child1;
 
             if (eliteSize + i + 1 < agents.length) {
-                FlappyBirdAgent child2 = new FlappyBirdAgent(4, 8, 1);
+                FlappyBirdAgent child2 = new FlappyBirdAgent(4, 8, 1, random);
                 child2.getBrain().setBrain(cruceStrategy.crossover(
                         parent2.getBrain(), parent1.getBrain()));
                 mutacionStrategy.mutate(child2.getBrain(), mutationRate);
@@ -132,14 +153,17 @@ public class Population {
         }
         if (maxFitness > bestFitness) {
             bestFitness = maxFitness;
-            bestAgent = new FlappyBirdAgent(4, 8, 1);
+            bestAgent = new FlappyBirdAgent(4, 8, 1, random);
             bestAgent.getBrain().setBrain(agents[maxIndex].getBrain());
         }
     }
 
     // Setters para configurar operadores
+    // Nota: cada setter propaga el generador aleatorio compartido de la población a la nueva
+    // estrategia, para que la evolución completa siga siendo reproducible con una semilla fija.
     public void setSeleccionStrategy(Seleccion strategy) {
         this.seleccionStrategy = strategy;
+        if (strategy != null) strategy.setRandom(random);
     }
 
     public void setEscaladoStrategy(Escalado strategy) {
@@ -148,26 +172,28 @@ public class Population {
 
     public void setMutacionStrategy(MutacionStrategy strategy) {
         this.mutacionStrategy = strategy;
+        if (strategy != null) strategy.setRandom(random);
     }
 
     public void setCruceStrategy(CruceStrategy strategy) {
         this.cruceStrategy = strategy;
+        if (strategy != null) strategy.setRandom(random);
     }
 
     public void setSeleccionStrategy(String tipo) {
-        this.seleccionStrategy = SeleccionFactory.getMetodoSeleccion(tipo);
+        setSeleccionStrategy(SeleccionFactory.getInstance().getSeleccionStrategy(tipo));
     }
 
     public void setEscaladoStrategy(String tipo) {
-        this.escaladoStrategy = EscaladoFactory.getMetodoEscalado(tipo);
+        setEscaladoStrategy(EscaladoFactory.getInstance().getEscaladoStrategy(tipo));
     }
 
     public void setMutacionStrategy(String tipo) {
-        this.mutacionStrategy = MutacionFactory.getMetodoMutacion(tipo);
+        setMutacionStrategy(MutacionFactory.getInstance().getMutacionStrategy(tipo));
     }
 
     public void setCruceStrategy(String tipo) {
-        this.cruceStrategy = CruceFactory.getMetodoCruce(tipo);
+        setCruceStrategy(CruceFactory.getInstance().getCruceStrategy(tipo));
     }
 
     // Getters

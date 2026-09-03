@@ -20,7 +20,7 @@ public class NeuralNetwork {
     private double[] lastHiddenActivations;
     private double[] lastOutputs;
 
-    private final Random random = new Random();
+    private Random random = new Random();
 
     /**
      * Constructor
@@ -29,9 +29,21 @@ public class NeuralNetwork {
      * @param outputSize Número de neuronas en la capa de salida
      */
     public NeuralNetwork(int inputSize, int hiddenSize, int outputSize) {
+        this(inputSize, hiddenSize, outputSize, new Random());
+    }
+
+    /**
+     * Constructor con generador aleatorio inyectado, para reproducibilidad (tests, semillas fijas).
+     * @param inputSize Número de neuronas en la capa de entrada
+     * @param hiddenSize Número de neuronas en la capa oculta
+     * @param outputSize Número de neuronas en la capa de salida
+     * @param random Generador aleatorio a usar para inicialización y mutación
+     */
+    public NeuralNetwork(int inputSize, int hiddenSize, int outputSize, Random random) {
         this.inputSize = inputSize;
         this.hiddenSize = hiddenSize;
         this.outputSize = outputSize;
+        this.random = random;
 
         // Inicializar pesos con valores aleatorios entre -1 y 1
         weightsInputHidden = new double[inputSize][hiddenSize];

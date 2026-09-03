@@ -35,7 +35,10 @@ public class SeleccionRanking extends Seleccion {
     public int[] getSeleccion(Seleccionable[] list, int tamPoblacion) {
         this.calculateProbs(list, tamPoblacion);
 
-        // Usar ruleta después de calcular probabilidades por ranking
-        return new SeleccionRuleta().getSeleccion(list, tamPoblacion);
+        // Usar ruleta después de calcular probabilidades por ranking, compartiendo el generador
+        // aleatorio para que el resultado siga siendo reproducible con una semilla fija.
+        SeleccionRuleta ruleta = new SeleccionRuleta();
+        ruleta.setRandom(this.rand);
+        return ruleta.getSeleccion(list, tamPoblacion);
     }
 }

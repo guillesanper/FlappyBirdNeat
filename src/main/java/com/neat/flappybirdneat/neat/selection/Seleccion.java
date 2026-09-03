@@ -13,6 +13,14 @@ public abstract class Seleccion {
     }
 
     /**
+     * Sustituye el generador aleatorio, para reproducibilidad (tests, semillas fijas).
+     * @param rand Generador aleatorio a usar
+     */
+    public void setRandom(Random rand) {
+        this.rand = rand;
+    }
+
+    /**
      * Realiza la selección de individuos.
      * @param list Array de individuos seleccionables con sus probabilidades calculadas
      * @param tamPoblacion Tamaño de la población

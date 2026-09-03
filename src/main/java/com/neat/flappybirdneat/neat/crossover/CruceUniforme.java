@@ -8,7 +8,12 @@ import java.util.Random;
  * Cada gen (peso/bias) tiene 50% de probabilidad de venir de cada padre.
  */
 public class CruceUniforme implements CruceStrategy {
-    private final Random random = new Random();
+    private Random random = new Random();
+
+    @Override
+    public void setRandom(Random random) {
+        this.random = random;
+    }
 
     @Override
     public NeuralNetwork crossover(NeuralNetwork parent1, NeuralNetwork parent2) {

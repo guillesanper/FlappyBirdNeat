@@ -2,6 +2,8 @@ package com.neat.flappybirdneat.neat.mutation;
 
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 
+import java.util.Random;
+
 /**
  * Interfaz para estrategias de mutación de redes neuronales.
  */
@@ -19,5 +21,13 @@ public interface MutacionStrategy {
      */
     default void update(int generation) {
         // Implementación por defecto: no hacer nada
+    }
+
+    /**
+     * Sustituye el generador aleatorio, para reproducibilidad (tests, semillas fijas).
+     * Las estrategias sin aleatoriedad propia (que delegan en la red neuronal) pueden ignorar esta llamada.
+     * @param random Generador aleatorio a usar
+     */
+    default void setRandom(Random random) {
     }
 }

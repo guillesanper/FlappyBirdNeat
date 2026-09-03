@@ -2,6 +2,8 @@ package com.neat.flappybirdneat.neat;
 
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 
+import java.util.Random;
+
 /**
  * Clase que representa un agente controlado por una red neuronal
  * que juega a Flappy Bird.
@@ -25,6 +27,18 @@ public class FlappyBirdAgent {
      */
     public FlappyBirdAgent(int inputSize, int hiddenSize, int outputSize) {
         brain = new NeuralNetwork(inputSize, hiddenSize, outputSize);
+        reset();
+    }
+
+    /**
+     * Constructor con generador aleatorio inyectado, para reproducibilidad (tests, semillas fijas).
+     * @param inputSize Número de entradas de la red neuronal
+     * @param hiddenSize Número de neuronas en la capa oculta
+     * @param outputSize Número de salidas de la red neuronal
+     * @param random Generador aleatorio a usar para inicializar el cerebro
+     */
+    public FlappyBirdAgent(int inputSize, int hiddenSize, int outputSize, Random random) {
+        brain = new NeuralNetwork(inputSize, hiddenSize, outputSize, random);
         reset();
     }
 

@@ -10,20 +10,50 @@ import java.util.Random;
  */
 public class MutacionUniforme implements MutacionStrategy {
 
-    private final Random random;
+    private Random random;
 
     public MutacionUniforme() {
         this.random = new Random();
     }
 
     @Override
-    public void mutate(NeuralNetwork network, double mutationRate) {
-        // Nota: Este método requiere acceso a los campos privados de NeuralNetwork
-        // Por ahora, usaremos reflexión o crearemos un método en NeuralNetwork
-        // Para simplificar, usaremos el método existente pero con mayor magnitud
+    public void setRandom(Random random) {
+        this.random = random;
+    }
 
-        // TODO: Implementar acceso directo a pesos cuando sea posible
-        // Por ahora, usamos la mutación gaussiana con mayor varianza
-        network.mutate(mutationRate);
+    @Override
+    public void mutate(NeuralNetwork network, double mutationRate) {
+        // Reemplaza completamente (no perturba) cada peso/bias mutado por un nuevo valor en [-1, 1]
+        double[][] weightsInputHidden = network.getWeightsInputHidden();
+        for (double[] row : weightsInputHidden) {
+            for (int j = 0; j < row.length; j++) {
+                if (random.nextDouble() < mutationRate) {
+                    row[j] = random.nextDouble() * 2 - 1;
+                }
+            }
+        }
+
+        double[] biasHidden = network.getBiasHidden();
+        for (int i = 0; i < biasHidden.length; i++) {
+            if (random.nextDouble() < mutationRate) {
+                biasHidden[i] = random.nextDouble() * 2 - 1;
+            }
+        }
+
+        double[][] weightsHiddenOutput = network.getWeightsHiddenOutput();
+        for (double[] row : weightsHiddenOutput) {
+            for (int j = 0; j < row.length; j++) {
+                if (random.nextDouble() < mutationRate) {
+                    row[j] = random.nextDouble() * 2 - 1;
+                }
+            }
+        }
+
+        double[] biasOutput = network.getBiasOutput();
+        for (int i = 0; i < biasOutput.length; i++) {
+            if (random.nextDouble() < mutationRate) {
+                biasOutput[i] = random.nextDouble() * 2 - 1;
+            }
+        }
     }
 }

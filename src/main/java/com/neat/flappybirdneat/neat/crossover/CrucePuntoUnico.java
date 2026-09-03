@@ -8,7 +8,12 @@ import java.util.Random;
  * Se elige un punto de corte aleatorio y se intercambian los genes.
  */
 public class CrucePuntoUnico implements CruceStrategy {
-    private final Random random = new Random();
+    private Random random = new Random();
+
+    @Override
+    public void setRandom(Random random) {
+        this.random = random;
+    }
 
     @Override
     public NeuralNetwork crossover(NeuralNetwork parent1, NeuralNetwork parent2) {

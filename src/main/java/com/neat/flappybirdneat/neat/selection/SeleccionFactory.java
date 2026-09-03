@@ -1,38 +1,22 @@
 package com.neat.flappybirdneat.neat.selection;
 
-public class SeleccionFactory {
+/**
+ * Factory (singleton) para crear instancias de estrategias de selección.
+ * La instancia concreta ({@link SeleccionFactoryImp}) solo se obtiene a través de {@link #getInstance()}.
+ */
+public abstract class SeleccionFactory {
 
-    public static Seleccion getMetodoSeleccion(String tipo) {
-        String t = tipo.toLowerCase();
-        if (t.equals("ruleta")) {
-            return new SeleccionRuleta();
-        } else if (t.equals("torneo deterministico") || t.equals("torneo_deterministico")) {
-            return new SeleccionTorneoDeterministico();
-        } else if (t.equals("torneo probabilistico") || t.equals("torneo_probabilistico")) {
-            return new SeleccionTorneoProbabilistico();
-        } else if (t.equals("ranking")) {
-            return new SeleccionRanking();
-        } else if (t.equals("truncamiento")) {
-            return new SeleccionTruncamiento();
-        } else if (t.equals("estocastico universal") || t.equals("estocastico_universal") || t.equals("sus")) {
-            return new SeleccionEstocasticoUniversal();
-        } else if (t.equals("restos")) {
-            return new SeleccionRestos();
-        } else {
-            throw new IllegalArgumentException("Tipo de selección desconocido: " + tipo);
-        }
+    private static final SeleccionFactory INSTANCE = new SeleccionFactoryImp();
+
+    public static SeleccionFactory getInstance() {
+        return INSTANCE;
     }
 
-    public static Seleccion getMetodoSeleccion(String tipo, double param) {
-        String t = tipo.toLowerCase();
-        if (t.equals("torneo probabilistico") || t.equals("torneo_probabilistico")) {
-            return new SeleccionTorneoProbabilistico(param);
-        } else if (t.equals("ranking")) {
-            return new SeleccionRanking(param);
-        } else if (t.equals("truncamiento")) {
-            return new SeleccionTruncamiento(param);
-        } else {
-            return getMetodoSeleccion(tipo);
-        }
-    }
+    /**
+     * Crea una estrategia de selección del tipo indicado.
+     * @param tipo Nombre del tipo de selección (ej. "ruleta", "torneo_deterministico", "ranking"...)
+     * @param params Parámetros opcionales específicos de la estrategia (ej. beta para ranking)
+     * @return La estrategia de selección correspondiente
+     */
+    public abstract Seleccion getSeleccionStrategy(String tipo, double... params);
 }
