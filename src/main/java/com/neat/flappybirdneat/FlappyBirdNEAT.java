@@ -483,11 +483,28 @@ public class FlappyBirdNEAT extends Application {
 
         additionalControls.getChildren().addAll(resetButton, exportDataButton, playBestButton, configOperatorsButton,
                 statsWindowButton, benchmarkButton);
-        additionalControls.setPadding(new Insets(10, 0, 0, 0));
+        additionalControls.setPadding(new Insets(10, 0, 10, 0));
         additionalControls.setAlignment(Pos.CENTER_LEFT);
+        additionalControls.setStyle("-fx-border-color: transparent transparent lightgray transparent; -fx-border-width: 0 0 1 0;");
 
-        // Organizar todo el panel
-        statsPanel.getChildren().addAll(topControls, fitnessChart, evolutionMetricsBox, additionalControls);
+        // Los controles y botones se mantienen fijos arriba; los gráficos van
+        // dentro de un ScrollPane más abajo para que quepan aunque la ventana
+        // no esté maximizada.
+        fitnessChart.setPrefHeight(400);
+        fitnessChart.setMinHeight(300);
+        VBox.setVgrow(fitnessChart, Priority.NEVER);
+
+        VBox chartsBox = new VBox(15, fitnessChart, evolutionMetricsBox);
+        chartsBox.setPadding(new Insets(5, 0, 0, 0));
+
+        ScrollPane chartsScroll = new ScrollPane(chartsBox);
+        chartsScroll.setFitToWidth(true);
+        chartsScroll.setPannable(true);
+        VBox.setVgrow(chartsScroll, Priority.ALWAYS);
+
+        // Organizar todo el panel: info + controles + botones fijos arriba,
+        // gráficos scrolleables abajo
+        statsPanel.getChildren().addAll(topControls, additionalControls, chartsScroll);
 
         return statsPanel;
     }

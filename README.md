@@ -2,9 +2,7 @@
 
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 
-A neuroevolution playground built with **Java 21** and **JavaFX 17**: a population of Flappy Bird agents, each controlled by a small neural network, learns to play through a genetic algorithm. The simulation runs live in a JavaFX canvas, with configurable genetic operators, generation history/replay, and fitness charts.
-
-> Despite the project name, the current engine evolves the **weights** of a fixed-topology network (a classic genetic algorithm), not the network topology itself. True [NEAT](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf) (topology + weight evolution, speciation) is on the roadmap — see [Algorithms implemented](#algorithms-implemented) below.
+A neuroevolution playground built with **Java 21** and **JavaFX 17**: a population of Flappy Bird agents, each controlled by a small neural network, learns to play through evolution. The simulation runs live in a JavaFX canvas, with two selectable engines (a fixed-topology genetic algorithm and true [NEAT](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf)), configurable genetic operators, generation history/replay, live fitness/diversity/species charts, and a benchmark mode for comparing operator configurations.
 
 <!-- TODO: add a GIF/screenshot of the simulation running, e.g. docs/screenshot.gif, and embed it here with ![demo](docs/screenshot.gif) -->
 
@@ -33,31 +31,38 @@ mvn clean package
 com.neat.flappybirdneat
 ├── Main / FlappyBirdNEAT      Application entry point and main JavaFX window
 ├── game/                      Game rules: bird physics, pipes, collisions
-├── neural/                    NeuralNetwork — fixed-topology MLP (feed-forward, sigmoid)
-├── neat/                      Population and agent (FlappyBirdAgent wraps a NeuralNetwork)
-│   ├── selection/             Selection strategies (roulette, ranking, tournament, ...)
-│   ├── crossover/             Crossover strategies (uniform, single-point, arithmetic)
-│   ├── mutation/               Mutation strategies (gaussian, uniform, non-uniform)
-│   └── scaling/                Fitness scaling (linear, sigma, Boltzmann)
-├── simulation/                 SimulationController — drives the live game/training loop
+├── neural/                    Brain interface + NeuralNetwork (fixed-topology MLP, feed-forward, sigmoid)
+├── neat/                      EvolvingPopulation (engine-agnostic) and agent (FlappyBirdAgent wraps a Brain)
+│   ├── selection/             Selection strategies (roulette, ranking, tournament, ...) — GA engine
+│   ├── crossover/             Crossover strategies (uniform, single-point, arithmetic) — GA engine
+│   ├── mutation/               Mutation strategies (gaussian, uniform, non-uniform) — GA engine
+│   ├── scaling/                Fitness scaling (linear, sigma, Boltzmann) — GA engine
+│   └── genome/                 True NEAT engine: Genome, NodeGene/ConnectionGene, InnovationTracker,
+│                                Species/CompatibilityDistance, NeatCrossover, NeatPopulation
+├── simulation/                 SimulationController — drives the live game/training loop, switches
+│                                between the Fixed MLP (Population) and NEAT (NeatPopulation) engines
+├── benchmark/                  BenchmarkRunner/BenchmarkConfig/BenchmarkPresets — headless comparison
+│                                of operator configurations across repeated runs, with CSV export
 ├── history/                    Per-generation snapshots for replay and CSV export
 ├── config/                     Genetic operator configuration shared across the UI
-└── view/                       JavaFX windows: game canvas, operator config, network visualizer
+└── view/                       JavaFX windows: game canvas, operator config, network visualizer,
+                                 StatisticsWindow (advanced charts), BenchmarkWindow
 ```
 
-All genetic operators are implemented as interchangeable strategies (Strategy pattern) behind small factories (`SeleccionFactory`, `CruceFactory`, `MutacionFactory`, `EscaladoFactory`), so a run can mix and match selection/crossover/mutation/scaling methods from the UI without touching `Population`.
+All genetic operators are implemented as interchangeable strategies (Strategy pattern) behind small factories (`SeleccionFactory`, `CruceFactory`, `MutacionFactory`, `EscaladoFactory`), so a run can mix and match selection/crossover/mutation/scaling methods from the UI without touching `Population`. The evolution engine itself (Fixed MLP GA vs. NEAT) is selectable from the same "Algoritmo" dropdown.
 
 ## Algorithms implemented
 
-**Genetic algorithm (current default engine)**
+**Genetic algorithm (fixed-topology engine)**
 
 - **Selection:** roulette wheel, ranking, deterministic/probabilistic tournament, truncation, remainder stochastic sampling, stochastic universal sampling
 - **Crossover:** uniform, single-point, arithmetic
 - **Mutation:** gaussian (fixed magnitude), non-uniform (magnitude decays over generations), uniform
 - **Fitness scaling:** linear, sigma, Boltzmann
 - **Network:** fixed-topology MLP (4 inputs → 8 hidden → 1 output), only weights and biases evolve
+- Configurable operator combinations can be compared head-to-head via the benchmark mode (CSV export of results)
 
-**NEAT (planned)** — real topology evolution (node/connection genes, innovation numbers, structural mutations, speciation) as an alternative, selectable engine alongside the fixed-topology GA. Not implemented yet.
+**NEAT** — real topology evolution: node/connection genes with global innovation numbers, structural mutations (add connection, add node), speciation via compatibility distance, and NEAT-style crossover (matching/disjoint/excess genes). Selectable as an alternative engine (`Algoritmo: NEAT`) alongside the fixed-topology GA; the network topology and visualizer grow dynamically as the population evolves.
 
 ## Known limitations / in-progress cleanup
 

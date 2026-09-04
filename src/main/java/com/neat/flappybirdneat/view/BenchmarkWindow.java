@@ -17,6 +17,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.layout.BorderPane;
@@ -52,6 +53,7 @@ public class BenchmarkWindow {
     private final int canvasHeight;
 
     private final LineChart<Number, Number> chart;
+    private final NumberAxis yAxis;
     private final ProgressBar progressBar = new ProgressBar(0);
     private final Label statusLabel = new Label("Listo");
     private final Button runButton = new Button("▶ Ejecutar Benchmark");
@@ -69,12 +71,17 @@ public class BenchmarkWindow {
 
         NumberAxis xAxis = new NumberAxis();
         xAxis.setLabel("Generación");
-        NumberAxis yAxis = new NumberAxis();
+        yAxis = new NumberAxis();
         yAxis.setLabel("Mejor Fitness (media ± desv. estándar)");
         chart = new LineChart<>(xAxis, yAxis);
         chart.setTitle("Comparativa de Operadores Genéticos");
         chart.setCreateSymbols(false);
         chart.setAnimated(false);
+        // Tamaño mínimo generoso para que las curvas y las bandas media±desv.est. no queden
+        // aplastadas; si hay muchas generaciones el ancho crece y el ScrollPane de más abajo
+        // permite desplazarse en lugar de comprimir el eje X.
+        chart.setMinHeight(550);
+        chart.setMinWidth(900);
         VBox.setVgrow(chart, Priority.ALWAYS);
 
         Label seedsLabel = new Label("Semillas:");
@@ -102,9 +109,17 @@ public class BenchmarkWindow {
         runButton.setOnAction(e -> runBenchmark(seedsSpinner.getValue(), generationsSpinner.getValue()));
         exportButton.setOnAction(e -> exportCsv());
 
-        VBox root = new VBox(controls, statusBox, chart);
+        ScrollPane chartScroll = new ScrollPane(chart);
+        chartScroll.setFitToWidth(false);
+        chartScroll.setFitToHeight(false);
+        chartScroll.setPannable(true);
+        VBox.setVgrow(chartScroll, Priority.ALWAYS);
+
+        VBox root = new VBox(controls, statusBox, chartScroll);
         BorderPane borderPane = new BorderPane(root);
-        stage.setScene(new Scene(borderPane, 900, 650));
+        stage.setScene(new Scene(borderPane, 950, 700));
+        stage.setMinWidth(700);
+        stage.setMinHeight(500);
     }
 
     public void show() {
@@ -116,6 +131,9 @@ public class BenchmarkWindow {
         exportButton.setDisable(true);
         chart.getData().clear();
         progressBar.setProgress(0);
+        // Ensanchar el gráfico si hay muchas generaciones, para que cada punto tenga sitio
+        // y el ScrollPane permita desplazarse horizontalmente en lugar de aplastar el eje X.
+        chart.setPrefWidth(Math.max(900, generations * 20));
 
         List<BenchmarkConfig> configs = BenchmarkPresets.defaultConfigs(generations);
 
@@ -154,6 +172,36 @@ public class BenchmarkWindow {
 
     private void plotResults(List<BenchmarkResult> results) {
         chart.getData().clear();
+
+        // El rango del eje Y se calcula SOLO a partir de las curvas de media: son los valores
+        // que realmente importa comparar. Si se incluyera la banda ± desv. estándar sin más,
+        // una única generación con una desviación anómala (p. ej. un agente que explota un bug
+        // del juego en una semilla) dispararía el rango a millones y aplastaría todas las demás
+        // curvas contra el eje X. Las bandas se dibujan igualmente, pero se recortan (clamp) al
+        // rango visible en vez de deformar la escala.
+        double meanMin = Double.POSITIVE_INFINITY;
+        double meanMax = Double.NEGATIVE_INFINITY;
+        for (BenchmarkResult result : results) {
+            for (double v : result.getMeanCurve()) {
+                meanMin = Math.min(meanMin, v);
+                meanMax = Math.max(meanMax, v);
+            }
+        }
+        double lowerBound = 0;
+        double upperBound = 1;
+        if (Double.isFinite(meanMin) && Double.isFinite(meanMax)) {
+            double range = Math.max(1.0, meanMax - meanMin);
+            double margin = range * 0.2;
+            lowerBound = Math.max(0, meanMin - margin);
+            upperBound = meanMax + margin;
+            yAxis.setAutoRanging(false);
+            yAxis.setLowerBound(lowerBound);
+            yAxis.setUpperBound(upperBound);
+            yAxis.setTickUnit(Math.max(1.0, (upperBound - lowerBound) / 10.0));
+        }
+        final double clampLower = lowerBound;
+        final double clampUpper = upperBound;
+
         for (int i = 0; i < results.size(); i++) {
             BenchmarkResult result = results.get(i);
             Color color = PALETTE[i % PALETTE.length];
@@ -175,8 +223,14 @@ public class BenchmarkWindow {
             List<Double> lower = new ArrayList<>(mean.size());
             List<Double> stdDev = result.getStdDevCurve();
             for (int g = 0; g < mean.size(); g++) {
-                upper.add(mean.get(g) + stdDev.get(g));
-                lower.add(mean.get(g) - stdDev.get(g));
+                double u = mean.get(g) + stdDev.get(g);
+                double l = mean.get(g) - stdDev.get(g);
+                // Clamp de ambos extremos al rango visible completo (no solo el borde que
+                // "sobresale"): si una banda entera queda fuera del rango, limitar solo un
+                // lado invertía upper por debajo de lower, produciendo un polígono
+                // auto-intersecante que Prism rellena como bloques rectangulares.
+                upper.add(Math.max(clampLower, Math.min(clampUpper, u)));
+                lower.add(Math.max(clampLower, Math.min(clampUpper, l)));
             }
 
             Polygon band = new Polygon();
