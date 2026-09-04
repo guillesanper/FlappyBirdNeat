@@ -2,6 +2,7 @@ package com.neat.flappybirdneat.neat.genome;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -87,5 +88,51 @@ class GenomeTest {
                 .getInnovationNumber();
 
         assertEquals(originalInnovation, reusedInnovation);
+    }
+
+    @Test
+    void computeNodeLayersPlacesInputsAndBiasAtZeroAndOutputsRightAfter() {
+        Genome genome = new Genome(2, 1, new Random(1), new InnovationTracker());
+
+        Map<Integer, Integer> layers = genome.computeNodeLayers();
+
+        for (NodeGene node : genome.getNodes()) {
+            if (node.getType() == NodeType.INPUT || node.getType() == NodeType.BIAS) {
+                assertEquals(0, layers.get(node.getId()), "Inputs/bias deben estar en la columna 0");
+            } else if (node.getType() == NodeType.OUTPUT) {
+                assertEquals(1, layers.get(node.getId()), "Sin nodos ocultos, la salida va justo tras la columna 0");
+            }
+        }
+    }
+
+    @Test
+    void computeNodeLayersPlacesHiddenNodeBetweenInputAndOutputAfterAddNodeMutation() {
+        InnovationTracker tracker = new InnovationTracker();
+        Genome genome = new Genome(2, 1, new Random(1), tracker);
+        assertTrue(genome.mutateAddNode(new Random(1), tracker), "Debe haber al menos una conexión que partir");
+
+        Map<Integer, Integer> layers = genome.computeNodeLayers();
+        NodeGene hidden = genome.getNodes().stream()
+                .filter(n -> n.getType() == NodeType.HIDDEN).findFirst().orElseThrow();
+        NodeGene output = genome.getNodes().stream()
+                .filter(n -> n.getType() == NodeType.OUTPUT).findFirst().orElseThrow();
+
+        assertEquals(1, layers.get(hidden.getId()), "El nodo oculto va después de la columna de inputs");
+        assertEquals(2, layers.get(output.getId()), "La salida siempre queda tras el oculto más profundo");
+    }
+
+    @Test
+    void feedForwardStoresLastInputsOutputsAndActivationsForVisualization() {
+        Genome genome = new Genome(2, 1, new Random(1), new InnovationTracker());
+        assertNull(genome.getLastInputs(), "Antes de evaluar no hay estado que dibujar");
+        assertTrue(genome.getLastActivations().isEmpty());
+
+        double[] inputs = {0.4, -0.7};
+        double[] outputs = genome.feedForward(inputs);
+
+        assertArrayEquals(inputs, genome.getLastInputs());
+        assertArrayEquals(outputs, genome.getLastOutputs());
+        assertEquals(genome.getNodes().size(), genome.getLastActivations().size(),
+                "Debe registrarse la activación de todos los nodos, no solo las salidas");
     }
 }

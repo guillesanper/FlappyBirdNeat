@@ -3,12 +3,13 @@ package com.neat.flappybirdneat.neat;
 import java.util.Arrays;
 import java.util.Random;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
+
 import com.neat.flappybirdneat.neat.selection.*;
 import com.neat.flappybirdneat.neat.scaling.*;
 import com.neat.flappybirdneat.neat.mutation.*;
 import com.neat.flappybirdneat.neat.crossover.*;
 
-public class Population {
+public class Population implements EvolvingPopulation {
     private FlappyBirdAgent[] agents;
     private FlappyBirdAgent bestAgent;
     private int generation;
@@ -59,6 +60,7 @@ public class Population {
         if (mutacionStrategy != null) mutacionStrategy.setRandom(random);
     }
 
+    @Override
     public void naturalSelection() {
         FlappyBirdAgent[] newAgents = new FlappyBirdAgent[agents.length];
 
@@ -80,7 +82,7 @@ public class Population {
         int eliteSize = (int)(agents.length * elitismRate);
         for (int i = 0; i < eliteSize; i++) {
             newAgents[i] = new FlappyBirdAgent(4, 8, 1, random);
-            newAgents[i].getBrain().setBrain(agents[i].getBrain());
+            brainOf(newAgents[i]).setBrain(brainOf(agents[i]));
             newAgents[i].setFitness(agents[i].getFitness());
         }
 
@@ -99,16 +101,16 @@ public class Population {
             FlappyBirdAgent parent2 = agents[idx2];
 
             FlappyBirdAgent child1 = new FlappyBirdAgent(4, 8, 1, random);
-            child1.getBrain().setBrain(cruceStrategy.crossover(
-                    parent1.getBrain(), parent2.getBrain()));
-            mutacionStrategy.mutate(child1.getBrain(), mutationRate);
+            brainOf(child1).setBrain(cruceStrategy.crossover(
+                    brainOf(parent1), brainOf(parent2)));
+            mutacionStrategy.mutate(brainOf(child1), mutationRate);
             newAgents[eliteSize + i] = child1;
 
             if (eliteSize + i + 1 < agents.length) {
                 FlappyBirdAgent child2 = new FlappyBirdAgent(4, 8, 1, random);
-                child2.getBrain().setBrain(cruceStrategy.crossover(
-                        parent2.getBrain(), parent1.getBrain()));
-                mutacionStrategy.mutate(child2.getBrain(), mutationRate);
+                brainOf(child2).setBrain(cruceStrategy.crossover(
+                        brainOf(parent2), brainOf(parent1)));
+                mutacionStrategy.mutate(brainOf(child2), mutationRate);
                 newAgents[eliteSize + i + 1] = child2;
             }
         }
@@ -154,8 +156,16 @@ public class Population {
         if (maxFitness > bestFitness) {
             bestFitness = maxFitness;
             bestAgent = new FlappyBirdAgent(4, 8, 1, random);
-            bestAgent.getBrain().setBrain(agents[maxIndex].getBrain());
+            brainOf(bestAgent).setBrain(brainOf(agents[maxIndex]));
         }
+    }
+
+    /**
+     * Los agentes de esta población siempre llevan una {@link NeuralNetwork} como cerebro
+     * (construidos con {@code new FlappyBirdAgent(4, 8, 1, random)}), así que el cast es seguro.
+     */
+    private static NeuralNetwork brainOf(FlappyBirdAgent agent) {
+        return (NeuralNetwork) agent.getBrain();
     }
 
     // Setters para configurar operadores
@@ -196,18 +206,69 @@ public class Population {
         setCruceStrategy(CruceFactory.getInstance().getCruceStrategy(tipo));
     }
 
+    /**
+     * Diversidad genética: distancia euclídea media por pareja entre los vectores de pesos
+     * (aplanando pesos y bias de entrada-oculta y oculta-salida) de una muestra de la población.
+     * Se limita el nº de parejas comparadas para no degradar el rendimiento en poblaciones grandes.
+     */
+    @Override
+    public double diversity() {
+        int n = agents.length;
+        if (n < 2) return 0;
+        int sampleSize = Math.min(n, 30);
+
+        double totalDistance = 0;
+        int pairs = 0;
+        double[][] vectors = new double[sampleSize][];
+        for (int i = 0; i < sampleSize; i++) {
+            vectors[i] = flattenWeights(brainOf(agents[i]));
+        }
+        for (int i = 0; i < sampleSize; i++) {
+            for (int j = i + 1; j < sampleSize; j++) {
+                double sumSquares = 0;
+                for (int k = 0; k < vectors[i].length; k++) {
+                    double diff = vectors[i][k] - vectors[j][k];
+                    sumSquares += diff * diff;
+                }
+                totalDistance += Math.sqrt(sumSquares);
+                pairs++;
+            }
+        }
+        return pairs > 0 ? totalDistance / pairs : 0;
+    }
+
+    private static double[] flattenWeights(NeuralNetwork brain) {
+        double[][] wih = brain.getWeightsInputHidden();
+        double[][] who = brain.getWeightsHiddenOutput();
+        double[] bh = brain.getBiasHidden();
+        double[] bo = brain.getBiasOutput();
+
+        double[] vector = new double[wih.length * wih[0].length + who.length * who[0].length + bh.length + bo.length];
+        int idx = 0;
+        for (double[] row : wih) for (double w : row) vector[idx++] = w;
+        for (double[] row : who) for (double w : row) vector[idx++] = w;
+        for (double b : bh) vector[idx++] = b;
+        for (double b : bo) vector[idx++] = b;
+        return vector;
+    }
+
     // Getters
+    @Override
     public FlappyBirdAgent[] getAgents() { return agents; }
+    @Override
     public int getGeneration() { return generation; }
+    @Override
     public double getBestFitness() { return bestFitness; }
     public double getElitismRate() { return elitismRate; }
     public void setElitismRate(double elitismRate) { this.elitismRate = elitismRate; }
+    @Override
     public FlappyBirdAgent getBestAgent() { return bestAgent; }
     public Seleccion getSeleccionStrategy() { return seleccionStrategy; }
     public Escalado getEscaladoStrategy() { return escaladoStrategy; }
     public MutacionStrategy getMutacionStrategy() { return mutacionStrategy; }
     public CruceStrategy getCruceStrategy() { return cruceStrategy; }
 
+    @Override
     public Population deepCopy() {
         Population copy = new Population(agents.length);
         for (int i = 0; i < agents.length; i++) {

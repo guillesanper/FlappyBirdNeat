@@ -1,7 +1,9 @@
 package com.neat.flappybirdneat.view;
 
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
+import com.neat.flappybirdneat.neat.genome.Genome;
 import com.neat.flappybirdneat.game.Pipe;
+import com.neat.flappybirdneat.neural.NeuralNetwork;
 
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -87,10 +89,22 @@ public class NeuralNetworkWindow {
         gc.setFont(Font.font("System", FontWeight.BOLD, 18));
         gc.fillText("Red Neuronal del Mejor Agente", 20, 30);
 
-        // Obtener los inputs y outputs que la red realmente usó en su última decisión
-        // (almacenados en el state tracking de la red neuronal)
-        double[] inputs = agent.getBrain().getLastInputs();
-        double[] outputs = agent.getBrain().getLastOutputs();
+        // Obtener los inputs y outputs que el cerebro realmente usó en su última decisión
+        // (almacenados en el state tracking de la MLP o del genoma NEAT).
+        double[] inputs;
+        double[] outputs;
+        if (agent.getBrain() instanceof NeuralNetwork network) {
+            inputs = network.getLastInputs();
+            outputs = network.getLastOutputs();
+        } else if (agent.getBrain() instanceof Genome genome) {
+            inputs = genome.getLastInputs();
+            outputs = genome.getLastOutputs();
+        } else {
+            gc.setFill(Color.BLACK);
+            gc.setFont(Font.font("System", FontWeight.NORMAL, 14));
+            gc.fillText("Visualización no disponible para este tipo de cerebro.", 20, 60);
+            return;
+        }
 
         // Si no hay datos (primera ejecución), usar valores por defecto
         if (inputs == null || outputs == null) {
@@ -103,12 +117,20 @@ public class NeuralNetworkWindow {
         double heightOfNextPipe = nextPipe != null ? nextPipe.getGapY() : 300;
         double gapSize = nextPipe != null ? nextPipe.getGapSize() : 150;
 
-        // Dibujar la red neuronal
-        NeuralNetworkVisualizer.drawNetwork(
-                gc, agent.getBrain(),
-                120, 70, canvasWidth - 240, canvasHeight - 100,
-                inputs, outputs
-        );
+        // Dibujar la red: MLP fija o grafo NEAT de topología variable
+        if (agent.getBrain() instanceof NeuralNetwork network) {
+            NeuralNetworkVisualizer.drawNetwork(
+                    gc, network,
+                    120, 70, canvasWidth - 240, canvasHeight - 100,
+                    inputs, outputs
+            );
+        } else if (agent.getBrain() instanceof Genome genome) {
+            NeuralNetworkVisualizer.drawGenome(
+                    gc, genome,
+                    120, 70, canvasWidth - 240, canvasHeight - 100,
+                    inputs, outputs
+            );
+        }
 
         // Información adicional
         gc.setFill(Color.BLACK);

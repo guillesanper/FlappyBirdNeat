@@ -1,15 +1,18 @@
 package com.neat.flappybirdneat.neat;
 
+import com.neat.flappybirdneat.neat.genome.Genome;
+import com.neat.flappybirdneat.neural.Brain;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 
 import java.util.Random;
 
 /**
- * Clase que representa un agente controlado por una red neuronal
- * que juega a Flappy Bird.
+ * Clase que representa un agente controlado por un {@link Brain} (MLP de topología fija o
+ * genoma NEAT de topología evolutiva) que juega a Flappy Bird. La física y las reglas del
+ * juego son agnósticas al tipo de cerebro: {@link #think} solo necesita {@code feedForward}.
  */
 public class FlappyBirdAgent {
-    private NeuralNetwork brain;
+    private Brain brain;
     private double fitness;
     private boolean isDead;
 
@@ -39,6 +42,16 @@ public class FlappyBirdAgent {
      */
     public FlappyBirdAgent(int inputSize, int hiddenSize, int outputSize, Random random) {
         brain = new NeuralNetwork(inputSize, hiddenSize, outputSize, random);
+        reset();
+    }
+
+    /**
+     * Constructor para agentes NEAT: el cerebro es un {@link Genome} de topología variable
+     * en vez de la MLP densa de tamaño fijo.
+     * @param brain Cerebro (genoma NEAT u otra implementación de Brain) que controla al agente
+     */
+    public FlappyBirdAgent(Brain brain) {
+        this.brain = brain;
         reset();
     }
 
@@ -94,9 +107,9 @@ public class FlappyBirdAgent {
     }
 
     /**
-     * @return La red neuronal que controla al agente
+     * @return El cerebro (MLP fija o genoma NEAT) que controla al agente
      */
-    public NeuralNetwork getBrain() {
+    public Brain getBrain() {
         return brain;
     }
 
@@ -145,8 +158,14 @@ public class FlappyBirdAgent {
     }
 
     public FlappyBirdAgent(FlappyBirdAgent other) {
-        // Deep copy of the neural network
-        this.brain = new NeuralNetwork(other.brain);
+        // Deep copy del cerebro, sea cual sea su tipo concreto
+        if (other.brain instanceof NeuralNetwork network) {
+            this.brain = new NeuralNetwork(network);
+        } else if (other.brain instanceof Genome genome) {
+            this.brain = genome.copy();
+        } else {
+            throw new IllegalStateException("Tipo de cerebro no soportado para copia: " + other.brain.getClass());
+        }
 
         // Copy primitive fields
         this.fitness = other.fitness;

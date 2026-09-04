@@ -27,6 +27,11 @@ public class Genome implements Brain {
     private final int numOutputs;
     private final int biasNodeId;
 
+    // Estado de la última evaluación, para el visualizador (ver view.NeuralNetworkVisualizer).
+    private double[] lastInputs;
+    private double[] lastOutputs;
+    private Map<Integer, Double> lastActivations = Collections.emptyMap();
+
     /**
      * Construye el genoma inicial mínimo de NEAT: sin nodos ocultos, cada entrada
      * (y el nodo de bias) conectados directamente a cada salida.
@@ -238,7 +243,52 @@ public class Genome implements Brain {
         for (int i = 0; i < outputNodes.size(); i++) {
             outputs[i] = values.getOrDefault(outputNodes.get(i).getId(), 0.0);
         }
+
+        this.lastInputs = inputs;
+        this.lastOutputs = outputs;
+        this.lastActivations = values;
         return outputs;
+    }
+
+    /**
+     * Asigna a cada nodo una columna (capa) para el layout del visualizador de topología
+     * variable: INPUT/BIAS en la columna 0, cada nodo oculto en 1 + la columna máxima de sus
+     * predecesores habilitados (o 1 si no tiene ninguno), y los OUTPUT siempre en la última
+     * columna (una más allá del oculto más profundo), para que la salida quede siempre a la
+     * derecha aunque la red crezca por mutaciones estructurales.
+     */
+    public Map<Integer, Integer> computeNodeLayers() {
+        Map<Integer, Integer> layer = new HashMap<>();
+        for (int nodeId : topologicalOrder()) {
+            NodeType type = nodeById(nodeId).getType();
+            if (type == NodeType.INPUT || type == NodeType.BIAS) {
+                layer.put(nodeId, 0);
+                continue;
+            }
+            if (type == NodeType.OUTPUT) continue;
+
+            int maxIncoming = 0;
+            for (ConnectionGene connection : connections) {
+                if (connection.isEnabled() && connection.getOutNode() == nodeId) {
+                    maxIncoming = Math.max(maxIncoming, layer.getOrDefault(connection.getInNode(), 0) + 1);
+                }
+            }
+            layer.put(nodeId, Math.max(1, maxIncoming));
+        }
+
+        int maxHiddenLayer = layer.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int outputLayer = maxHiddenLayer + 1;
+        for (NodeGene node : nodes) {
+            if (node.getType() == NodeType.OUTPUT) layer.put(node.getId(), outputLayer);
+        }
+        return layer;
+    }
+
+    private NodeGene nodeById(int id) {
+        for (NodeGene node : nodes) {
+            if (node.getId() == id) return node;
+        }
+        throw new IllegalArgumentException("Nodo no encontrado: " + id);
     }
 
     /**
@@ -308,5 +358,20 @@ public class Genome implements Brain {
 
     public int getBiasNodeId() {
         return biasNodeId;
+    }
+
+    /** @return las entradas de la última llamada a {@link #feedForward}, o null si aún no se evaluó. */
+    public double[] getLastInputs() {
+        return lastInputs;
+    }
+
+    /** @return las salidas de la última llamada a {@link #feedForward}, o null si aún no se evaluó. */
+    public double[] getLastOutputs() {
+        return lastOutputs;
+    }
+
+    /** @return activación de cada nodo (por id) en la última evaluación; vacío si aún no se evaluó. */
+    public Map<Integer, Double> getLastActivations() {
+        return Collections.unmodifiableMap(lastActivations);
     }
 }

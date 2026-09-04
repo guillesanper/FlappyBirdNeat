@@ -1,10 +1,20 @@
 package com.neat.flappybirdneat.view;
 
+import com.neat.flappybirdneat.neat.genome.ConnectionGene;
+import com.neat.flappybirdneat.neat.genome.Genome;
+import com.neat.flappybirdneat.neat.genome.NodeGene;
+import com.neat.flappybirdneat.neat.genome.NodeType;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Clase que dibuja una representación visual de una red neuronal.
@@ -174,6 +184,146 @@ public class NeuralNetworkVisualizer {
             gc.setFont(Font.font("System", FontWeight.BOLD, 14));
             String outputLabel = outputVal > 0.5 ? "SALTAR" : "NO SALTAR";
             gc.fillText(outputLabel, x + 2 * layerSpacing + 30, nodeY + 5);
+        }
+    }
+
+    /**
+     * Dibuja un genoma NEAT de topología variable: a diferencia de {@link #drawNetwork}, el
+     * número de columnas y de nodos por columna no es fijo, así que primero se calcula un
+     * layout (columna por nodo vía {@link Genome#computeNodeLayers()}, posición vertical por
+     * orden dentro de la columna) y luego se dibuja igual que la MLP fija: conexiones detrás,
+     * nodos encima, coloreados por su última activación.
+     *
+     * @param gc El contexto gráfico donde dibujar
+     * @param genome El genoma NEAT a visualizar
+     * @param x Posición X donde empezar a dibujar
+     * @param y Posición Y donde empezar a dibujar
+     * @param width Ancho total de la visualización
+     * @param height Alto total de la visualización
+     * @param inputs Valores actuales de entrada
+     * @param outputs Valores actuales de salida
+     */
+    public static void drawGenome(GraphicsContext gc, Genome genome,
+                                   double x, double y, double width, double height,
+                                   double[] inputs, double[] outputs) {
+        double nodeRadius = 15;
+
+        Map<Integer, Integer> nodeLayers = genome.computeNodeLayers();
+        int maxLayer = 0;
+        for (int l : nodeLayers.values()) maxLayer = Math.max(maxLayer, l);
+        double layerSpacing = maxLayer > 0 ? width / maxLayer : width;
+
+        // Agrupar nodos por columna, ordenados por id (orden de creación) para un layout estable
+        // entre redibujados sucesivos.
+        Map<Integer, List<NodeGene>> nodesByLayer = new HashMap<>();
+        for (NodeGene node : genome.getNodes()) {
+            int layer = nodeLayers.getOrDefault(node.getId(), 0);
+            nodesByLayer.computeIfAbsent(layer, k -> new ArrayList<>()).add(node);
+        }
+        for (List<NodeGene> column : nodesByLayer.values()) {
+            column.sort(Comparator.comparingInt(NodeGene::getId));
+        }
+
+        Map<Integer, double[]> position = new HashMap<>();
+        for (Map.Entry<Integer, List<NodeGene>> entry : nodesByLayer.entrySet()) {
+            int layer = entry.getKey();
+            List<NodeGene> column = entry.getValue();
+            double columnX = x + layer * layerSpacing;
+            double verticalSpacing = height / (column.size() + 1);
+            for (int i = 0; i < column.size(); i++) {
+                double nodeY = y + (i + 1) * verticalSpacing;
+                position.put(column.get(i).getId(), new double[]{columnX, nodeY});
+            }
+        }
+
+        // === Etiquetas de capas ===
+        gc.setFill(Color.BLACK);
+        gc.setFont(Font.font("System", FontWeight.BOLD, 14));
+        gc.fillText("Entradas", x + 10, y - 10);
+        gc.fillText("Salidas", x + maxLayer * layerSpacing - 20, y - 10);
+        if (maxLayer > 1) {
+            gc.fillText("Ocultos", x + layerSpacing - 25, y - 10);
+        }
+
+        // === Conexiones (detrás de los nodos) ===
+        for (ConnectionGene connection : genome.getConnections()) {
+            double[] from = position.get(connection.getInNode());
+            double[] to = position.get(connection.getOutNode());
+            if (from == null || to == null) continue;
+
+            if (!connection.isEnabled()) {
+                gc.setStroke(new Color(0.6, 0.6, 0.6, 0.25));
+                gc.setLineWidth(0.75);
+            } else {
+                gc.setStroke(getWeightColor(connection.getWeight()));
+                gc.setLineWidth(getWeightThickness(connection.getWeight()));
+            }
+            gc.strokeLine(from[0] + nodeRadius, from[1], to[0] - nodeRadius, to[1]);
+        }
+        gc.setLineWidth(1.0);
+
+        // === Nodos (encima de las conexiones) ===
+        Map<Integer, Double> activations = genome.getLastActivations();
+        int inputIndex = 0;
+        String[] inputLabels = {"Altura", "Velocidad", "Dist. Tubo", "Alt. Hueco"};
+        int outputIndex = 0;
+        List<NodeGene> sortedNodes = new ArrayList<>(genome.getNodes());
+        sortedNodes.sort(Comparator.comparingInt(NodeGene::getId));
+
+        for (NodeGene node : sortedNodes) {
+            double[] pos = position.get(node.getId());
+            if (pos == null) continue;
+            double nodeX = pos[0];
+            double nodeY = pos[1];
+
+            double activation;
+            String valueLabel;
+            switch (node.getType()) {
+                case INPUT -> {
+                    activation = inputIndex < inputs.length ? inputs[inputIndex] : 0.5;
+                    valueLabel = String.format("%.2f", activation);
+                }
+                case BIAS -> {
+                    activation = 1.0;
+                    valueLabel = "1.0";
+                }
+                case OUTPUT -> {
+                    activation = outputIndex < outputs.length ? outputs[outputIndex] : 0.5;
+                    valueLabel = String.format("%.2f", activation);
+                }
+                default -> {
+                    activation = activations.getOrDefault(node.getId(), 0.5);
+                    valueLabel = String.format("%.2f", activation);
+                }
+            }
+
+            Color nodeColor = node.getType() == NodeType.BIAS
+                    ? new Color(0.4, 0.4, 0.4, 0.9)
+                    : getColorFromValue(activation);
+            gc.setFill(nodeColor);
+            gc.fillOval(nodeX - nodeRadius, nodeY - nodeRadius, 2 * nodeRadius, 2 * nodeRadius);
+
+            gc.setFill(Color.WHITE);
+            gc.setFont(Font.font("System", FontWeight.BOLD, 10));
+            gc.fillText(valueLabel, nodeX - 10, nodeY + 3);
+
+            if (node.getType() == NodeType.INPUT) {
+                gc.setFill(Color.BLACK);
+                gc.setFont(Font.font("System", FontWeight.NORMAL, 12));
+                String label = inputIndex < inputLabels.length ? inputLabels[inputIndex] : "Input " + inputIndex;
+                gc.fillText(label, nodeX - 100, nodeY + 5);
+                inputIndex++;
+            } else if (node.getType() == NodeType.BIAS) {
+                gc.setFill(Color.BLACK);
+                gc.setFont(Font.font("System", FontWeight.NORMAL, 12));
+                gc.fillText("Bias", nodeX - 100, nodeY + 5);
+            } else if (node.getType() == NodeType.OUTPUT) {
+                gc.setFill(Color.BLACK);
+                gc.setFont(Font.font("System", FontWeight.BOLD, 14));
+                String outputLabel = activation > 0.5 ? "SALTAR" : "NO SALTAR";
+                gc.fillText(outputLabel, nodeX + 30, nodeY + 5);
+                outputIndex++;
+            }
         }
     }
 

@@ -5,6 +5,7 @@ import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.history.GenerationData;
 import com.neat.flappybirdneat.history.HistoryManager;
 import com.neat.flappybirdneat.history.RunHistory;
+import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
 import com.neat.flappybirdneat.simulation.SimulationController;
@@ -39,7 +40,7 @@ public class FlappyBirdGameUI {
     private static final int CANVAS_HEIGHT = 600;
 
     // Variables del juego
-    private Population population;
+    private EvolvingPopulation population;
     private FlappyBirdGame game;
     private int currentGeneration = 1;
     private boolean gamePaused = false;
@@ -284,7 +285,7 @@ public class FlappyBirdGameUI {
     /**
      * Inicia el bucle principal del juego
      */
-    public void startGameLoop(Population population) {
+    public void startGameLoop(EvolvingPopulation population) {
         // Detener el bucle existente si hay uno
         stopGameLoop();
 
@@ -391,7 +392,7 @@ public class FlappyBirdGameUI {
     /**
      * Prepara el escenario para visualizar una población específica
      */
-    public void prepareStage(Stage stage, Population population, int generationNumber) {
+    public void prepareStage(Stage stage, EvolvingPopulation population, int generationNumber) {
         this.primaryStage = stage;
 
         // Guardar la población que queremos visualizar

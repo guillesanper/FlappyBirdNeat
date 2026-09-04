@@ -2,12 +2,16 @@ package com.neat.flappybirdneat;
 
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.game.Pipe;
+import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.FlappyBirdGameUI;
 import com.neat.flappybirdneat.view.NeuralNetworkWindow;
 import com.neat.flappybirdneat.view.GeneticOperatorsConfigWindow;
+import com.neat.flappybirdneat.view.ChartBandUtil;
+import com.neat.flappybirdneat.view.StatisticsWindow;
+import com.neat.flappybirdneat.view.BenchmarkWindow;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -23,6 +27,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Polygon;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
@@ -66,18 +71,26 @@ public class FlappyBirdNEAT extends Application {
 
     // Ventana de visualización de la red neuronal
     private NeuralNetworkWindow networkWindow;
+    private StatisticsWindow statisticsWindow;
 
     // Gráficos
     private LineChart<Number, Number> fitnessChart;
     private XYChart.Series<Number, Number> bestFitnessSeries;
     private XYChart.Series<Number, Number> avgFitnessSeries;
     private XYChart.Series<Number, Number> bestAbsoluteSeries;
+    private Polygon minMaxBand;
+
+    private LineChart<Number, Number> diversityChart;
+    private XYChart.Series<Number, Number> diversitySeries;
+    private LineChart<Number, Number> speciesCountChart;
+    private XYChart.Series<Number, Number> speciesCountSeries;
 
     // UI components
     private Label genLabel;
     private Label bestFitnessLabel;
     private Label avgFitnessLabel;
     private Label aliveLabel;
+    private Label speciesLabel;
     private Button stopButton;
     private ProgressBar progressBar;
     private Slider speedSlider;
@@ -97,6 +110,7 @@ public class FlappyBirdNEAT extends Application {
 
         // Inicializar ventana de red neuronal
         networkWindow = new NeuralNetworkWindow(600, 400);
+        statisticsWindow = new StatisticsWindow(800, 600);
 
         // Crear la interfaz con pestañas
         TabPane tabPane = new TabPane();
@@ -126,6 +140,9 @@ public class FlappyBirdNEAT extends Application {
         primaryStage.setOnCloseRequest(e -> {
             if (networkWindow.isShowing()) {
                 networkWindow.close();
+            }
+            if (statisticsWindow.isShowing()) {
+                statisticsWindow.close();
             }
             if (gameLoop != null) {
                 gameLoop.stop();
@@ -168,6 +185,10 @@ public class FlappyBirdNEAT extends Application {
         aliveLabel.textProperty().bind(Bindings.concat("💚 Agentes Vivos: ",
                 simulationController.aliveCountProperty().asString(), " / ", POPULATION_SIZE));
 
+        speciesLabel = new Label("🧬 Especies: -");
+        speciesLabel.setVisible(false);
+        speciesLabel.setManaged(false);
+
         // Label para estado de simulación
         Label statusLabel = new Label();
         statusLabel.textProperty().bind(
@@ -182,6 +203,7 @@ public class FlappyBirdNEAT extends Application {
         bestFitnessLabel.setFont(labelFont);
         avgFitnessLabel.setFont(labelFont);
         aliveLabel.setFont(labelFont);
+        speciesLabel.setFont(labelFont);
         statusLabel.setFont(labelFont);
 
         // Cambiar color según estado
@@ -197,7 +219,7 @@ public class FlappyBirdNEAT extends Application {
         VBox infoPanel = new VBox(5);
         infoPanel.setPadding(new Insets(10));
         infoPanel.setStyle("-fx-background-color: #f0f0f0; -fx-background-radius: 5;");
-        infoPanel.getChildren().addAll(statsTitle, genLabel, bestFitnessLabel, avgFitnessLabel, aliveLabel, statusLabel);
+        infoPanel.getChildren().addAll(statsTitle, genLabel, bestFitnessLabel, avgFitnessLabel, aliveLabel, speciesLabel, statusLabel);
 
         infoBox.getChildren().add(infoPanel);
 
@@ -213,6 +235,27 @@ public class FlappyBirdNEAT extends Application {
         Label fastSimDescription = new Label("Entrena rápidamente sin visualización");
         fastSimDescription.setFont(Font.font("System", 12));
         fastSimDescription.setTextFill(Color.GRAY);
+
+        // Selector de algoritmo: MLP de topología fija (operadores configurables) vs NEAT real
+        HBox modeBox = new HBox(10);
+        modeBox.setAlignment(Pos.CENTER_LEFT);
+        Label modeLabel = new Label("Algoritmo:");
+        modeLabel.setFont(Font.font("System", FontWeight.BOLD, 13));
+        ComboBox<String> modeComboBox = new ComboBox<>();
+        modeComboBox.getItems().addAll("Fixed MLP", "NEAT");
+        modeComboBox.setValue("Fixed MLP");
+        modeComboBox.disableProperty().bind(simulationController.runningProperty());
+        modeComboBox.setOnAction(e -> {
+            boolean neatSelected = "NEAT".equals(modeComboBox.getValue());
+            simulationController.setMode(neatSelected
+                    ? SimulationController.Mode.NEAT
+                    : SimulationController.Mode.FIXED_MLP);
+            speciesLabel.setVisible(neatSelected);
+            speciesLabel.setManaged(neatSelected);
+            simulationController.resetSimulation();
+            updateChart();
+        });
+        modeBox.getChildren().addAll(modeLabel, modeComboBox);
 
         HBox genInputBox = new HBox(10);
         Label genToRunLabel = new Label("Generaciones:");
@@ -259,7 +302,7 @@ public class FlappyBirdNEAT extends Application {
         Label progressLabel = new Label("Progreso:");
         progressLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
 
-        fastSimPanel.getChildren().addAll(fastSimLabel, fastSimDescription, genInputBox, buttonBox, progressLabel, progressBar);
+        fastSimPanel.getChildren().addAll(fastSimLabel, fastSimDescription, modeBox, genInputBox, buttonBox, progressLabel, progressBar);
         controlBox.getChildren().add(fastSimPanel);
 
         // Acciones de los botones
@@ -313,6 +356,10 @@ public class FlappyBirdNEAT extends Application {
         });
 
         topControls.getChildren().addAll(infoBox, controlBox);
+
+        // Gráficos de diversidad genética y nº de especies (deben existir antes de
+        // createFitnessChart(), que llama a updateChart() y los referencia)
+        HBox evolutionMetricsBox = createEvolutionMetricsCharts();
 
         // Gráfico de evolución del fitness
         createFitnessChart();
@@ -405,19 +452,42 @@ public class FlappyBirdNEAT extends Application {
         Button configOperatorsButton = new Button("⚙ Configurar Operadores Genéticos");
         configOperatorsButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;");
         configOperatorsButton.setOnAction(e -> {
+            if (!(simulationController.getPopulation() instanceof Population fixedPopulation)) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("No disponible en modo NEAT");
+                alert.setHeaderText(null);
+                alert.setContentText("Los operadores genéticos configurables (cruce, selección, mutación, escalado) " +
+                        "solo aplican en modo 'Fixed MLP'. En modo NEAT, la topología y los pesos evolucionan " +
+                        "mediante las reglas propias de NEAT.");
+                alert.showAndWait();
+                return;
+            }
             // Asegurar que la población actual tenga la configuración guardada antes de abrir el modal
-            simulationController.getOperatorsConfig().applyTo(simulationController.getPopulation());
+            simulationController.getOperatorsConfig().applyTo(fixedPopulation);
             GeneticOperatorsConfigWindow configWindow = new GeneticOperatorsConfigWindow(
-                    simulationController.getPopulation(), simulationController);
+                    fixedPopulation, simulationController);
             configWindow.show();
         });
 
-        additionalControls.getChildren().addAll(resetButton, exportDataButton, playBestButton, configOperatorsButton);
+        Button statsWindowButton = new Button("📊 Panel de Estadísticas Avanzado");
+        statsWindowButton.setOnAction(e -> {
+            statisticsWindow.update(simulationController);
+            statisticsWindow.show();
+        });
+
+        Button benchmarkButton = new Button("🔬 Comparar Operadores (Benchmark)");
+        benchmarkButton.setOnAction(e -> {
+            BenchmarkWindow benchmarkWindow = new BenchmarkWindow(POPULATION_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT);
+            benchmarkWindow.show();
+        });
+
+        additionalControls.getChildren().addAll(resetButton, exportDataButton, playBestButton, configOperatorsButton,
+                statsWindowButton, benchmarkButton);
         additionalControls.setPadding(new Insets(10, 0, 0, 0));
         additionalControls.setAlignment(Pos.CENTER_LEFT);
 
         // Organizar todo el panel
-        statsPanel.getChildren().addAll(topControls, fitnessChart, additionalControls);
+        statsPanel.getChildren().addAll(topControls, fitnessChart, evolutionMetricsBox, additionalControls);
 
         return statsPanel;
     }
@@ -504,14 +574,20 @@ public class FlappyBirdNEAT extends Application {
 
             if (file != null) {
                 java.io.PrintWriter writer = new java.io.PrintWriter(file);
-                writer.println("Generacion,MejorFitness,FitnessPromedio");
+                writer.println("Generacion,MejorFitness,FitnessPromedio,FitnessMinimo,NumEspecies,Diversidad");
 
                 List<Double> bestFitness = simulationController.getBestFitnessHistory();
                 List<Double> avgFitness = simulationController.getAvgFitnessHistory();
+                List<Double> minFitness = simulationController.getMinFitnessHistory();
+                List<Integer> speciesCount = simulationController.getSpeciesCountHistory();
+                List<Double> diversity = simulationController.getDiversityHistory();
 
                 for (int i = 0; i < bestFitness.size(); i++) {
                     writer.println((i+1) + "," + bestFitness.get(i) + "," +
-                            (i < avgFitness.size() ? avgFitness.get(i) : ""));
+                            (i < avgFitness.size() ? avgFitness.get(i) : "") + "," +
+                            (i < minFitness.size() ? minFitness.get(i) : "") + "," +
+                            (i < speciesCount.size() ? speciesCount.get(i) : "") + "," +
+                            (i < diversity.size() ? diversity.get(i) : ""));
                 }
 
                 writer.close();
@@ -567,6 +643,12 @@ public class FlappyBirdNEAT extends Application {
         avgFitnessSeries.getNode().setStyle("-fx-stroke: blue; -fx-stroke-width: 1.5px;");
         bestAbsoluteSeries.getNode().setStyle("-fx-stroke: green; -fx-stroke-width: 2.5px; -fx-stroke-dash-array: 5 5;");
 
+        // Banda min-max: sombreado entre el fitness mínimo y el mejor (máximo) de cada generación
+        minMaxBand = new Polygon();
+        minMaxBand.setFill(new Color(1, 0, 0, 0.12));
+        minMaxBand.setStroke(null);
+        minMaxBand.setMouseTransparent(true);
+
         // Inicializar con datos actuales
         updateChart();
 
@@ -575,10 +657,52 @@ public class FlappyBirdNEAT extends Application {
     }
 
     /**
+     * Crea los gráficos de evolución de la diversidad genética y del nº de especies (modo NEAT)
+     * a lo largo de las generaciones, para acompañar a la curva de fitness principal.
+     */
+    private HBox createEvolutionMetricsCharts() {
+        NumberAxis divX = new NumberAxis();
+        divX.setLabel("Generación");
+        NumberAxis divY = new NumberAxis();
+        divY.setLabel("Diversidad");
+        diversityChart = new LineChart<>(divX, divY);
+        diversityChart.setTitle("Diversidad Genética");
+        diversityChart.setCreateSymbols(false);
+        diversityChart.setAnimated(false);
+        diversityChart.setLegendVisible(false);
+        diversitySeries = new XYChart.Series<>();
+        diversityChart.getData().add(diversitySeries);
+        diversityChart.setPrefHeight(200);
+
+        NumberAxis specX = new NumberAxis();
+        specX.setLabel("Generación");
+        NumberAxis specY = new NumberAxis();
+        specY.setLabel("Nº de especies");
+        speciesCountChart = new LineChart<>(specX, specY);
+        speciesCountChart.setTitle("Nº de Especies (modo NEAT)");
+        speciesCountChart.setCreateSymbols(false);
+        speciesCountChart.setAnimated(false);
+        speciesCountChart.setLegendVisible(false);
+        speciesCountSeries = new XYChart.Series<>();
+        speciesCountChart.getData().add(speciesCountSeries);
+        speciesCountChart.setPrefHeight(200);
+
+        HBox box = new HBox(10, diversityChart, speciesCountChart);
+        HBox.setHgrow(diversityChart, Priority.ALWAYS);
+        HBox.setHgrow(speciesCountChart, Priority.ALWAYS);
+        return box;
+    }
+
+    /**
      * Actualiza el gráfico con los datos actuales
      * Optimizado para no recrear todo, solo añadir nuevos puntos
      */
     private void updateChart() {
+        int speciesCount = simulationController.getSpeciesCount();
+        if (speciesCount >= 0) {
+            speciesLabel.setText("🧬 Especies: " + speciesCount);
+        }
+
         List<Double> bestHistory = simulationController.getBestFitnessHistory();
         List<Double> avgHistory = simulationController.getAvgFitnessHistory();
 
@@ -627,6 +751,34 @@ public class FlappyBirdNEAT extends Application {
                 bestAbsoluteSeries.getData().add(
                         new XYChart.Data<>(i, absoluteHistory.get(i)));
             }
+        }
+
+        // Banda min-max: entre el fitness mínimo y el mejor de cada generación
+        ChartBandUtil.update(fitnessChart, minMaxBand, bestHistory, simulationController.getMinFitnessHistory());
+
+        // Gráficos de diversidad genética y nº de especies
+        updateLineSeries(diversitySeries, simulationController.getDiversityHistory());
+
+        List<Integer> speciesHistory = simulationController.getSpeciesCountHistory();
+        boolean neatMode = !speciesHistory.isEmpty() && speciesHistory.get(speciesHistory.size() - 1) >= 0;
+        speciesCountChart.setVisible(neatMode);
+        speciesCountChart.setManaged(neatMode);
+        if (neatMode) {
+            speciesCountSeries.getData().clear();
+            for (int i = 0; i < speciesHistory.size(); i++) {
+                speciesCountSeries.getData().add(new XYChart.Data<>(i, speciesHistory.get(i)));
+            }
+        }
+
+        if (statisticsWindow.isShowing()) {
+            statisticsWindow.update(simulationController);
+        }
+    }
+
+    private void updateLineSeries(XYChart.Series<Number, Number> series, List<Double> history) {
+        series.getData().clear();
+        for (int i = 0; i < history.size(); i++) {
+            series.getData().add(new XYChart.Data<>(i, history.get(i)));
         }
     }
 
@@ -878,7 +1030,7 @@ public class FlappyBirdNEAT extends Application {
             }
 
             // Cargar la población seleccionada
-            Population selectedPopulation = selectedGen.getSavedPopulation();
+            EvolvingPopulation selectedPopulation = selectedGen.getSavedPopulation();
 
             // Crear una nueva ventana con FlappyBirdGameUI para la visualización
             try {
@@ -1004,7 +1156,7 @@ public class FlappyBirdNEAT extends Application {
      */
     private void drawGame() {
         FlappyBirdGame game = simulationController.getGame();
-        Population population = simulationController.getPopulation();
+        EvolvingPopulation population = simulationController.getPopulation();
 
         // Dibujar fondo
         gc.setFill(Color.SKYBLUE);

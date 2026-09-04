@@ -77,7 +77,26 @@ public class SimulationRunner {
 
         // Actualizar historial
         int aliveCount = countAliveAgents();
-        historyManager.addGenerationData(population.getBestFitness(), aliveCount,population,game.getPipes());
+        double avgFitness = averageFitness();
+        double minFitness = minFitness();
+        historyManager.addGenerationData(population.getBestFitness(), avgFitness, minFitness, aliveCount,
+                -1, population.diversity(), population, game.getPipes());
+    }
+
+    private double averageFitness() {
+        double total = 0;
+        for (FlappyBirdAgent agent : population.getAgents()) {
+            total += agent.getFitness();
+        }
+        return total / population.getAgents().length;
+    }
+
+    private double minFitness() {
+        double min = Double.POSITIVE_INFINITY;
+        for (FlappyBirdAgent agent : population.getAgents()) {
+            min = Math.min(min, agent.getFitness());
+        }
+        return min;
     }
 
     private int countAliveAgents() {
@@ -92,7 +111,11 @@ public class SimulationRunner {
         // Guardar estado de la generación para visualización posterior
         GenerationData data = new GenerationData(
                 population.getBestFitness(),
+                averageFitness(),
+                minFitness(),
                 countAliveAgents(),
+                -1,
+                population.diversity(),
                 population.deepCopy(),
                 new ArrayList<>(game.getPipes())
         );
