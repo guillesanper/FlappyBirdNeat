@@ -24,7 +24,18 @@ public class Pipe implements Serializable {
      * @param canvasHeight Altura del área de juego
      */
     public Pipe(float x, int canvasHeight) {
-        this.random = new Random();
+        this(x, canvasHeight, new Random());
+    }
+
+    /**
+     * Constructor con generador aleatorio inyectado, para reproducibilidad (posición del hueco
+     * determinista con una semilla fija).
+     * @param x Posición inicial en el eje X
+     * @param canvasHeight Altura del área de juego
+     * @param random Generador aleatorio a usar para la posición del hueco
+     */
+    public Pipe(float x, int canvasHeight, Random random) {
+        this.random = random;
         this.x = x;
         this.width = 80;
         this.gapSize = 150;

@@ -7,6 +7,7 @@ import javafx.scene.paint.Color;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Clase que implementa la lógica del juego Flappy Bird.
@@ -24,6 +25,7 @@ public class FlappyBirdGame {
 
     private final int canvasWidth;
     private final int canvasHeight;
+    private final Random random;
 
     /**
      * Constructor
@@ -31,8 +33,21 @@ public class FlappyBirdGame {
      * @param canvasHeight Alto del área de juego
      */
     public FlappyBirdGame(int canvasWidth, int canvasHeight) {
+        this(canvasWidth, canvasHeight, new Random());
+    }
+
+    /**
+     * Constructor con generador aleatorio inyectado, para reproducibilidad: la posición de los
+     * huecos de los tubos (única fuente de aleatoriedad del juego en sí) queda determinada por
+     * esta semilla, en vez de por un {@link Random} nuevo en cada tubo.
+     * @param canvasWidth Ancho del área de juego
+     * @param canvasHeight Alto del área de juego
+     * @param random Generador aleatorio a usar para la posición de los huecos de los tubos
+     */
+    public FlappyBirdGame(int canvasWidth, int canvasHeight, Random random) {
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
+        this.random = random;
         pipes = new ArrayList<>();
         reset();
     }
@@ -47,7 +62,7 @@ public class FlappyBirdGame {
     public void reset() {
         pipes.clear();
         // Añadir un tubo inicial
-        pipes.add(new Pipe(canvasWidth, canvasHeight));
+        pipes.add(new Pipe(canvasWidth, canvasHeight, random));
         score = 0;
         frameCount = 0;
     }
@@ -61,7 +76,7 @@ public class FlappyBirdGame {
 
         // Añadir nuevo tubo cada cierto tiempo
         if (frameCount % PIPE_SPACING == 0) {
-            pipes.add(new Pipe(canvasWidth, canvasHeight));
+            pipes.add(new Pipe(canvasWidth, canvasHeight, random));
         }
 
         // Actualizar tubos

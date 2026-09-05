@@ -59,7 +59,7 @@ public final class BenchmarkRunner {
         population.setMutacionStrategy(config.newMutacion());
         population.setCruceStrategy(config.newCruce());
 
-        FlappyBirdGame game = new FlappyBirdGame(canvasWidth, canvasHeight);
+        FlappyBirdGame game = new FlappyBirdGame(canvasWidth, canvasHeight, random);
         List<Double> curve = new ArrayList<>(generations);
 
         for (int gen = 0; gen < generations; gen++) {

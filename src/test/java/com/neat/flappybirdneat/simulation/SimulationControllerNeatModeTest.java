@@ -4,6 +4,8 @@ import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.genome.Genome;
 import org.junit.jupiter.api.Test;
 
+import java.util.Random;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -60,5 +62,47 @@ class SimulationControllerNeatModeTest {
         controller.resetSimulation();
 
         assertEquals(-1, controller.getSpeciesCount());
+    }
+
+    @Test
+    void sameSeedProducesIdenticalFitnessCurveInFixedMlpMode() {
+        assertEquals(
+                runGenerations(SimulationController.Mode.FIXED_MLP, 42L, 3),
+                runGenerations(SimulationController.Mode.FIXED_MLP, 42L, 3));
+    }
+
+    @Test
+    void sameSeedProducesIdenticalFitnessCurveInNeatMode() {
+        assertEquals(
+                runGenerations(SimulationController.Mode.NEAT, 42L, 3),
+                runGenerations(SimulationController.Mode.NEAT, 42L, 3));
+    }
+
+    @Test
+    void differentSeedsUsuallyProduceDifferentFitnessCurves() {
+        assertNotEquals(
+                runGenerations(SimulationController.Mode.FIXED_MLP, 1L, 3),
+                runGenerations(SimulationController.Mode.FIXED_MLP, 2L, 3));
+    }
+
+    /**
+     * Ejecuta varias generaciones headless de punta a punta (incluida la generación de tubos del
+     * juego) y devuelve la curva de mejor fitness por generación, para comparar reproducibilidad.
+     */
+    private static java.util.List<Double> runGenerations(SimulationController.Mode mode, long seed, int generations) {
+        SimulationController controller = new SimulationController(15, 800, 600, new Random(seed));
+        controller.setMode(mode);
+        controller.resetSimulation();
+        controller.runningProperty().set(true);
+
+        for (int i = 0; i < generations; i++) {
+            boolean allDead = false;
+            int safetyLimit = 100_000;
+            while (!allDead && safetyLimit-- > 0) {
+                allDead = controller.updateFrame();
+            }
+            controller.nextGeneration();
+        }
+        return controller.getBestFitnessHistory();
     }
 }

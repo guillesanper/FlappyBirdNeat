@@ -15,6 +15,7 @@ import javafx.concurrent.Task;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Controlador que gestiona la ejecución de simulaciones de FlappyBird NEAT,
@@ -61,15 +62,27 @@ public class SimulationController {
     private int targetGenerations = 0;
     private boolean replayMode = false; // Indica si estamos reproduciendo el mejor agente
     private Mode mode = Mode.FIXED_MLP;
+    private final Random random;
 
 
     /**
      * Constructor
      */
     public SimulationController(int populationSize, int canvasWidth, int canvasHeight) {
+        this(populationSize, canvasWidth, canvasHeight, new Random());
+    }
+
+    /**
+     * Constructor con generador aleatorio inyectado, para reproducibilidad: la misma semilla se
+     * usa tanto para inicializar/evolucionar la población (Fixed MLP o NEAT) como para la
+     * generación de tubos del juego, de modo que dos simulaciones con la misma semilla producen
+     * exactamente las mismas curvas de fitness.
+     */
+    public SimulationController(int populationSize, int canvasWidth, int canvasHeight, Random random) {
         this.populationSize = populationSize;
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
+        this.random = random;
         this.historyManager = new HistoryManager();
         this.operatorsConfig = new GeneticOperatorsConfig();
 
@@ -93,13 +106,13 @@ public class SimulationController {
      */
     public void resetSimulation() {
         if (mode == Mode.NEAT) {
-            population = new NeatPopulation(populationSize, AGENT_INPUTS, AGENT_OUTPUTS, new java.util.Random(), neatConfig);
+            population = new NeatPopulation(populationSize, AGENT_INPUTS, AGENT_OUTPUTS, random, neatConfig);
         } else {
-            Population fixedPopulation = new Population(populationSize);
+            Population fixedPopulation = new Population(populationSize, random);
             operatorsConfig.applyTo(fixedPopulation); // Aplicar operadores configurados
             population = fixedPopulation;
         }
-        game = new FlappyBirdGame(canvasWidth, canvasHeight);
+        game = new FlappyBirdGame(canvasWidth, canvasHeight, random);
 
         currentGeneration.set(1);
         bestFitness.set(0);
