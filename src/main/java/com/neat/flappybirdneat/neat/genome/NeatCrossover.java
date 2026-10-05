@@ -17,8 +17,7 @@ public final class NeatCrossover {
 
     private static final double INHERIT_DISABLED_CHANCE = 0.75;
 
-    private NeatCrossover() {
-    }
+    private NeatCrossover() {}
 
     /**
      * Cruza dos genomas según su fitness. Si el fitness es igual, los genes disjoint/excess
@@ -64,11 +63,16 @@ public final class NeatCrossover {
             offspringNodes.computeIfAbsent(connection.getOutNode(), id -> copyOf(findNode(otherParent, id)));
         }
 
-        return Genome.fromGenes(fitterParent.getNumInputs(), fitterParent.getNumOutputs(), fitterParent.getBiasNodeId(),
-                new ArrayList<>(offspringNodes.values()), offspringConnections);
+        return Genome.fromGenes(
+                fitterParent.getNumInputs(),
+                fitterParent.getNumOutputs(),
+                fitterParent.getBiasNodeId(),
+                new ArrayList<>(offspringNodes.values()),
+                offspringConnections);
     }
 
-    private static ConnectionGene inheritMatchingGene(ConnectionGene fitterGene, ConnectionGene otherGene, Random random) {
+    private static ConnectionGene inheritMatchingGene(
+            ConnectionGene fitterGene, ConnectionGene otherGene, Random random) {
         ConnectionGene chosen = random.nextBoolean() ? fitterGene : otherGene;
         boolean enabled = chosen.isEnabled();
         if ((!fitterGene.isEnabled() || !otherGene.isEnabled()) && random.nextDouble() < INHERIT_DISABLED_CHANCE) {
@@ -89,11 +93,13 @@ public final class NeatCrossover {
         for (NodeGene node : genome.getNodes()) {
             if (node.getId() == nodeId) return node;
         }
-        throw new IllegalStateException("Nodo " + nodeId + " referenciado por una conexión pero ausente en ambos padres");
+        throw new IllegalStateException(
+                "Nodo " + nodeId + " referenciado por una conexión pero ausente en ambos padres");
     }
 
     private static ConnectionGene copyOf(ConnectionGene source, boolean enabled) {
-        return new ConnectionGene(source.getInNode(), source.getOutNode(), source.getWeight(), enabled, source.getInnovationNumber());
+        return new ConnectionGene(
+                source.getInNode(), source.getOutNode(), source.getWeight(), enabled, source.getInnovationNumber());
     }
 
     private static NodeGene copyOf(NodeGene source) {

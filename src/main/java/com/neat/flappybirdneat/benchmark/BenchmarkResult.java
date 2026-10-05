@@ -20,8 +20,19 @@ public class BenchmarkResult {
         this.seeds = seeds;
     }
 
-    public String getLabel() { return label; }
-    public List<Double> getMeanCurve() { return meanCurve; }
-    public List<Double> getStdDevCurve() { return stdDevCurve; }
-    public int getSeeds() { return seeds; }
+    public String getLabel() {
+        return label;
+    }
+
+    public List<Double> getMeanCurve() {
+        return meanCurve;
+    }
+
+    public List<Double> getStdDevCurve() {
+        return stdDevCurve;
+    }
+
+    public int getSeeds() {
+        return seeds;
+    }
 }

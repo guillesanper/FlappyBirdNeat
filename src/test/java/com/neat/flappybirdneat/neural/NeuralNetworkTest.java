@@ -1,10 +1,9 @@
 package com.neat.flappybirdneat.neural;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class NeuralNetworkTest {
 
@@ -12,7 +11,7 @@ class NeuralNetworkTest {
     void feedForwardProducesOutputVectorOfExpectedSize() {
         NeuralNetwork network = new NeuralNetwork(4, 8, 1, new Random(42));
 
-        double[] outputs = network.feedForward(new double[]{0.1, -0.2, 0.3, 0.4});
+        double[] outputs = network.feedForward(new double[] {0.1, -0.2, 0.3, 0.4});
 
         assertEquals(1, outputs.length);
     }
@@ -21,7 +20,7 @@ class NeuralNetworkTest {
     void feedForwardOutputsAreBoundedBySigmoid() {
         NeuralNetwork network = new NeuralNetwork(4, 8, 1, new Random(1));
 
-        double[] outputs = network.feedForward(new double[]{5, -5, 100, -100});
+        double[] outputs = network.feedForward(new double[] {5, -5, 100, -100});
 
         for (double output : outputs) {
             assertTrue(output > 0.0 && output < 1.0);
@@ -74,7 +73,7 @@ class NeuralNetworkTest {
         NeuralNetwork copy = new NeuralNetwork(original);
 
         // Mutating the copy heavily must not change the original's behaviour.
-        copy.mutate(1.0, 5.0);
+        copy.mutate(1.0, 5.0, new Random(1));
 
         double[] inputs = {0.2, 0.2, 0.2, 0.2};
         double[] originalOutput = original.feedForward(inputs);
@@ -89,7 +88,7 @@ class NeuralNetworkTest {
         double[] inputs = {0.1, -0.4, 0.6, 0.2};
         double[] before = network.feedForward(inputs);
 
-        network.mutate(0.0, 0.5);
+        network.mutate(0.0, 0.5, new Random(1));
 
         double[] after = network.feedForward(inputs);
         assertArrayEquals(before, after);

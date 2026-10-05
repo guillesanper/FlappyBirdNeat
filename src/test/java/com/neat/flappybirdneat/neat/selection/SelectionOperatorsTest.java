@@ -1,13 +1,12 @@
 package com.neat.flappybirdneat.neat.selection;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Random;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Invariantes comunes a todas las estrategias de selección: deben devolver
@@ -16,23 +15,25 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SelectionOperatorsTest {
 
+    /** Generador que se pasa a las estrategias en cada llamada (JUnit crea una instancia por test). */
+    private Random random = new Random(0);
+
     private static final int POPULATION_SIZE = 10;
 
-    static Stream<Seleccion> strategies() {
+    static Stream<SelectionStrategy> strategies() {
         return Stream.of(
-                new SeleccionRuleta(),
-                new SeleccionRanking(),
-                new SeleccionRestos(),
-                new SeleccionEstocasticoUniversal(),
-                new SeleccionTorneoDeterministico(),
-                new SeleccionTorneoProbabilistico(),
-                new SeleccionTruncamiento()
-        );
+                new RouletteSelection(),
+                new RankingSelection(),
+                new RemainderSelection(),
+                new StochasticUniversalSelection(),
+                new DeterministicTournamentSelection(),
+                new ProbabilisticTournamentSelection(),
+                new TruncationSelection());
     }
 
-    private Seleccionable[] buildSeleccionables(long seed) {
+    private Selectable[] buildSelectables(long seed) {
         Random random = new Random(seed);
-        Seleccionable[] list = new Seleccionable[POPULATION_SIZE];
+        Selectable[] list = new Selectable[POPULATION_SIZE];
         double totalFitness = 0;
         double[] fitness = new double[POPULATION_SIZE];
         for (int i = 0; i < POPULATION_SIZE; i++) {
@@ -42,7 +43,7 @@ class SelectionOperatorsTest {
         double accProb = 0;
         for (int i = 0; i < POPULATION_SIZE; i++) {
             double prob = fitness[i] / totalFitness;
-            list[i] = new Seleccionable(i, fitness[i]);
+            list[i] = new Selectable(i, fitness[i]);
             list[i].setProb(prob);
             list[i].setAccProb(accProb);
             accProb += prob;
@@ -52,37 +53,36 @@ class SelectionOperatorsTest {
 
     @ParameterizedTest
     @MethodSource("strategies")
-    void returnsRequestedNumberOfSelections(Seleccion strategy) {
-        strategy.setRandom(new Random(42));
-        Seleccionable[] list = buildSeleccionables(1);
+    void returnsRequestedNumberOfSelections(SelectionStrategy strategy) {
+        random = new Random(42);
+        Selectable[] list = buildSelectables(1);
 
-        int[] selection = strategy.getSeleccion(list, POPULATION_SIZE);
+        int[] selection = strategy.select(list, POPULATION_SIZE, random);
 
         assertEquals(POPULATION_SIZE, selection.length);
     }
 
     @ParameterizedTest
     @MethodSource("strategies")
-    void allSelectedIndicesAreWithinPopulationBounds(Seleccion strategy) {
-        strategy.setRandom(new Random(7));
-        Seleccionable[] list = buildSeleccionables(2);
+    void allSelectedIndicesAreWithinPopulationBounds(SelectionStrategy strategy) {
+        random = new Random(7);
+        Selectable[] list = buildSelectables(2);
 
-        int[] selection = strategy.getSeleccion(list, POPULATION_SIZE);
+        int[] selection = strategy.select(list, POPULATION_SIZE, random);
 
         for (int index : selection) {
-            assertTrue(index >= 0 && index < POPULATION_SIZE,
-                    "Índice fuera de rango: " + index);
+            assertTrue(index >= 0 && index < POPULATION_SIZE, "Índice fuera de rango: " + index);
         }
     }
 
     @ParameterizedTest
     @MethodSource("strategies")
-    void sameSeedProducesIdenticalSelection(Seleccion strategy) {
-        strategy.setRandom(new Random(123));
-        int[] first = strategy.getSeleccion(buildSeleccionables(3), POPULATION_SIZE);
+    void sameSeedProducesIdenticalSelection(SelectionStrategy strategy) {
+        random = new Random(123);
+        int[] first = strategy.select(buildSelectables(3), POPULATION_SIZE, random);
 
-        strategy.setRandom(new Random(123));
-        int[] second = strategy.getSeleccion(buildSeleccionables(3), POPULATION_SIZE);
+        random = new Random(123);
+        int[] second = strategy.select(buildSelectables(3), POPULATION_SIZE, random);
 
         assertArrayEquals(first, second);
     }
@@ -92,39 +92,38 @@ class SelectionOperatorsTest {
         // Con solo dos individuos, cada trío de 3 sorteos solo pierde ante el más apto si las
         // tres tiradas caen en el otro individuo (probabilidad 1/8); con una semilla fija y
         // suficientes sorteos, debe ganar la gran mayoría de las veces.
-        // getSeleccion exige list.length == tamPoblacion, así que repetimos la selección
+        // select exige list.length == tamPoblacion, así que repetimos la selección
         // sobre una población de 2 individuos en vez de inflar tamPoblacion.
-        Seleccionable[] list = {
-                new Seleccionable(0, 1.0),
-                new Seleccionable(1, 100.0)
-        };
-        SeleccionTorneoDeterministico strategy = new SeleccionTorneoDeterministico();
-        strategy.setRandom(new Random(99));
+        Selectable[] list = {new Selectable(0, 1.0), new Selectable(1, 100.0)};
+        DeterministicTournamentSelection strategy = new DeterministicTournamentSelection();
+        random = new Random(99);
 
         int trials = 300;
         long timesFitterWon = 0;
         long totalSelections = 0;
         for (int t = 0; t < trials; t++) {
-            int[] selection = strategy.getSeleccion(list, 2);
+            int[] selection = strategy.select(list, 2, random);
             totalSelections += selection.length;
-            timesFitterWon += java.util.Arrays.stream(selection).filter(i -> i == 1).count();
+            timesFitterWon +=
+                    java.util.Arrays.stream(selection).filter(i -> i == 1).count();
         }
 
-        assertTrue(timesFitterWon > totalSelections * 0.8,
-                "El individuo más apto debería ganar la gran mayoría de los torneos: "
-                        + timesFitterWon + "/" + totalSelections);
+        assertTrue(
+                timesFitterWon > totalSelections * 0.8,
+                "El individuo más apto debería ganar la gran mayoría de los torneos: " + timesFitterWon + "/"
+                        + totalSelections);
     }
 
     @Test
     void truncamientoOnlySelectsFromTopFraction() {
-        Seleccionable[] list = new Seleccionable[10];
+        Selectable[] list = new Selectable[10];
         for (int i = 0; i < 10; i++) {
-            list[i] = new Seleccionable(i, i);
+            list[i] = new Selectable(i, i);
         }
-        SeleccionTruncamiento strategy = new SeleccionTruncamiento(0.3);
-        strategy.setRandom(new Random(5));
+        TruncationSelection strategy = new TruncationSelection(0.3);
+        random = new Random(5);
 
-        int[] selection = strategy.getSeleccion(list, 10);
+        int[] selection = strategy.select(list, 10, random);
 
         for (int index : selection) {
             assertTrue(index >= 7, "Se seleccionó un individuo fuera del top 30%: index=" + index);

@@ -3,70 +3,96 @@ package com.neat.flappybirdneat.config;
 import com.neat.flappybirdneat.neat.Population;
 import com.neat.flappybirdneat.neat.crossover.*;
 import com.neat.flappybirdneat.neat.mutation.*;
-import com.neat.flappybirdneat.neat.selection.*;
 import com.neat.flappybirdneat.neat.scaling.*;
+import com.neat.flappybirdneat.neat.selection.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Almacena la configuración de operadores genéticos
  * para persistir entre reinicios de simulación
  */
 public class GeneticOperatorsConfig {
-    private Seleccion seleccionStrategy;
-    private Escalado escaladoStrategy;
-    private MutacionStrategy mutacionStrategy;
-    private CruceStrategy cruceStrategy;
+    private static final Logger LOG = LoggerFactory.getLogger(GeneticOperatorsConfig.class);
+
+    private SelectionStrategy selectionStrategy;
+    private ScalingStrategy scalingStrategy;
+    private MutationStrategy mutationStrategy;
+    private CrossoverStrategy crossoverStrategy;
 
     public GeneticOperatorsConfig() {
         // Valores por defecto
-        seleccionStrategy = new SeleccionRuleta();
-        escaladoStrategy = null;
-        mutacionStrategy = new MutacionGaussiana();
-        cruceStrategy = new CruceUniforme();
+        selectionStrategy = new RouletteSelection();
+        scalingStrategy = null;
+        mutationStrategy = new GaussianMutation();
+        crossoverStrategy = new UniformCrossover();
     }
 
     /**
      * Aplica la configuración guardada a una población
      */
     public void applyTo(Population population) {
-        population.setSeleccionStrategy(seleccionStrategy);
-        population.setEscaladoStrategy(escaladoStrategy);
-        population.setMutacionStrategy(mutacionStrategy);
-        population.setCruceStrategy(cruceStrategy);
+        population.setSelectionStrategy(selectionStrategy);
+        population.setScalingStrategy(scalingStrategy);
+        population.setMutationStrategy(mutationStrategy);
+        population.setCrossoverStrategy(crossoverStrategy);
 
-        // Debug: mostrar qué configuración se está aplicando
-        System.out.println("🔧 Aplicando configuración de operadores genéticos:");
-        System.out.println("  - Cruce: " + (cruceStrategy != null ? cruceStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Selección: " + (seleccionStrategy != null ? seleccionStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Mutación: " + (mutacionStrategy != null ? mutacionStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Escalado: " + (escaladoStrategy != null ? escaladoStrategy.getClass().getSimpleName() : "Ninguno"));
+        LOG.debug("Applying genetic operators: {}", this);
     }
 
     /**
      * Actualiza la configuración desde una población
      */
     public void updateFrom(Population population) {
-        this.seleccionStrategy = population.getSeleccionStrategy();
-        this.escaladoStrategy = population.getEscaladoStrategy();
-        this.mutacionStrategy = population.getMutacionStrategy();
-        this.cruceStrategy = population.getCruceStrategy();
+        this.selectionStrategy = population.getSelectionStrategy();
+        this.scalingStrategy = population.getScalingStrategy();
+        this.mutationStrategy = population.getMutationStrategy();
+        this.crossoverStrategy = population.getCrossoverStrategy();
 
-        // Debug: mostrar qué configuración se está guardando
-        System.out.println("💾 Guardando configuración de operadores genéticos:");
-        System.out.println("  - Cruce: " + (cruceStrategy != null ? cruceStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Selección: " + (seleccionStrategy != null ? seleccionStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Mutación: " + (mutacionStrategy != null ? mutacionStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Escalado: " + (escaladoStrategy != null ? escaladoStrategy.getClass().getSimpleName() : "Ninguno"));
+        LOG.info("Genetic operators updated: {}", this);
+    }
+
+    @Override
+    public String toString() {
+        return "selection=" + simpleName(selectionStrategy) + ", crossover=" + simpleName(crossoverStrategy)
+                + ", mutation=" + simpleName(mutationStrategy) + ", scaling=" + simpleName(scalingStrategy);
+    }
+
+    private static String simpleName(Object strategy) {
+        return strategy != null ? strategy.getClass().getSimpleName() : "none";
     }
 
     // Getters
-    public Seleccion getSeleccionStrategy() { return seleccionStrategy; }
-    public Escalado getEscaladoStrategy() { return escaladoStrategy; }
-    public MutacionStrategy getMutacionStrategy() { return mutacionStrategy; }
-    public CruceStrategy getCruceStrategy() { return cruceStrategy; }
+    public SelectionStrategy getSelectionStrategy() {
+        return selectionStrategy;
+    }
+
+    public ScalingStrategy getScalingStrategy() {
+        return scalingStrategy;
+    }
+
+    public MutationStrategy getMutationStrategy() {
+        return mutationStrategy;
+    }
+
+    public CrossoverStrategy getCrossoverStrategy() {
+        return crossoverStrategy;
+    }
 
     // Setters
-    public void setSeleccionStrategy(Seleccion s) { this.seleccionStrategy = s; }
-    public void setEscaladoStrategy(Escalado e) { this.escaladoStrategy = e; }
-    public void setMutacionStrategy(MutacionStrategy m) { this.mutacionStrategy = m; }
-    public void setCruceStrategy(CruceStrategy c) { this.cruceStrategy = c; }
+    public void setSelectionStrategy(SelectionStrategy s) {
+        this.selectionStrategy = s;
+    }
+
+    public void setScalingStrategy(ScalingStrategy e) {
+        this.scalingStrategy = e;
+    }
+
+    public void setMutationStrategy(MutationStrategy m) {
+        this.mutationStrategy = m;
+    }
+
+    public void setCrossoverStrategy(CrossoverStrategy c) {
+        this.crossoverStrategy = c;
+    }
 }

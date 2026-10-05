@@ -1,12 +1,10 @@
 package com.neat.flappybirdneat.simulation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.genome.Genome;
 import org.junit.jupiter.api.Test;
-
-import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Verifica que el modo NEAT funciona de punta a punta a través de {@link SimulationController}:
@@ -18,7 +16,7 @@ class SimulationControllerNeatModeTest {
 
     @Test
     void neatModeRunsAgentsWithGenomeBrains() {
-        SimulationController controller = new SimulationController(20, 800, 600);
+        SimulationController controller = new SimulationController(20, 800, 600, 7L);
         controller.setMode(SimulationController.Mode.NEAT);
         controller.resetSimulation();
 
@@ -29,7 +27,7 @@ class SimulationControllerNeatModeTest {
 
     @Test
     void neatModePlaysAGenerationAndEvolvesWithoutErrors() {
-        SimulationController controller = new SimulationController(20, 800, 600);
+        SimulationController controller = new SimulationController(20, 800, 600, 7L);
         controller.setMode(SimulationController.Mode.NEAT);
         controller.resetSimulation();
         controller.runningProperty().set(true);
@@ -57,7 +55,7 @@ class SimulationControllerNeatModeTest {
 
     @Test
     void fixedMlpModeReportsNoSpecies() {
-        SimulationController controller = new SimulationController(10, 800, 600);
+        SimulationController controller = new SimulationController(10, 800, 600, 7L);
         controller.setMode(SimulationController.Mode.FIXED_MLP);
         controller.resetSimulation();
 
@@ -90,7 +88,7 @@ class SimulationControllerNeatModeTest {
      * juego) y devuelve la curva de mejor fitness por generación, para comparar reproducibilidad.
      */
     private static java.util.List<Double> runGenerations(SimulationController.Mode mode, long seed, int generations) {
-        SimulationController controller = new SimulationController(15, 800, 600, new Random(seed));
+        SimulationController controller = new SimulationController(15, 800, 600, seed);
         controller.setMode(mode);
         controller.resetSimulation();
         controller.runningProperty().set(true);

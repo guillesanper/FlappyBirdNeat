@@ -16,38 +16,18 @@ public class Pipe implements Serializable {
     private float width;
     private static final float SPEED = 3;
 
-    private transient Random random;
-
     /**
-     * Constructor
-     * @param x Posición inicial en el eje X
-     * @param canvasHeight Altura del área de juego
-     */
-    public Pipe(float x, int canvasHeight) {
-        this(x, canvasHeight, new Random());
-    }
-
-    /**
-     * Constructor con generador aleatorio inyectado, para reproducibilidad (posición del hueco
-     * determinista con una semilla fija).
+     * Constructor. La posición del hueco sale del generador de la simulación, así que es
+     * determinista con una semilla fija.
      * @param x Posición inicial en el eje X
      * @param canvasHeight Altura del área de juego
      * @param random Generador aleatorio a usar para la posición del hueco
      */
     public Pipe(float x, int canvasHeight, Random random) {
-        this.random = random;
         this.x = x;
         this.width = 80;
         this.gapSize = 150;
         this.gapY = (float) (random.nextDouble() * (canvasHeight - 200 - gapSize) + 100);
-    }
-
-    /**
-     * Método llamado después de la deserialización para reinicializar campos transient
-     */
-    private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
-        in.defaultReadObject();
-        this.random = new Random();
     }
 
     /**
@@ -79,7 +59,7 @@ public class Pipe implements Serializable {
         }
 
         // Si el pájaro está dentro del hueco, no hay colisión
-        if (birdY > gapY - gapSize/2 && birdY + birdSize < gapY + gapSize/2) {
+        if (birdY > gapY - gapSize / 2 && birdY + birdSize < gapY + gapSize / 2) {
             return false;
         }
 

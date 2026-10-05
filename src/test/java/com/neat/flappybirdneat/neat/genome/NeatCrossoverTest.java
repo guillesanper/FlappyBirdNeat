@@ -1,12 +1,11 @@
 package com.neat.flappybirdneat.neat.genome;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class NeatCrossoverTest {
 
@@ -81,7 +80,7 @@ class NeatCrossoverTest {
 
         Genome offspring = NeatCrossover.crossover(parent1, 8.0, parent2, 3.0, new Random(6));
 
-        double[] outputs = offspring.feedForward(new double[]{0.2, -0.4, 0.6});
+        double[] outputs = offspring.feedForward(new double[] {0.2, -0.4, 0.6});
         assertEquals(2, outputs.length);
         for (double output : outputs) {
             assertTrue(output > 0.0 && output < 1.0);
@@ -105,7 +104,8 @@ class NeatCrossoverTest {
             double weight = gene.getWeight();
             boolean matchesParent1 = weight == parent1WeightsByInnovation.get(gene.getInnovationNumber());
             boolean matchesParent2 = weight == parent2WeightsByInnovation.get(gene.getInnovationNumber());
-            assertTrue(matchesParent1 || matchesParent2,
+            assertTrue(
+                    matchesParent1 || matchesParent2,
                     "Cada gen matching del hijo debe venir literalmente de uno de los dos padres");
         }
     }
@@ -121,10 +121,12 @@ class NeatCrossoverTest {
 
         Genome offspring = NeatCrossover.crossover(parent1, 5.0, parent2, 5.0, new Random(3));
 
-        long inputNodes = offspring.getNodes().stream().filter(n -> n.getType() == NodeType.INPUT).count();
+        long inputNodes = offspring.getNodes().stream()
+                .filter(n -> n.getType() == NodeType.INPUT)
+                .count();
         assertEquals(4, inputNodes);
         assertEquals(parent1.getConnections().size(), offspring.getConnections().size());
-        assertDoesNotThrow(() -> offspring.feedForward(new double[]{0.1, 0.2, 0.3, 0.4}));
+        assertDoesNotThrow(() -> offspring.feedForward(new double[] {0.1, 0.2, 0.3, 0.4}));
     }
 
     private Map<Integer, Double> byInnovation(Genome genome, Function<ConnectionGene, Double> extractor) {

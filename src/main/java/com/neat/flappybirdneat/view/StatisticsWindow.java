@@ -2,7 +2,7 @@ package com.neat.flappybirdneat.view;
 
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.simulation.SimulationController;
-
+import java.util.List;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.chart.BarChart;
@@ -15,8 +15,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-
-import java.util.List;
 
 /**
  * Panel de estadísticas avanzadas, en una ventana independiente (mismo patrón que

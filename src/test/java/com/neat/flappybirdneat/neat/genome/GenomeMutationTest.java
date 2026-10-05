@@ -1,11 +1,10 @@
 package com.neat.flappybirdneat.neat.genome;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class GenomeMutationTest {
 
@@ -34,7 +33,9 @@ class GenomeMutationTest {
 
         assertTrue(added, "Tras add-node hay pares nodo-nodo libres (p.ej. otra entrada -> nodo oculto)");
         assertEquals(connectionsBefore + 1, genome.getConnections().size());
-        long enabledCount = genome.getConnections().stream().filter(ConnectionGene::isEnabled).count();
+        long enabledCount = genome.getConnections().stream()
+                .filter(ConnectionGene::isEnabled)
+                .count();
         assertTrue(enabledCount >= 1);
     }
 
@@ -51,7 +52,7 @@ class GenomeMutationTest {
         // Si el grafo tuviera un ciclo, no existiría ningún orden topológico válido y
         // feedForward lanzaría o se quedaría con nodos sin valor; en su lugar debe terminar
         // y devolver siempre el número de salidas esperado.
-        double[] outputs = genome.feedForward(new double[]{0.1, 0.2, 0.3});
+        double[] outputs = genome.feedForward(new double[] {0.1, 0.2, 0.3});
         assertEquals(2, outputs.length);
         for (double output : outputs) {
             assertTrue(output >= 0.0 && output <= 1.0);
@@ -71,7 +72,8 @@ class GenomeMutationTest {
         assertEquals(nodesBefore + 1, genome.getNodes().size());
         assertEquals(connectionsBefore + 2, genome.getConnections().size());
 
-        long disabledCount = genome.getConnections().stream().filter(c -> !c.isEnabled()).count();
+        long disabledCount =
+                genome.getConnections().stream().filter(c -> !c.isEnabled()).count();
         assertEquals(1, disabledCount, "Debe quedar exactamente una conexión deshabilitada: la que se partió");
 
         NodeGene newNode = genome.getNodes().stream()
@@ -92,7 +94,7 @@ class GenomeMutationTest {
         genome.mutateAddNode(new Random(4), tracker);
         genome.mutateAddNode(new Random(5), tracker);
 
-        double[] outputs = genome.feedForward(new double[]{0.1, -0.2, 0.3, 0.4});
+        double[] outputs = genome.feedForward(new double[] {0.1, -0.2, 0.3, 0.4});
 
         assertEquals(2, outputs.length);
         for (double output : outputs) {
@@ -120,7 +122,9 @@ class GenomeMutationTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertEquals(nodeIdFromTracker, newNodeInA.getId(),
+        assertEquals(
+                nodeIdFromTracker,
+                newNodeInA.getId(),
                 "Partir la misma conexión (mismo innovation number) debe reusar el mismo id de nodo nuevo");
     }
 
@@ -141,11 +145,13 @@ class GenomeMutationTest {
     void mutateWeightsChangesWeightsWhenRateIsOne() {
         InnovationTracker tracker = new InnovationTracker();
         Genome genome = new Genome(3, 1, new Random(1), tracker);
-        List<Double> before = genome.getConnections().stream().map(ConnectionGene::getWeight).toList();
+        List<Double> before =
+                genome.getConnections().stream().map(ConnectionGene::getWeight).toList();
 
         genome.mutateWeights(new Random(2), 1.0);
 
-        List<Double> after = genome.getConnections().stream().map(ConnectionGene::getWeight).toList();
+        List<Double> after =
+                genome.getConnections().stream().map(ConnectionGene::getWeight).toList();
         assertNotEquals(before, after);
     }
 
@@ -153,11 +159,13 @@ class GenomeMutationTest {
     void mutateWeightsLeavesWeightsUnchangedWhenRateIsZero() {
         InnovationTracker tracker = new InnovationTracker();
         Genome genome = new Genome(3, 1, new Random(1), tracker);
-        List<Double> before = genome.getConnections().stream().map(ConnectionGene::getWeight).toList();
+        List<Double> before =
+                genome.getConnections().stream().map(ConnectionGene::getWeight).toList();
 
         genome.mutateWeights(new Random(2), 0.0);
 
-        List<Double> after = genome.getConnections().stream().map(ConnectionGene::getWeight).toList();
+        List<Double> after =
+                genome.getConnections().stream().map(ConnectionGene::getWeight).toList();
         assertEquals(before, after);
     }
 

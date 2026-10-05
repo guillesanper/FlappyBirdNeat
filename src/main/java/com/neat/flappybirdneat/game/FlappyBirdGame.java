@@ -1,10 +1,6 @@
 package com.neat.flappybirdneat.game;
 
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
-
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -26,15 +22,6 @@ public class FlappyBirdGame {
     private final int canvasWidth;
     private final int canvasHeight;
     private final Random random;
-
-    /**
-     * Constructor
-     * @param canvasWidth Ancho del área de juego
-     * @param canvasHeight Alto del área de juego
-     */
-    public FlappyBirdGame(int canvasWidth, int canvasHeight) {
-        this(canvasWidth, canvasHeight, new Random());
-    }
 
     /**
      * Constructor con generador aleatorio inyectado, para reproducibilidad: la posición de los
@@ -101,11 +88,10 @@ public class FlappyBirdGame {
                             agent.getY(),
                             nextPipe.getX() - BIRD_X_POSITION, // Distancia horizontal al tubo
                             nextPipe.getGapY(),
-                            nextPipe.getGapSize()
-                    );
+                            nextPipe.getGapSize());
                 } else {
                     // Si no hay tubo, usar valores predeterminados
-                    agent.think(agent.getY(), canvasWidth, canvasHeight/2, 150);
+                    agent.think(agent.getY(), canvasWidth, canvasHeight / 2, 150);
                 }
 
                 // Actualizar física del agente
@@ -114,41 +100,6 @@ public class FlappyBirdGame {
                 // Comprobar colisiones
                 checkCollision(agent);
             }
-        }
-    }
-
-    /**
-     * Dibuja el estado actual del juego en el canvas
-     * @param gc El GraphicsContext donde dibujar
-     */
-    public void draw(GraphicsContext gc) {
-        // Dibujar fondo
-        gc.setFill(Color.SKYBLUE);
-        gc.fillRect(0, 0, canvasWidth, canvasHeight);
-
-        // Dibujar el suelo
-        gc.setFill(Color.SANDYBROWN);
-        gc.fillRect(0, canvasHeight - 20, canvasWidth, 20);
-
-        // Dibujar tubos
-        for (Pipe pipe : pipes) {
-            gc.setFill(Color.GREEN);
-
-            // Parte superior del tubo (desde arriba hasta inicio del gap)
-            double gapTop = pipe.getGapY() - pipe.getGapSize() / 2;
-            gc.fillRect(pipe.getX(), 0, pipe.getWidth(), gapTop);
-
-            // Parte inferior del tubo (desde fin del gap hasta el suelo)
-            double gapBottom = pipe.getGapY() + pipe.getGapSize() / 2;
-            gc.fillRect(pipe.getX(), gapBottom, pipe.getWidth(), canvasHeight - gapBottom - 20); // -20 para el suelo
-
-            // Dibujar borde del tubo (opcional para hacerlo más visual)
-            gc.setStroke(Color.DARKGREEN);
-            gc.setLineWidth(2);
-            // Borde tubo superior
-            gc.strokeRect(pipe.getX(), 0, pipe.getWidth(), gapTop);
-            // Borde tubo inferior
-            gc.strokeRect(pipe.getX(), gapBottom, pipe.getWidth(), canvasHeight - gapBottom - 20);
         }
     }
 

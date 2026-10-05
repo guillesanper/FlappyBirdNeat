@@ -4,7 +4,12 @@ import com.neat.flappybirdneat.benchmark.BenchmarkConfig;
 import com.neat.flappybirdneat.benchmark.BenchmarkPresets;
 import com.neat.flappybirdneat.benchmark.BenchmarkResult;
 import com.neat.flappybirdneat.benchmark.BenchmarkRunner;
-
+import java.io.File;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -29,13 +34,6 @@ import javafx.scene.shape.Polygon;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Ventana de comparativa de operadores (benchmark): ejecuta el modo "Fixed MLP" con distintas
  * combinaciones predefinidas de selección/cruce/mutación/escalado ({@link BenchmarkPresets}), cada
@@ -44,7 +42,7 @@ import java.util.Map;
  */
 public class BenchmarkWindow {
     private static final Color[] PALETTE = {
-            Color.rgb(220, 50, 47), Color.rgb(38, 139, 210), Color.rgb(42, 161, 152), Color.rgb(203, 75, 22)
+        Color.rgb(220, 50, 47), Color.rgb(38, 139, 210), Color.rgb(42, 161, 152), Color.rgb(203, 75, 22)
     };
 
     private final Stage stage;
@@ -90,7 +88,8 @@ public class BenchmarkWindow {
         seedsSpinner.setPrefWidth(80);
 
         Label generationsLabel = new Label("Generaciones:");
-        Spinner<Integer> generationsSpinner = new Spinner<>(new SpinnerValueFactory.IntegerSpinnerValueFactory(5, 1000, 50));
+        Spinner<Integer> generationsSpinner =
+                new Spinner<>(new SpinnerValueFactory.IntegerSpinnerValueFactory(5, 1000, 50));
         generationsSpinner.setEditable(true);
         generationsSpinner.setPrefWidth(80);
 
@@ -98,7 +97,8 @@ public class BenchmarkWindow {
         exportButton.setDisable(true);
         progressBar.setPrefWidth(300);
 
-        HBox controls = new HBox(10, seedsLabel, seedsSpinner, generationsLabel, generationsSpinner, runButton, exportButton);
+        HBox controls =
+                new HBox(10, seedsLabel, seedsSpinner, generationsLabel, generationsSpinner, runButton, exportButton);
         controls.setAlignment(Pos.CENTER_LEFT);
         controls.setPadding(new Insets(10));
 
@@ -140,7 +140,13 @@ public class BenchmarkWindow {
         Task<List<BenchmarkResult>> task = new Task<>() {
             @Override
             protected List<BenchmarkResult> call() {
-                return BenchmarkRunner.run(configs, seeds, generations, populationSize, canvasWidth, canvasHeight,
+                return BenchmarkRunner.run(
+                        configs,
+                        seeds,
+                        generations,
+                        populationSize,
+                        canvasWidth,
+                        canvasHeight,
                         (completed, total, message) -> Platform.runLater(() -> {
                             progressBar.setProgress((double) completed / total);
                             statusLabel.setText(message + " (" + completed + "/" + total + ")");
@@ -160,8 +166,9 @@ public class BenchmarkWindow {
             runButton.setDisable(false);
             Throwable ex = task.getException();
             statusLabel.setText("Error: " + (ex != null ? ex.getMessage() : "desconocido"));
-            Alert alert = new Alert(Alert.AlertType.ERROR, "El benchmark falló: " +
-                    (ex != null ? ex.getMessage() : "error desconocido"));
+            Alert alert = new Alert(
+                    Alert.AlertType.ERROR,
+                    "El benchmark falló: " + (ex != null ? ex.getMessage() : "error desconocido"));
             alert.showAndWait();
         });
 
@@ -214,8 +221,9 @@ public class BenchmarkWindow {
             }
             chart.getData().add(series);
             if (series.getNode() != null) {
-                String hex = String.format("#%02x%02x%02x", (int) (color.getRed() * 255),
-                        (int) (color.getGreen() * 255), (int) (color.getBlue() * 255));
+                String hex = String.format(
+                        "#%02x%02x%02x",
+                        (int) (color.getRed() * 255), (int) (color.getGreen() * 255), (int) (color.getBlue() * 255));
                 series.getNode().setStyle("-fx-stroke: " + hex + "; -fx-stroke-width: 2px;");
             }
 

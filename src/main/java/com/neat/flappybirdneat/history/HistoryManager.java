@@ -2,12 +2,15 @@ package com.neat.flappybirdneat.history;
 
 import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
-
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HistoryManager {
+    private static final Logger LOG = LoggerFactory.getLogger(HistoryManager.class);
+
     // Límite de generaciones a mantener en el historial para evitar fugas de memoria
     private static final int MAX_GENERATIONS_PER_RUN = 500;
     private static final int MAX_RUNS = 10;
@@ -36,10 +39,24 @@ public class HistoryManager {
         currentRun = new RunHistory();
     }
 
-    public void addGenerationData(double bestFitness, double avgFitness, double minFitness, int aliveCount,
-                                   int speciesCount, double diversity, EvolvingPopulation pop, List<Pipe> savedPipes) {
-        GenerationData data = new GenerationData(bestFitness, avgFitness, minFitness, aliveCount, speciesCount,
-                diversity, pop.deepCopy(), new ArrayList<>(savedPipes));
+    public void addGenerationData(
+            double bestFitness,
+            double avgFitness,
+            double minFitness,
+            int aliveCount,
+            int speciesCount,
+            double diversity,
+            EvolvingPopulation pop,
+            List<Pipe> savedPipes) {
+        GenerationData data = new GenerationData(
+                bestFitness,
+                avgFitness,
+                minFitness,
+                aliveCount,
+                speciesCount,
+                diversity,
+                pop.deepCopy(),
+                new ArrayList<>(savedPipes));
         currentRun.addGenerationData(data);
 
         // Registrar el mejor de todos los tiempos
@@ -90,7 +107,7 @@ public class HistoryManager {
             out.writeObject(bestGeneration);
             out.writeDouble(bestFitnessEver);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("Could not save run history to {}", filename, e);
         }
     }
 
@@ -101,7 +118,7 @@ public class HistoryManager {
             bestGeneration = (GenerationData) in.readObject();
             bestFitnessEver = in.readDouble();
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            LOG.error("Could not load run history from {}", filename, e);
         }
     }
 }
