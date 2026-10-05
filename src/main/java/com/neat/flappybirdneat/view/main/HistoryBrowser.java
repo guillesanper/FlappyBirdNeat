@@ -30,15 +30,18 @@ final class HistoryBrowser {
 
     private final SimulationController controller;
     private final Runnable pauseLiveLoop;
+    private final Runnable resumeLiveLoop;
     private final ComboBox<String> runComboBox = new ComboBox<>();
     private final TableView<GenerationData> generationTable = new TableView<>();
 
     /**
-     * @param pauseLiveLoop pauses the main window's game loop while a replay window is open
+     * @param pauseLiveLoop  pauses the main window's game loop while a replay window is open
+     * @param resumeLiveLoop resumes it once the replay window is closed
      */
-    HistoryBrowser(SimulationController controller, Runnable pauseLiveLoop) {
+    HistoryBrowser(SimulationController controller, Runnable pauseLiveLoop, Runnable resumeLiveLoop) {
         this.controller = controller;
         this.pauseLiveLoop = pauseLiveLoop;
+        this.resumeLiveLoop = resumeLiveLoop;
 
         runComboBox.setPromptText("Seleccionar ejecución");
         runComboBox.setPrefWidth(200);
@@ -178,6 +181,7 @@ final class HistoryBrowser {
             replayStage.setTitle("Simulación de Generación " + generationNumber);
             new FlappyBirdGameUI().prepareStage(replayStage, selectedGen.getSavedPopulation(), generationNumber,
                     controller.derivedRandom(generationNumber));
+            replayStage.setOnHidden(e -> resumeLiveLoop.run());
             replayStage.show();
 
             Dialogs.show(Alert.AlertType.INFORMATION, "Reproducción Histórica", null,
@@ -185,6 +189,7 @@ final class HistoryBrowser {
                             + String.format("%.2f", selectedGen.getBestFitness())
                             + "\n\nSe abrirá una nueva ventana con la simulación visual.");
         } catch (Exception e) {
+            resumeLiveLoop.run();
             LOG.error("Could not open the replay of generation {}", generationNumber, e);
             Dialogs.show(Alert.AlertType.ERROR, "Error", "Error al cargar la simulación",
                     "No se pudo iniciar la simulación visual: " + e.getMessage());
