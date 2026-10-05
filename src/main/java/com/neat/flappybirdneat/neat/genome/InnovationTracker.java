@@ -17,6 +17,18 @@ public class InnovationTracker {
     private int nextInnovationNumber = 0;
     private int nextNodeId = 0;
 
+    public InnovationTracker() {
+    }
+
+    /** Copia independiente: las innovaciones registradas a partir de aquí no se comparten. */
+    public InnovationTracker(InnovationTracker other) {
+        connectionInnovations.putAll(other.connectionInnovations);
+        nodeSplitInnovations.putAll(other.nodeSplitInnovations);
+        initialNodeIds.putAll(other.initialNodeIds);
+        nextInnovationNumber = other.nextInnovationNumber;
+        nextNodeId = other.nextNodeId;
+    }
+
     public int nextNodeId() {
         return nextNodeId++;
     }

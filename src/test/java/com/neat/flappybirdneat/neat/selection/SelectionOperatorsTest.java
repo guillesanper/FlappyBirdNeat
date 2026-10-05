@@ -16,6 +16,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class SelectionOperatorsTest {
 
+    /** Generador que se pasa a las estrategias en cada llamada (JUnit crea una instancia por test). */
+    private Random random = new Random(0);
+
     private static final int POPULATION_SIZE = 10;
 
     static Stream<SelectionStrategy> strategies() {
@@ -30,7 +33,7 @@ class SelectionOperatorsTest {
         );
     }
 
-    private Selectable[] buildSeleccionables(long seed) {
+    private Selectable[] buildSelectables(long seed) {
         Random random = new Random(seed);
         Selectable[] list = new Selectable[POPULATION_SIZE];
         double totalFitness = 0;
@@ -53,10 +56,10 @@ class SelectionOperatorsTest {
     @ParameterizedTest
     @MethodSource("strategies")
     void returnsRequestedNumberOfSelections(SelectionStrategy strategy) {
-        strategy.setRandom(new Random(42));
-        Selectable[] list = buildSeleccionables(1);
+        random = new Random(42);
+        Selectable[] list = buildSelectables(1);
 
-        int[] selection = strategy.select(list, POPULATION_SIZE);
+        int[] selection = strategy.select(list, POPULATION_SIZE, random);
 
         assertEquals(POPULATION_SIZE, selection.length);
     }
@@ -64,10 +67,10 @@ class SelectionOperatorsTest {
     @ParameterizedTest
     @MethodSource("strategies")
     void allSelectedIndicesAreWithinPopulationBounds(SelectionStrategy strategy) {
-        strategy.setRandom(new Random(7));
-        Selectable[] list = buildSeleccionables(2);
+        random = new Random(7);
+        Selectable[] list = buildSelectables(2);
 
-        int[] selection = strategy.select(list, POPULATION_SIZE);
+        int[] selection = strategy.select(list, POPULATION_SIZE, random);
 
         for (int index : selection) {
             assertTrue(index >= 0 && index < POPULATION_SIZE,
@@ -78,11 +81,11 @@ class SelectionOperatorsTest {
     @ParameterizedTest
     @MethodSource("strategies")
     void sameSeedProducesIdenticalSelection(SelectionStrategy strategy) {
-        strategy.setRandom(new Random(123));
-        int[] first = strategy.select(buildSeleccionables(3), POPULATION_SIZE);
+        random = new Random(123);
+        int[] first = strategy.select(buildSelectables(3), POPULATION_SIZE, random);
 
-        strategy.setRandom(new Random(123));
-        int[] second = strategy.select(buildSeleccionables(3), POPULATION_SIZE);
+        random = new Random(123);
+        int[] second = strategy.select(buildSelectables(3), POPULATION_SIZE, random);
 
         assertArrayEquals(first, second);
     }
@@ -99,13 +102,13 @@ class SelectionOperatorsTest {
                 new Selectable(1, 100.0)
         };
         DeterministicTournamentSelection strategy = new DeterministicTournamentSelection();
-        strategy.setRandom(new Random(99));
+        random = new Random(99);
 
         int trials = 300;
         long timesFitterWon = 0;
         long totalSelections = 0;
         for (int t = 0; t < trials; t++) {
-            int[] selection = strategy.select(list, 2);
+            int[] selection = strategy.select(list, 2, random);
             totalSelections += selection.length;
             timesFitterWon += java.util.Arrays.stream(selection).filter(i -> i == 1).count();
         }
@@ -122,9 +125,9 @@ class SelectionOperatorsTest {
             list[i] = new Selectable(i, i);
         }
         TruncationSelection strategy = new TruncationSelection(0.3);
-        strategy.setRandom(new Random(5));
+        random = new Random(5);
 
-        int[] selection = strategy.select(list, 10);
+        int[] selection = strategy.select(list, 10, random);
 
         for (int index : selection) {
             assertTrue(index >= 7, "Se seleccionó un individuo fuera del top 30%: index=" + index);

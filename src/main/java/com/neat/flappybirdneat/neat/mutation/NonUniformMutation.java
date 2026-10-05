@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.neat.mutation;
 
+import java.util.Random;
+
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 
 /**
@@ -32,12 +34,12 @@ public class NonUniformMutation implements MutationStrategy {
     }
 
     @Override
-    public void mutate(NeuralNetwork network, double mutationRate) {
+    public void mutate(NeuralNetwork network, double mutationRate, Random random) {
         // Calcular magnitud actual y aplicarla realmente a los pesos
         double t = (double) currentGeneration / maxGenerations;
         double currentMagnitude = initialMagnitude * Math.pow(1 - t, beta);
 
-        network.mutate(mutationRate, currentMagnitude);
+        network.mutate(mutationRate, currentMagnitude, random);
     }
 
     @Override

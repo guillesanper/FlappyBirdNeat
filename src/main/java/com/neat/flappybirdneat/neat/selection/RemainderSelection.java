@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.neat.selection;
 
+import java.util.Random;
+
 /**
  * Selección por restos.
  * Asigna copias de individuos según su fitness esperado.
@@ -7,7 +9,7 @@ package com.neat.flappybirdneat.neat.selection;
  */
 public class RemainderSelection extends SelectionStrategy {
     @Override
-    public int[] select(Selectable[] list, int count) {
+    public int[] select(Selectable[] list, int count, Random random) {
         int[] selected = new int[count];
 
         int filled = 0;
@@ -28,8 +30,7 @@ public class RemainderSelection extends SelectionStrategy {
         // aleatorio para que el resultado siga siendo reproducible con una semilla fija.
         if (filled != count) {
             DeterministicTournamentSelection tournament = new DeterministicTournamentSelection();
-            tournament.setRandom(this.rand);
-            int[] newSelection = tournament.select(list, count - filled);
+            int[] newSelection = tournament.select(list, count - filled, random);
 
             if (count - filled >= 0)
                 System.arraycopy(newSelection, 0, selected, filled, count - filled);

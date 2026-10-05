@@ -1,6 +1,8 @@
 package com.neat.flappybirdneat.neat.scaling;
 
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
+import java.util.Random;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,7 +20,7 @@ class ScalingOperatorsTest {
     private FlappyBirdAgent[] agentsWithFitness(double... fitness) {
         FlappyBirdAgent[] agents = new FlappyBirdAgent[fitness.length];
         for (int i = 0; i < fitness.length; i++) {
-            agents[i] = new FlappyBirdAgent(4, 8, 1);
+            agents[i] = new FlappyBirdAgent(4, 8, 1, new Random(i));
             agents[i].setFitness(fitness[i]);
         }
         return agents;

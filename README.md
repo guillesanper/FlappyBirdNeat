@@ -116,7 +116,7 @@ A few design decisions behind it:
 
 - **The engine is abstracted away from the game.** `FlappyBirdGame` and `FlappyBirdAgent` only know about the `Brain` interface (`double[] feedForward(double[])`), and the simulation only knows about `EvolvingPopulation`. Switching between the GA and NEAT is a dropdown in the UI, not a code change.
 - **Operators are strategies built by factories** (`SelectionFactory`, `CrossoverFactory`, `MutationFactory`, `ScalingFactory`). Adding a new selection method means writing one class; `Population` doesn't change.
-- **Randomness is injected.** The game, the populations and the networks accept a `Random`. That is what lets the benchmark mode compare configurations over the same seeds, and lets tests assert that the same seed gives the same evolution.
+- **Every run is reproducible from one seed.** `SimulationController` and `BenchmarkRunner` own a global seed, and there is no `new Random()` anywhere else: the game, the populations and the networks receive the generator, and operator strategies get it as a call argument instead of storing it, so one strategy instance can be shared without coupling runs. Replays draw from derived generators, so opening one never perturbs training. The app logs its seed at startup (`-Dseed=N` to reproduce it), and an end-to-end test checks that the same seed with non-default operators gives an identical fitness curve.
 
 ## Getting started
 

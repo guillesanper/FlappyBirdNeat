@@ -2,13 +2,9 @@ package com.neat.flappybirdneat.view;
 
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.game.Pipe;
-import com.neat.flappybirdneat.history.GenerationData;
-import com.neat.flappybirdneat.history.HistoryManager;
-import com.neat.flappybirdneat.history.RunHistory;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
-import com.neat.flappybirdneat.simulation.SimulationController;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -24,10 +20,9 @@ import javafx.scene.control.Slider;
 import javafx.scene.control.CheckBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.File;
+import java.util.Random;
 
 /**
  * Componente principal que integra el algoritmo evolutivo de redes neuronales
@@ -60,10 +55,9 @@ public class FlappyBirdGameUI {
     private Label speedLabel;
     private AnimationTimer gameLoop;
     private Stage primaryStage;
-    private BorderPane root;
 
-    // Controlador de simulación
-    private SimulationController simulationController;
+    // Generador de la repetición (derivado de la semilla global por quien abre la ventana)
+    private Random random;
 
     // Ventana de visualización de la red neuronal
     private NeuralNetworkWindow networkWindow;
@@ -72,205 +66,6 @@ public class FlappyBirdGameUI {
     public FlappyBirdGameUI() {
         // El constructor vacío no inicializa nada, se hará mediante prepareStage
         networkWindow = null;  // Se inicializará bajo demanda
-    }
-
-    /**
-     * Inicializa y configura la UI del juego
-     * @param stage La ventana principal donde se mostrará el juego
-     * @return La escena configurada
-     */
-    public Scene initialize(Stage stage) {
-        this.primaryStage = stage;
-
-        // Inicializar población y juego
-        population = new Population(POPULATION_SIZE);
-        game = new FlappyBirdGame(CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        // Inicializar controlador de simulación
-        simulationController = new SimulationController(POPULATION_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        // Inicializar ventana de red neuronal
-        networkWindow = new NeuralNetworkWindow(600, 400);
-
-        // Configurar la interfaz gráfica
-        root = new BorderPane();
-
-        canvas = new Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-        gc = canvas.getGraphicsContext2D();
-
-        root.setCenter(canvas);
-
-        // Panel de información
-        generationLabel = new Label("Generación: 1");
-        generationLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
-        aliveLabel = new Label("Vivos: " + POPULATION_SIZE);
-        scoreLabel = new Label("Puntuación: 0");
-        bestFitnessLabel = new Label("Mejor Fitness: 0");
-        speedLabel = new Label("Velocidad: 1x");
-
-        // Botones de control
-        Button pauseButton = new Button("Pausar / Continuar");
-        pauseButton.setOnAction(e -> togglePause());
-
-        // Control de velocidad
-        Label speedSliderLabel = new Label("Velocidad de simulación:");
-        Slider speedSlider = new Slider(1, 10, 1);
-        speedSlider.setShowTickMarks(true);
-        speedSlider.setShowTickLabels(true);
-        speedSlider.setMajorTickUnit(1);
-        speedSlider.setBlockIncrement(1);
-        speedSlider.setSnapToTicks(true);
-        speedSlider.valueProperty().addListener((obs, oldValue, newValue) -> {
-            gameSpeed = newValue.intValue();
-            speedLabel.setText("Velocidad: " + gameSpeed + "x");
-        });
-
-        // Botón para la siguiente generación
-        Button nextGenButton = new Button("Siguiente generación");
-        nextGenButton.setOnAction(e -> {
-            // Solo permitir saltar a la siguiente generación si está pausado
-            if (gamePaused) {
-                nextGeneration();
-            }
-        });
-
-        // Botón para reiniciar simulación
-        Button resetButton = new Button("Reiniciar simulación");
-        resetButton.setOnAction(e -> resetSimulation());
-
-        // Botón para ejecutar simulación rápida
-        Button fastSimulationButton = new Button("Ejecutar 20 generaciones rápido");
-        fastSimulationButton.setOnAction(e -> {
-            stopGameLoop();
-            simulationController.runFastSimulation(20);
-        });
-
-        // Control para el bucle de reproducción
-        CheckBox loopCheckbox = new CheckBox("Reproducir en bucle");
-        loopCheckbox.setSelected(loopSimulation);
-        loopCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            loopSimulation = newVal;
-        });
-
-        // Slider para configurar el máximo de generaciones
-        Label maxGenLabel = new Label("Máximo de generaciones: " + maxGenerations);
-        Slider maxGenSlider = new Slider(10, 200, maxGenerations);
-        maxGenSlider.setShowTickMarks(true);
-        maxGenSlider.setShowTickLabels(true);
-        maxGenSlider.setMajorTickUnit(50);
-        maxGenSlider.setBlockIncrement(10);
-        maxGenSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-            maxGenerations = newVal.intValue();
-            maxGenLabel.setText("Máximo de generaciones: " + maxGenerations);
-        });
-
-        // Botón para mostrar el mejor individuo histórico
-        Button showBestButton = new Button("Mostrar mejor individuo");
-        showBestButton.setOnAction(e -> {
-            stopGameLoop();
-            simulationController.playBestHistoricalGeneration();
-            startGameLoop(simulationController.getPopulation());
-        });
-
-        // Botones para guardar y cargar historial
-        Button saveHistoryButton = new Button("Guardar historial");
-        saveHistoryButton.setOnAction(e -> {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Guardar historial");
-            fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("Archivos NEAT", "*.neat")
-            );
-            File file = fileChooser.showSaveDialog(primaryStage);
-            if (file != null) {
-                simulationController.getHistoryManager().saveToFile(file.getAbsolutePath());
-            }
-        });
-
-        Button loadHistoryButton = new Button("Cargar historial");
-        loadHistoryButton.setOnAction(e -> {
-            FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Cargar historial");
-            fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("Archivos NEAT", "*.neat")
-            );
-            File file = fileChooser.showOpenDialog(primaryStage);
-            if (file != null) {
-                simulationController.getHistoryManager().loadFromFile(file.getAbsolutePath());
-                // Mostrar información del historial cargado
-                HistoryManager hm = simulationController.getHistoryManager();
-                System.out.println("Historial cargado. Mejor fitness: " + hm.getBestFitnessEver());
-            }
-        });
-
-        // Checkbox para mostrar todos los agentes o solo el mejor
-        CheckBox showAllAgentsCheckbox = new CheckBox("Mostrar todos los agentes");
-        showAllAgentsCheckbox.setSelected(showAllAgents);
-        showAllAgentsCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            showAllAgents = newVal;
-        });
-
-        // Checkbox para reinicio automático al extinguirse
-        CheckBox autoRestartCheckbox = new CheckBox("Reinicio automático");
-        autoRestartCheckbox.setSelected(autoRestartOnExtinction);
-        autoRestartCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> {
-            autoRestartOnExtinction = newVal;
-        });
-
-        // Botón para mostrar/ocultar ventana de red neuronal
-        Button showNetworkButton = new Button("Mostrar Red Neuronal");
-        showNetworkButton.setOnAction(e -> {
-            showNeuralNetwork = !showNeuralNetwork;
-            if (showNeuralNetwork) {
-                networkWindow.show();
-                showNetworkButton.setText("Ocultar Red Neuronal");
-            } else {
-                networkWindow.close();
-                showNetworkButton.setText("Mostrar Red Neuronal");
-            }
-        });
-
-        VBox infoPanel = new VBox(10);
-        infoPanel.setPadding(new Insets(10));
-        infoPanel.getChildren().addAll(
-                generationLabel,
-                aliveLabel,
-                scoreLabel,
-                bestFitnessLabel,
-                speedLabel,
-                pauseButton,
-                speedSliderLabel,
-                speedSlider,
-                nextGenButton,
-                resetButton,
-                fastSimulationButton,
-                showBestButton,
-                loopCheckbox,
-                maxGenLabel,
-                maxGenSlider,
-                saveHistoryButton,
-                loadHistoryButton,
-                showAllAgentsCheckbox,
-                autoRestartCheckbox,
-                showNetworkButton
-        );
-
-        root.setRight(infoPanel);
-
-        Scene scene = new Scene(root, CANVAS_WIDTH + 200, CANVAS_HEIGHT);
-        primaryStage.setTitle("Flappy Bird NEAT");
-
-        // Manejar el cierre de la ventana principal
-        primaryStage.setOnCloseRequest(e -> {
-            if (networkWindow.isShowing()) {
-                networkWindow.close();
-            }
-            stopGameLoop();
-        });
-
-        // Iniciar el bucle del juego
-        startGameLoop(population);
-
-        return scene;
     }
 
     /**
@@ -392,11 +187,13 @@ public class FlappyBirdGameUI {
     /**
      * Prepara el escenario para visualizar una población específica
      */
-    public void prepareStage(Stage stage, EvolvingPopulation population, int generationNumber) {
+    public void prepareStage(Stage stage, EvolvingPopulation population, int generationNumber, Random random) {
         this.primaryStage = stage;
+        this.random = random;
 
-        // Guardar la población que queremos visualizar
-        this.population = population;
+        // Copia independiente de la población guardada: la repetición evoluciona con su propio
+        // generador y no modifica ni el historial ni la ejecución en curso
+        this.population = population.deepCopy(random);
         this.currentGeneration = generationNumber;
 
         // Configurar la interfaz gráfica
@@ -416,10 +213,10 @@ public class FlappyBirdGameUI {
         stage.setScene(scene);
 
         // Reiniciar el juego para la visualización
-        game = new FlappyBirdGame(CANVAS_WIDTH, CANVAS_HEIGHT);
+        game = new FlappyBirdGame(CANVAS_WIDTH, CANVAS_HEIGHT, random);
 
         // Reiniciar los agentes para la visualización
-        for (FlappyBirdAgent agent : population.getAgents()) {
+        for (FlappyBirdAgent agent : this.population.getAgents()) {
             agent.reset();
         }
 
@@ -434,7 +231,7 @@ public class FlappyBirdGameUI {
         });
 
         // Iniciar el bucle de juego
-        startGameLoop(population);
+        startGameLoop(this.population);
     }
 
     private VBox createSimulationInfoPanel() {
@@ -663,17 +460,12 @@ public class FlappyBirdGameUI {
      * Reinicia toda la simulación
      */
     private void resetSimulation() {
-        population = new Population(POPULATION_SIZE);
+        population = new Population(POPULATION_SIZE, random);
         game.reset();
         currentGeneration = 1;
 
         // Si estaba pausado, reanudar
         gamePaused = false;
-    }
-
-    // Getter para el controlador de simulación
-    public SimulationController getSimulationController() {
-        return simulationController;
     }
 
     // Getter para el estado de la simulación

@@ -29,6 +29,9 @@ public class SimulationController {
     private static final int AGENT_INPUTS = 4;
     private static final int AGENT_OUTPUTS = 1;
 
+    // Sal para el generador derivado de las réplicas del mejor agente (ver derivedRandom)
+    private static final long REPLAY_SALT = -1;
+
     /** Modo de evolución: MLP de topología fija (operadores configurables) o NEAT real. */
     public enum Mode { FIXED_MLP, NEAT }
 
@@ -62,27 +65,22 @@ public class SimulationController {
     private int targetGenerations = 0;
     private boolean replayMode = false; // Indica si estamos reproduciendo el mejor agente
     private Mode mode = Mode.FIXED_MLP;
+    private final long seed;
     private final Random random;
 
 
     /**
-     * Constructor
+     * Constructor con semilla global. Toda la aleatoriedad de la simulación sale de esta semilla:
+     * inicialización y evolución de la población (Fixed MLP o NEAT), estrategias de operadores
+     * genéticos y generación de tubos. Dos controladores con la misma semilla, la misma
+     * configuración y la misma secuencia de acciones producen exactamente las mismas curvas de fitness.
      */
-    public SimulationController(int populationSize, int canvasWidth, int canvasHeight) {
-        this(populationSize, canvasWidth, canvasHeight, new Random());
-    }
-
-    /**
-     * Constructor con generador aleatorio inyectado, para reproducibilidad: la misma semilla se
-     * usa tanto para inicializar/evolucionar la población (Fixed MLP o NEAT) como para la
-     * generación de tubos del juego, de modo que dos simulaciones con la misma semilla producen
-     * exactamente las mismas curvas de fitness.
-     */
-    public SimulationController(int populationSize, int canvasWidth, int canvasHeight, Random random) {
+    public SimulationController(int populationSize, int canvasWidth, int canvasHeight, long seed) {
         this.populationSize = populationSize;
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
-        this.random = random;
+        this.seed = seed;
+        this.random = new Random(seed);
         this.historyManager = new HistoryManager();
         this.operatorsConfig = new GeneticOperatorsConfig();
 
@@ -415,37 +413,6 @@ public class SimulationController {
         simulationThread.start();
     }
 
-    // Método para reproducir la generación con el mejor individuo
-    public void playBestHistoricalGeneration() {
-        GenerationData bestGenData = historyManager.getBestGeneration();
-        game.setPipes(bestGenData.getSavedPipes());
-        if (bestGenData != null) {
-            playHistoricalGeneration(bestGenData.getSavedPopulation());
-        }
-    }
-
-    // Método para reproducir una generación histórica
-    public void playHistoricalGeneration(EvolvingPopulation savedPopulation) {
-        // Resetear el juego pero usar la población guardada
-        game.reset();
-        // Clonar la población para no modificar el original histórico
-        this.population = savedPopulation.deepCopy();
-
-        // Aplicar la configuración de operadores guardada (solo tiene sentido en modo Fixed MLP)
-        if (this.population instanceof Population fixedPopulation) {
-            operatorsConfig.applyTo(fixedPopulation);
-        }
-
-        // Reiniciar los agentes
-        for (FlappyBirdAgent agent : this.population.getAgents()) {
-            agent.reset();
-        }
-
-        fastMode = false;
-        running.set(true);
-        // La visualización se hará a través del gameLoop en FlappyBirdNEAT
-    }
-
     /**
      * Crea una población especial con solo el mejor agente para visualización
      * @return Población con solo el mejor agente clonado
@@ -463,14 +430,14 @@ public class SimulationController {
 
         if (bestPopulation instanceof Population) {
             // Crear una nueva población con solo el mejor agente
-            Population singleAgentPop = new Population(1);
-            // Aplicar la configuración de operadores guardada
-            operatorsConfig.applyTo(singleAgentPop);
+            // Población de réplica: no evoluciona (modo replay), así que no necesita operadores
+            Population singleAgentPop = new Population(1, derivedRandom(REPLAY_SALT));
             singleAgentPop.getAgents()[0] = clonedBestAgent;
             return singleAgentPop;
         }
 
-        return NeatPopulation.singleAgent(clonedBestAgent, AGENT_INPUTS, AGENT_OUTPUTS, neatConfig);
+        return NeatPopulation.singleAgent(clonedBestAgent, AGENT_INPUTS, AGENT_OUTPUTS,
+                derivedRandom(REPLAY_SALT), neatConfig);
     }
 
     /**
@@ -534,12 +501,23 @@ public class SimulationController {
         return OPTIMAL_FITNESS_THRESHOLD;
     }
 
-    public HistoryManager getHistoryManager() {
-        return historyManager;
+    /** @return la semilla global de esta simulación (para registrarla y poder reproducir la ejecución). */
+    public long getSeed() {
+        return seed;
     }
 
-    public void setCurrentPopulation(EvolvingPopulation population) {
-        this.population = population;
+    /**
+     * Generador determinista derivado de la semilla global, para usos auxiliares (repeticiones
+     * visuales, réplicas del mejor agente) que no deben consumir números del generador principal:
+     * así abrir una repetición no altera la evolución en curso.
+     * @param salt distingue usos distintos (p. ej. el nº de generación que se reproduce)
+     */
+    public Random derivedRandom(long salt) {
+        return new Random(seed * 0x9E3779B97F4A7C15L + salt);
+    }
+
+    public HistoryManager getHistoryManager() {
+        return historyManager;
     }
 
     /**

@@ -170,7 +170,7 @@ class NeatPopulationTest {
         FlappyBirdAgent bestAgent = new FlappyBirdAgent(genome);
         bestAgent.setFitness(123.0);
 
-        NeatPopulation single = NeatPopulation.singleAgent(bestAgent, 4, 1, new NeatConfig());
+        NeatPopulation single = NeatPopulation.singleAgent(bestAgent, 4, 1, new Random(0), new NeatConfig());
 
         // singleAgent envuelve el agente tal cual (la responsabilidad de clonarlo, si hace
         // falta, es de quien lo llama); ver SimulationController.createBestAgentOnlyPopulation.
@@ -183,7 +183,7 @@ class NeatPopulationTest {
     void diversityIsZeroForSingleAgentPopulation() {
         Genome genome = new Genome(4, 1, new Random(1), new InnovationTracker());
         FlappyBirdAgent agent = new FlappyBirdAgent(genome);
-        NeatPopulation single = NeatPopulation.singleAgent(agent, 4, 1, new NeatConfig());
+        NeatPopulation single = NeatPopulation.singleAgent(agent, 4, 1, new Random(0), new NeatConfig());
 
         assertEquals(0.0, single.diversity(), 1e-9);
     }

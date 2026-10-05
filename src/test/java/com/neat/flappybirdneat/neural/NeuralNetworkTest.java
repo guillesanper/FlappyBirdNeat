@@ -74,7 +74,7 @@ class NeuralNetworkTest {
         NeuralNetwork copy = new NeuralNetwork(original);
 
         // Mutating the copy heavily must not change the original's behaviour.
-        copy.mutate(1.0, 5.0);
+        copy.mutate(1.0, 5.0, new Random(1));
 
         double[] inputs = {0.2, 0.2, 0.2, 0.2};
         double[] originalOutput = original.feedForward(inputs);
@@ -89,7 +89,7 @@ class NeuralNetworkTest {
         double[] inputs = {0.1, -0.4, 0.6, 0.2};
         double[] before = network.feedForward(inputs);
 
-        network.mutate(0.0, 0.5);
+        network.mutate(0.0, 0.5, new Random(1));
 
         double[] after = network.feedForward(inputs);
         assertArrayEquals(before, after);

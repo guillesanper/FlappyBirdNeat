@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.neat.selection;
 
+import java.util.Random;
+
 /**
  * Selección por torneo probabilístico.
  * Selecciona 3 individuos al azar, luego elige el mejor con probabilidad p
@@ -30,27 +32,27 @@ public class ProbabilisticTournamentSelection extends SelectionStrategy {
     }
 
     @Override
-    public int[] select(Selectable[] list, int count) {
+    public int[] select(Selectable[] list, int count, Random random) {
         int[] selected = new int[count];
 
         for (int i = 0; i < count; i++) {
-            selected[i] = runTournament(list, count);
+            selected[i] = runTournament(list, count, random);
         }
 
         return selected;
     }
 
-    private int runTournament(Selectable[] list, int count) {
-        int ind1 = this.rand.nextInt(count);
-        int ind2 = this.rand.nextInt(count);
-        int ind3 = this.rand.nextInt(count);
+    private int runTournament(Selectable[] list, int count, Random random) {
+        int ind1 = random.nextInt(count);
+        int ind2 = random.nextInt(count);
+        int ind3 = random.nextInt(count);
 
         Selectable a = list[ind1];
         Selectable b = list[ind2];
         Selectable c = list[ind3];
 
         // El mejor individuo es seleccionado con probabilidad p
-        if (this.rand.nextDouble() <= p) return bigger(a, b, c).getIndex();
+        if (random.nextDouble() <= p) return bigger(a, b, c).getIndex();
         return smaller(a, b, c).getIndex();
     }
 }

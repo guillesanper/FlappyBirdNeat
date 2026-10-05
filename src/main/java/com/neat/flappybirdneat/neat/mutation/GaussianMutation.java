@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.neat.mutation;
 
+import java.util.Random;
+
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 
 /**
@@ -20,8 +22,8 @@ public class GaussianMutation implements MutationStrategy {
     }
 
     @Override
-    public void mutate(NeuralNetwork network, double mutationRate) {
+    public void mutate(NeuralNetwork network, double mutationRate, Random random) {
         // Delegar en NeuralNetwork con la magnitud configurada (sigma del ruido gaussiano)
-        network.mutate(mutationRate, magnitude);
+        network.mutate(mutationRate, magnitude, random);
     }
 }

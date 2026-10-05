@@ -23,17 +23,6 @@ public class FlappyBirdAgent {
     private static final float JUMP_FORCE = -12f;
 
     /**
-     * Constructor
-     * @param inputSize Número de entradas de la red neuronal
-     * @param hiddenSize Número de neuronas en la capa oculta
-     * @param outputSize Número de salidas de la red neuronal
-     */
-    public FlappyBirdAgent(int inputSize, int hiddenSize, int outputSize) {
-        brain = new NeuralNetwork(inputSize, hiddenSize, outputSize);
-        reset();
-    }
-
-    /**
      * Constructor con generador aleatorio inyectado, para reproducibilidad (tests, semillas fijas).
      * @param inputSize Número de entradas de la red neuronal
      * @param hiddenSize Número de neuronas en la capa oculta

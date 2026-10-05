@@ -8,20 +8,11 @@ import java.util.Random;
  * Cada gen (peso/bias) tiene 50% de probabilidad de venir de cada padre.
  */
 public class UniformCrossover implements CrossoverStrategy {
-    private Random random = new Random();
-
     @Override
-    public void setRandom(Random random) {
-        this.random = random;
-    }
-
-    @Override
-    public NeuralNetwork crossover(NeuralNetwork parent1, NeuralNetwork parent2) {
-        NeuralNetwork child = new NeuralNetwork(
-                parent1.getInputSize(),
-                parent1.getHiddenSize(),
-                parent1.getOutputSize()
-        );
+    public NeuralNetwork crossover(NeuralNetwork parent1, NeuralNetwork parent2, Random random) {
+        // Copia de parent1 como base: todos sus genes se sobrescriben abajo, y así no se consume
+        // aleatoriedad en inicializar pesos que se van a descartar.
+        NeuralNetwork child = new NeuralNetwork(parent1);
 
         // Cruzar pesos de entrada a capa oculta
         for (int i = 0; i < parent1.getInputSize(); i++) {

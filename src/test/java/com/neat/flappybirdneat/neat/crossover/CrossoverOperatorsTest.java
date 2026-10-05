@@ -17,6 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class CrossoverOperatorsTest {
 
+    /** Generador que se pasa a las estrategias en cada llamada (JUnit crea una instancia por test). */
+    private Random random = new Random(0);
+
     private static final int INPUT_SIZE = 4;
     private static final int HIDDEN_SIZE = 8;
     private static final int OUTPUT_SIZE = 1;
@@ -28,11 +31,11 @@ class CrossoverOperatorsTest {
     @ParameterizedTest
     @MethodSource("strategies")
     void childPreservesParentTopology(CrossoverStrategy strategy) {
-        strategy.setRandom(new Random(1));
+        random = new Random(1);
         NeuralNetwork parent1 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(10));
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(20));
 
-        NeuralNetwork child = strategy.crossover(parent1, parent2);
+        NeuralNetwork child = strategy.crossover(parent1, parent2, random);
 
         assertEquals(INPUT_SIZE, child.getInputSize());
         assertEquals(HIDDEN_SIZE, child.getHiddenSize());
@@ -46,11 +49,11 @@ class CrossoverOperatorsTest {
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(20));
         double[] inputs = {0.1, 0.2, 0.3, 0.4};
 
-        strategy.setRandom(new Random(55));
-        NeuralNetwork childA = strategy.crossover(parent1, parent2);
+        random = new Random(55);
+        NeuralNetwork childA = strategy.crossover(parent1, parent2, random);
 
-        strategy.setRandom(new Random(55));
-        NeuralNetwork childB = strategy.crossover(parent1, parent2);
+        random = new Random(55);
+        NeuralNetwork childB = strategy.crossover(parent1, parent2, random);
 
         assertArrayEquals(childA.feedForward(inputs), childB.feedForward(inputs));
     }
@@ -58,11 +61,11 @@ class CrossoverOperatorsTest {
     @Test
     void uniformCrossoverGenesComeFromEitherParent() {
         UniformCrossover strategy = new UniformCrossover();
-        strategy.setRandom(new Random(3));
+        random = new Random(3);
         NeuralNetwork parent1 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(1));
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(2));
 
-        NeuralNetwork child = strategy.crossover(parent1, parent2);
+        NeuralNetwork child = strategy.crossover(parent1, parent2, random);
 
         for (int i = 0; i < INPUT_SIZE; i++) {
             for (int j = 0; j < HIDDEN_SIZE; j++) {
@@ -80,7 +83,7 @@ class CrossoverOperatorsTest {
         NeuralNetwork parent1 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(1));
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(2));
 
-        NeuralNetwork child = strategy.crossover(parent1, parent2);
+        NeuralNetwork child = strategy.crossover(parent1, parent2, random);
 
         for (int i = 0; i < INPUT_SIZE; i++) {
             for (int j = 0; j < HIDDEN_SIZE; j++) {
@@ -99,8 +102,8 @@ class CrossoverOperatorsTest {
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(2));
         double[] inputs = {0.1, -0.2, 0.3, -0.4};
 
-        NeuralNetwork childA = strategy.crossover(parent1, parent2);
-        NeuralNetwork childB = strategy.crossover(parent1, parent2);
+        NeuralNetwork childA = strategy.crossover(parent1, parent2, random);
+        NeuralNetwork childB = strategy.crossover(parent1, parent2, random);
 
         assertArrayEquals(childA.feedForward(inputs), childB.feedForward(inputs));
     }

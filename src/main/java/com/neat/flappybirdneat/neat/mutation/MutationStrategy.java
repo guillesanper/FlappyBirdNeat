@@ -12,8 +12,9 @@ public interface MutationStrategy {
      * Aplica mutación a una red neuronal.
      * @param network Red neuronal a mutar
      * @param mutationRate Tasa de mutación (probabilidad por peso)
+     * @param random Generador de la simulación
      */
-    void mutate(NeuralNetwork network, double mutationRate);
+    void mutate(NeuralNetwork network, double mutationRate, Random random);
 
     /**
      * Actualiza parámetros internos de la estrategia (ej. generación actual).
@@ -21,13 +22,5 @@ public interface MutationStrategy {
      */
     default void update(int generation) {
         // Implementación por defecto: no hacer nada
-    }
-
-    /**
-     * Sustituye el generador aleatorio, para reproducibilidad (tests, semillas fijas).
-     * Las estrategias sin aleatoriedad propia (que delegan en la red neuronal) pueden ignorar esta llamada.
-     * @param random Generador aleatorio a usar
-     */
-    default void setRandom(Random random) {
     }
 }

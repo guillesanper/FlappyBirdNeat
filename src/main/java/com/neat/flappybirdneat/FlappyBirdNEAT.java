@@ -33,6 +33,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import com.neat.flappybirdneat.history.GenerationData;
 import com.neat.flappybirdneat.history.HistoryManager;
 import com.neat.flappybirdneat.history.RunHistory;
@@ -106,7 +107,10 @@ public class FlappyBirdNEAT extends Application {
     @Override
     public void start(Stage primaryStage) {
         // Inicializar controlador de simulación
-        simulationController = new SimulationController(POPULATION_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT);
+        // Semilla global: -Dseed=N para reproducir una ejecución; si no, una nueva en cada arranque
+        long seed = Long.getLong("seed", ThreadLocalRandom.current().nextLong());
+        System.out.println("Simulation seed: " + seed + " (relaunch with -Dseed=" + seed + " to reproduce)");
+        simulationController = new SimulationController(POPULATION_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT, seed);
 
         // Inicializar ventana de red neuronal
         networkWindow = new NeuralNetworkWindow(600, 400);
@@ -1059,7 +1063,8 @@ public class FlappyBirdNEAT extends Application {
                 FlappyBirdGameUI gameUI = new FlappyBirdGameUI();
 
                 // Configuramos el escenario para su inicialización
-                gameUI.prepareStage(simulationStage, selectedPopulation, selectedGenIndex + 1);
+                gameUI.prepareStage(simulationStage, selectedPopulation, selectedGenIndex + 1,
+                        simulationController.derivedRandom(selectedGenIndex + 1));
 
                 // Mostrar la ventana
                 simulationStage.show();

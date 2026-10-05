@@ -60,8 +60,9 @@ public class NeatPopulation implements EvolvingPopulation {
     }
 
     /** Crea una población de un único agente (usada para reproducir el mejor agente histórico). */
-    public static NeatPopulation singleAgent(FlappyBirdAgent agent, int numInputs, int numOutputs, NeatConfig config) {
-        NeatPopulation single = new NeatPopulation(1, numInputs, numOutputs, new Random(), config,
+    public static NeatPopulation singleAgent(FlappyBirdAgent agent, int numInputs, int numOutputs, Random random,
+                                             NeatConfig config) {
+        NeatPopulation single = new NeatPopulation(1, numInputs, numOutputs, random, config,
                 new InnovationTracker(), new FlappyBirdAgent[]{agent}, 1, agent.getFitness(), agent);
         return single;
     }
@@ -252,6 +253,15 @@ public class NeatPopulation implements EvolvingPopulation {
 
     @Override
     public NeatPopulation deepCopy() {
+        return copy(random, tracker);
+    }
+
+    @Override
+    public NeatPopulation deepCopy(Random random) {
+        return copy(random, new InnovationTracker(tracker));
+    }
+
+    private NeatPopulation copy(Random random, InnovationTracker tracker) {
         FlappyBirdAgent[] copiedAgents = new FlappyBirdAgent[agents.length];
         for (int i = 0; i < agents.length; i++) {
             copiedAgents[i] = new FlappyBirdAgent(agents[i]);

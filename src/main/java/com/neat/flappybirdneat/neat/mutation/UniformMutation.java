@@ -10,19 +10,8 @@ import java.util.Random;
  */
 public class UniformMutation implements MutationStrategy {
 
-    private Random random;
-
-    public UniformMutation() {
-        this.random = new Random();
-    }
-
     @Override
-    public void setRandom(Random random) {
-        this.random = random;
-    }
-
-    @Override
-    public void mutate(NeuralNetwork network, double mutationRate) {
+    public void mutate(NeuralNetwork network, double mutationRate, Random random) {
         // Reemplaza completamente (no perturba) cada peso/bias mutado por un nuevo valor en [-1, 1]
         double[][] weightsInputHidden = network.getWeightsInputHidden();
         for (double[] row : weightsInputHidden) {

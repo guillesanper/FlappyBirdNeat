@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.neat.selection;
 
+import java.util.Random;
+
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -21,7 +23,7 @@ public class TruncationSelection extends SelectionStrategy {
     }
 
     @Override
-    public int[] select(Selectable[] list, int count) {
+    public int[] select(Selectable[] list, int count, Random random) {
         int[] selected = new int[count];
 
         // Ordenar individuos por fitness descendente

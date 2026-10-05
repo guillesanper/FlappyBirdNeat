@@ -20,30 +20,17 @@ public class NeuralNetwork implements Brain {
     private double[] lastHiddenActivations;
     private double[] lastOutputs;
 
-    private Random random = new Random();
-
-    /**
-     * Constructor
-     * @param inputSize Número de neuronas en la capa de entrada
-     * @param hiddenSize Número de neuronas en la capa oculta
-     * @param outputSize Número de neuronas en la capa de salida
-     */
-    public NeuralNetwork(int inputSize, int hiddenSize, int outputSize) {
-        this(inputSize, hiddenSize, outputSize, new Random());
-    }
-
     /**
      * Constructor con generador aleatorio inyectado, para reproducibilidad (tests, semillas fijas).
      * @param inputSize Número de neuronas en la capa de entrada
      * @param hiddenSize Número de neuronas en la capa oculta
      * @param outputSize Número de neuronas en la capa de salida
-     * @param random Generador aleatorio a usar para inicialización y mutación
+     * @param random Generador aleatorio a usar para inicializar los pesos
      */
     public NeuralNetwork(int inputSize, int hiddenSize, int outputSize, Random random) {
         this.inputSize = inputSize;
         this.hiddenSize = hiddenSize;
         this.outputSize = outputSize;
-        this.random = random;
 
         // Inicializar pesos con valores aleatorios entre -1 y 1
         weightsInputHidden = new double[inputSize][hiddenSize];
@@ -51,13 +38,13 @@ public class NeuralNetwork implements Brain {
         biasHidden = new double[hiddenSize];
         biasOutput = new double[outputSize];
 
-        initializeRandomWeights();
+        initializeRandomWeights(random);
     }
 
     /**
      * Inicializa los pesos y bias con valores aleatorios
      */
-    private void initializeRandomWeights() {
+    private void initializeRandomWeights(Random random) {
         for (int i = 0; i < inputSize; i++) {
             for (int j = 0; j < hiddenSize; j++) {
                 weightsInputHidden[i][j] = random.nextDouble() * 2 - 1;
@@ -125,19 +112,12 @@ public class NeuralNetwork implements Brain {
     }
 
     /**
-     * Aplica mutaciones aleatorias a los pesos y bias con magnitud fija (0.1)
-     * @param mutationRate Probabilidad de mutación (0-1)
-     */
-    public void mutate(double mutationRate) {
-        mutate(mutationRate, 0.1);
-    }
-
-    /**
      * Aplica mutaciones aleatorias a los pesos y bias con magnitud configurable.
      * @param mutationRate Probabilidad de mutación (0-1)
      * @param magnitude Desviación estándar del ruido gaussiano aplicado
+     * @param random Generador de la simulación
      */
-    public void mutate(double mutationRate, double magnitude) {
+    public void mutate(double mutationRate, double magnitude, Random random) {
         // Mutar pesos de capa de entrada a capa oculta
         for (int i = 0; i < inputSize; i++) {
             for (int j = 0; j < hiddenSize; j++) {
@@ -192,60 +172,8 @@ public class NeuralNetwork implements Brain {
     }
 
     /**
-     * Realiza cruce entre dos redes neuronales (operador genético)
-     * @param parent1 Primera red neuronal padre
-     * @param parent2 Segunda red neuronal padre
-     * @return Nueva red neuronal hijo
+     * Constructor de copia profunda.
      */
-    public static NeuralNetwork crossover(NeuralNetwork parent1, NeuralNetwork parent2) {
-        NeuralNetwork child = new NeuralNetwork(
-                parent1.inputSize,
-                parent1.hiddenSize,
-                parent1.outputSize
-        );
-
-        Random random = new Random();
-
-        // Cruzar pesos de entrada a capa oculta
-        for (int i = 0; i < parent1.inputSize; i++) {
-            for (int j = 0; j < parent1.hiddenSize; j++) {
-                if (random.nextBoolean()) {
-                    child.weightsInputHidden[i][j] = parent1.weightsInputHidden[i][j];
-                } else {
-                    child.weightsInputHidden[i][j] = parent2.weightsInputHidden[i][j];
-                }
-            }
-        }
-
-        // Cruzar pesos y bias de capa oculta
-        for (int i = 0; i < parent1.hiddenSize; i++) {
-            if (random.nextBoolean()) {
-                child.biasHidden[i] = parent1.biasHidden[i];
-            } else {
-                child.biasHidden[i] = parent2.biasHidden[i];
-            }
-
-            for (int j = 0; j < parent1.outputSize; j++) {
-                if (random.nextBoolean()) {
-                    child.weightsHiddenOutput[i][j] = parent1.weightsHiddenOutput[i][j];
-                } else {
-                    child.weightsHiddenOutput[i][j] = parent2.weightsHiddenOutput[i][j];
-                }
-            }
-        }
-
-        // Cruzar bias de capa de salida
-        for (int i = 0; i < parent1.outputSize; i++) {
-            if (random.nextBoolean()) {
-                child.biasOutput[i] = parent1.biasOutput[i];
-            } else {
-                child.biasOutput[i] = parent2.biasOutput[i];
-            }
-        }
-
-        return child;
-    }
-
     public NeuralNetwork(NeuralNetwork other) {
         this.inputSize = other.inputSize;
         this.hiddenSize = other.hiddenSize;

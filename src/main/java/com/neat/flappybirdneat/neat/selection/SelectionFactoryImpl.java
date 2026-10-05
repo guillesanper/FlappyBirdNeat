@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.neat.selection;
 
+import java.util.Random;
+
 /**
  * Implementación concreta de {@link SelectionFactory}. Solo accesible a través de {@link SelectionFactory#getInstance()}.
  */
@@ -8,7 +10,7 @@ class SelectionFactoryImpl extends SelectionFactory {
     @Override
     public SelectionStrategy getSelectionStrategy(String type, double... params) {
         String t = type.toLowerCase();
-        if (t.equals("ruleta") || t.equals("roulette")) {
+        if (t.equals("roulette") || t.equals("roulette")) {
             return new RouletteSelection();
         } else if (t.equals("torneo deterministico") || t.equals("torneo_deterministico") || t.equals("deterministic_tournament")) {
             return new DeterministicTournamentSelection();

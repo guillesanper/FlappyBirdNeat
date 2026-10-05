@@ -24,10 +24,6 @@ public class Population implements EvolvingPopulation {
     private MutationStrategy mutationStrategy;
     private CrossoverStrategy crossoverStrategy;
 
-    public Population(int size) {
-        this(size, new Random());
-    }
-
     /**
      * Constructor con generador aleatorio inyectado, para reproducibilidad (tests, semillas fijas).
      * El mismo generador se propaga a los agentes iniciales y a las estrategias por defecto,
@@ -51,13 +47,6 @@ public class Population implements EvolvingPopulation {
         scalingStrategy = null;
         mutationStrategy = new GaussianMutation();
         crossoverStrategy = new UniformCrossover();
-        applyRandomToStrategies();
-    }
-
-    private void applyRandomToStrategies() {
-        if (selectionStrategy != null) selectionStrategy.setRandom(random);
-        if (crossoverStrategy != null) crossoverStrategy.setRandom(random);
-        if (mutationStrategy != null) mutationStrategy.setRandom(random);
     }
 
     @Override
@@ -87,10 +76,10 @@ public class Population implements EvolvingPopulation {
         }
 
         // Calcular probabilidades
-        Selectable[] seleccionables = computeSelectionProbabilities();
+        Selectable[] selectables = computeSelectionProbabilities();
 
         // Selección
-        int[] selected = selectionStrategy.select(seleccionables, agents.length - eliteSize);
+        int[] selected = selectionStrategy.select(selectables, agents.length - eliteSize, random);
 
         // Cruce y mutación
         for (int i = 0; i < selected.length; i += 2) {
@@ -102,15 +91,15 @@ public class Population implements EvolvingPopulation {
 
             FlappyBirdAgent child1 = new FlappyBirdAgent(4, 8, 1, random);
             brainOf(child1).setBrain(crossoverStrategy.crossover(
-                    brainOf(parent1), brainOf(parent2)));
-            mutationStrategy.mutate(brainOf(child1), mutationRate);
+                    brainOf(parent1), brainOf(parent2), random));
+            mutationStrategy.mutate(brainOf(child1), mutationRate, random);
             newAgents[eliteSize + i] = child1;
 
             if (eliteSize + i + 1 < agents.length) {
                 FlappyBirdAgent child2 = new FlappyBirdAgent(4, 8, 1, random);
                 brainOf(child2).setBrain(crossoverStrategy.crossover(
-                        brainOf(parent2), brainOf(parent1)));
-                mutationStrategy.mutate(brainOf(child2), mutationRate);
+                        brainOf(parent2), brainOf(parent1), random));
+                mutationStrategy.mutate(brainOf(child2), mutationRate, random);
                 newAgents[eliteSize + i + 1] = child2;
             }
         }
@@ -126,7 +115,7 @@ public class Population implements EvolvingPopulation {
     }
 
     private Selectable[] computeSelectionProbabilities() {
-        Selectable[] seleccionables = new Selectable[agents.length];
+        Selectable[] selectables = new Selectable[agents.length];
         double totalFitness = 0;
         for (int i = 0; i < agents.length; i++) {
             totalFitness += Math.max(0, agents[i].getFitness());
@@ -136,12 +125,12 @@ public class Population implements EvolvingPopulation {
         double accProb = 0;
         for (int i = 0; i < agents.length; i++) {
             double prob = Math.max(0, agents[i].getFitness()) / totalFitness;
-            seleccionables[i] = new Selectable(i, agents[i].getFitness());
-            seleccionables[i].setProb(prob);
-            seleccionables[i].setAccProb(accProb);
+            selectables[i] = new Selectable(i, agents[i].getFitness());
+            selectables[i].setProb(prob);
+            selectables[i].setAccProb(accProb);
             accProb += prob;
         }
-        return seleccionables;
+        return selectables;
     }
 
     private void setBestAgent() {
@@ -168,12 +157,10 @@ public class Population implements EvolvingPopulation {
         return (NeuralNetwork) agent.getBrain();
     }
 
-    // Setters para configurar operadores
-    // Nota: cada setter propaga el generador aleatorio compartido de la población a la nueva
-    // estrategia, para que la evolución completa siga siendo reproducible con una semilla fija.
+    // Setters para configurar operadores. Las estrategias no guardan generador: la población les
+    // pasa el suyo en cada llamada, así que pueden compartirse entre poblaciones sin acoplarlas.
     public void setSelectionStrategy(SelectionStrategy strategy) {
         this.selectionStrategy = strategy;
-        if (strategy != null) strategy.setRandom(random);
     }
 
     public void setScalingStrategy(ScalingStrategy strategy) {
@@ -182,12 +169,10 @@ public class Population implements EvolvingPopulation {
 
     public void setMutationStrategy(MutationStrategy strategy) {
         this.mutationStrategy = strategy;
-        if (strategy != null) strategy.setRandom(random);
     }
 
     public void setCrossoverStrategy(CrossoverStrategy strategy) {
         this.crossoverStrategy = strategy;
-        if (strategy != null) strategy.setRandom(random);
     }
 
     public void setSelectionStrategy(String tipo) {
@@ -268,12 +253,23 @@ public class Population implements EvolvingPopulation {
     public MutationStrategy getMutationStrategy() { return mutationStrategy; }
     public CrossoverStrategy getCrossoverStrategy() { return crossoverStrategy; }
 
+    /** Constructor de copia: no consume aleatoriedad del original. */
+    private Population(Population other, Random random) {
+        this.random = random;
+        this.agents = new FlappyBirdAgent[other.agents.length];
+        for (int i = 0; i < other.agents.length; i++) {
+            this.agents[i] = new FlappyBirdAgent(other.agents[i]);
+        }
+    }
+
     @Override
     public Population deepCopy() {
-        Population copy = new Population(agents.length);
-        for (int i = 0; i < agents.length; i++) {
-            copy.agents[i] = new FlappyBirdAgent(this.agents[i]);
-        }
+        return deepCopy(random);
+    }
+
+    @Override
+    public Population deepCopy(Random random) {
+        Population copy = new Population(this, random);
         copy.generation = this.generation;
         copy.bestFitness = this.bestFitness;
         copy.mutationRate = this.mutationRate;

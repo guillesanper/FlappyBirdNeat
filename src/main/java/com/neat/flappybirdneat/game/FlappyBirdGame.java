@@ -28,15 +28,6 @@ public class FlappyBirdGame {
     private final Random random;
 
     /**
-     * Constructor
-     * @param canvasWidth Ancho del área de juego
-     * @param canvasHeight Alto del área de juego
-     */
-    public FlappyBirdGame(int canvasWidth, int canvasHeight) {
-        this(canvasWidth, canvasHeight, new Random());
-    }
-
-    /**
      * Constructor con generador aleatorio inyectado, para reproducibilidad: la posición de los
      * huecos de los tubos (única fuente de aleatoriedad del juego en sí) queda determinada por
      * esta semilla, en vez de por un {@link Random} nuevo en cada tubo.

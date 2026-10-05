@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.neat.selection;
 
+import java.util.Random;
+
 /**
  * Selección por torneo determinista.
  * Selecciona 3 individuos al azar y elige el mejor.
@@ -13,14 +15,14 @@ public class DeterministicTournamentSelection extends SelectionStrategy {
     }
 
     @Override
-    public int[] select(Selectable[] list, int count) {
+    public int[] select(Selectable[] list, int count, Random random) {
         int[] selected = new int[count];
 
         for (int i = 0; i < count; i++) {
             // 3 individuos aleatorios
-            int ind1 = this.rand.nextInt(count);
-            int ind2 = this.rand.nextInt(count);
-            int ind3 = rand.nextInt(count);
+            int ind1 = random.nextInt(count);
+            int ind2 = random.nextInt(count);
+            int ind3 = random.nextInt(count);
 
             Selectable a = list[ind1];
             Selectable b = list[ind2];
