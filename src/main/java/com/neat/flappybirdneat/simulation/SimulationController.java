@@ -1,5 +1,8 @@
 package com.neat.flappybirdneat.simulation;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.neat.flappybirdneat.config.GeneticOperatorsConfig;
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.history.GenerationData;
@@ -22,6 +25,8 @@ import java.util.Random;
  * permitiendo ejecutar generaciones rápidamente en modo headless.
  */
 public class SimulationController {
+    private static final Logger LOG = LoggerFactory.getLogger(SimulationController.class);
+
     // Fitness considerado óptimo - si se alcanza, se detiene el entrenamiento automáticamente
     private static final double OPTIMAL_FITNESS_THRESHOLD = 80000.0;
 
@@ -216,9 +221,8 @@ public class SimulationController {
         bestFitness.set(bestFitnessThisGen); // Mejor de esta generación, no el histórico
         aliveCount.set(populationSize);
 
-        System.out.println("Generación " + currentGeneration.get() +
-                " - Mejor Fitness: " + bestFitness.get() +
-                " - Fitness Promedio: " + avgFitness);
+        LOG.info("Generation {} - best fitness {} - average fitness {}", currentGeneration.get(),
+                String.format("%.2f", bestFitness.get()), String.format("%.2f", avgFitness));
     }
 
     /**
@@ -327,13 +331,8 @@ public class SimulationController {
                             updateProgress(1, 1); // Completar barra de progreso
                         });
 
-                        System.out.println("\n╔════════════════════════════════════════════╗");
-                        System.out.println("║  🎯 ¡FITNESS ÓPTIMO ALCANZADO! 🎯        ║");
-                        System.out.println("╠════════════════════════════════════════════╣");
-                        System.out.println("║  Generación: " + currentGen);
-                        System.out.println("║  Fitness: " + String.format("%.2f", bestFit));
-                        System.out.println("║  Detención automática activada            ║");
-                        System.out.println("╚════════════════════════════════════════════╝\n");
+                        LOG.info("Optimal fitness reached at generation {} (fitness {}); stopping training",
+                                currentGen, String.format("%.2f", bestFit));
 
                         // Salir del bucle - hemos encontrado el óptimo
                         break;
@@ -367,9 +366,8 @@ public class SimulationController {
                             updateProgress(finalI + 1, generations);
                         });
 
-                        System.out.println("Generación " + currentGen +
-                                " - Mejor Fitness: " + String.format("%.2f", bestFit) +
-                                " - Fitness Promedio: " + String.format("%.2f", avgFit));
+                        LOG.info("Generation {} - best fitness {} - average fitness {}", currentGen,
+                                String.format("%.2f", bestFit), String.format("%.2f", avgFit));
                     }
 
                     // Evolucionar población
@@ -392,14 +390,9 @@ public class SimulationController {
                     fastMode = false;
                     updateProgress(1, 1); // Completar la barra de progreso
 
-                    if (reachedOptimal) {
-                        // Ya se mostró el mensaje de fitness óptimo arriba
-                        System.out.println("Usa el botón '▶ Ver Mejor Individuo' para reproducir el agente óptimo.\n");
-                    } else {
-                        System.out.println("\n=== SIMULACIÓN COMPLETADA ===");
-                        System.out.println("Mejor generación: " + finalBestGeneration +
-                                " con fitness: " + String.format("%.2f", finalGlobalBestFitness));
-                        System.out.println("==============================\n");
+                    if (!reachedOptimal) {
+                        LOG.info("Training finished. Best generation: {} with fitness {}", finalBestGeneration,
+                                String.format("%.2f", finalGlobalBestFitness));
                     }
                 });
 
@@ -446,7 +439,7 @@ public class SimulationController {
     public void playBestAgentOnly() {
         GenerationData bestGenData = historyManager.getBestGeneration();
         if (bestGenData == null) {
-            System.out.println("No hay mejor generación guardada aún");
+            LOG.warn("No best generation recorded yet; nothing to replay");
             return;
         }
 
@@ -467,9 +460,7 @@ public class SimulationController {
             replayMode = true; // IMPORTANTE: Activar modo replay para que no evolucione
             running.set(true);
 
-            System.out.println("\n=== REPRODUCIENDO MEJOR AGENTE ===");
-            System.out.println("Fitness alcanzado: " + String.format("%.2f", historyManager.getBestFitnessEver()));
-            System.out.println("===================================\n");
+            LOG.info("Replaying best agent (fitness {})", String.format("%.2f", historyManager.getBestFitnessEver()));
         }
     }
 

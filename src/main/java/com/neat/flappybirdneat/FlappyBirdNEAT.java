@@ -1,5 +1,8 @@
 package com.neat.flappybirdneat;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
@@ -55,6 +58,8 @@ import javafx.scene.layout.HBox;
  * Incluye pestañas para estadísticas/gráficos y para simulación visual.
  */
 public class FlappyBirdNEAT extends Application {
+    private static final Logger LOG = LoggerFactory.getLogger(FlappyBirdNEAT.class);
+
     // Configuración principal
     private static final int POPULATION_SIZE = 50;
     private static final int CANVAS_WIDTH = 800;
@@ -109,7 +114,7 @@ public class FlappyBirdNEAT extends Application {
         // Inicializar controlador de simulación
         // Semilla global: -Dseed=N para reproducir una ejecución; si no, una nueva en cada arranque
         long seed = Long.getLong("seed", ThreadLocalRandom.current().nextLong());
-        System.out.println("Simulation seed: " + seed + " (relaunch with -Dseed=" + seed + " to reproduce)");
+        LOG.info("Simulation seed: {} (relaunch with -Dseed={} to reproduce this run)", seed, seed);
         simulationController = new SimulationController(POPULATION_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT, seed);
 
         // Inicializar ventana de red neuronal
@@ -1079,7 +1084,7 @@ public class FlappyBirdNEAT extends Application {
                 alert.showAndWait();
 
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.error("Could not open the replay of generation {}", selectedGenIndex + 1, e);
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Error");
                 alert.setHeaderText("Error al cargar la simulación");
@@ -1132,7 +1137,7 @@ public class FlappyBirdNEAT extends Application {
                         for (FlappyBirdAgent agent : simulationController.getPopulation().getAgents()) {
                             agent.reset();
                         }
-                        System.out.println("Mejor agente murió. Fitness alcanzado: " +
+                        LOG.info("Best agent died with fitness {}; restarting the replay",
                                 String.format("%.2f", simulationController.getPopulation().getAgents()[0].getFitness()));
                     } else {
                         // Modo normal: pasar a siguiente generación

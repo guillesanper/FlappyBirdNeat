@@ -1,5 +1,8 @@
 package com.neat.flappybirdneat.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.neat.flappybirdneat.neat.Population;
 import com.neat.flappybirdneat.neat.crossover.*;
 import com.neat.flappybirdneat.neat.mutation.*;
@@ -11,6 +14,8 @@ import com.neat.flappybirdneat.neat.scaling.*;
  * para persistir entre reinicios de simulación
  */
 public class GeneticOperatorsConfig {
+    private static final Logger LOG = LoggerFactory.getLogger(GeneticOperatorsConfig.class);
+
     private SelectionStrategy selectionStrategy;
     private ScalingStrategy scalingStrategy;
     private MutationStrategy mutationStrategy;
@@ -33,12 +38,7 @@ public class GeneticOperatorsConfig {
         population.setMutationStrategy(mutationStrategy);
         population.setCrossoverStrategy(crossoverStrategy);
 
-        // Debug: mostrar qué configuración se está aplicando
-        System.out.println("🔧 Aplicando configuración de operadores genéticos:");
-        System.out.println("  - Cruce: " + (crossoverStrategy != null ? crossoverStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Selección: " + (selectionStrategy != null ? selectionStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Mutación: " + (mutationStrategy != null ? mutationStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Escalado: " + (scalingStrategy != null ? scalingStrategy.getClass().getSimpleName() : "Ninguno"));
+        LOG.debug("Applying genetic operators: {}", this);
     }
 
     /**
@@ -50,12 +50,17 @@ public class GeneticOperatorsConfig {
         this.mutationStrategy = population.getMutationStrategy();
         this.crossoverStrategy = population.getCrossoverStrategy();
 
-        // Debug: mostrar qué configuración se está guardando
-        System.out.println("💾 Guardando configuración de operadores genéticos:");
-        System.out.println("  - Cruce: " + (crossoverStrategy != null ? crossoverStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Selección: " + (selectionStrategy != null ? selectionStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Mutación: " + (mutationStrategy != null ? mutationStrategy.getClass().getSimpleName() : "null"));
-        System.out.println("  - Escalado: " + (scalingStrategy != null ? scalingStrategy.getClass().getSimpleName() : "Ninguno"));
+        LOG.info("Genetic operators updated: {}", this);
+    }
+
+    @Override
+    public String toString() {
+        return "selection=" + simpleName(selectionStrategy) + ", crossover=" + simpleName(crossoverStrategy)
+                + ", mutation=" + simpleName(mutationStrategy) + ", scaling=" + simpleName(scalingStrategy);
+    }
+
+    private static String simpleName(Object strategy) {
+        return strategy != null ? strategy.getClass().getSimpleName() : "none";
     }
 
     // Getters

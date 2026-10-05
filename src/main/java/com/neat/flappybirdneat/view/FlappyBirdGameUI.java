@@ -1,5 +1,8 @@
 package com.neat.flappybirdneat.view;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
@@ -29,6 +32,8 @@ import java.util.Random;
  * con JavaFX para visualizar el aprendizaje de los agentes en Flappy Bird.
  */
 public class FlappyBirdGameUI {
+    private static final Logger LOG = LoggerFactory.getLogger(FlappyBirdGameUI.class);
+
     // Configuración principal
     private static final int POPULATION_SIZE = 50;
     private static final int CANVAS_WIDTH = 800;
@@ -445,8 +450,7 @@ public class FlappyBirdGameUI {
         }
 
         currentGeneration++;
-        System.out.println("Generación " + currentGeneration +
-                " - Mejor Fitness: " + population.getBestFitness());
+        LOG.debug("Replay generation {} - best fitness {}", currentGeneration, population.getBestFitness());
     }
 
     /**
