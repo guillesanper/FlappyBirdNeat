@@ -15,6 +15,7 @@ import com.neat.flappybirdneat.view.GeneticOperatorsConfigWindow;
 import com.neat.flappybirdneat.view.ChartBandUtil;
 import com.neat.flappybirdneat.view.StatisticsWindow;
 import com.neat.flappybirdneat.view.BenchmarkWindow;
+import com.neat.flappybirdneat.view.GameRenderer;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
@@ -71,6 +72,7 @@ public class FlappyBirdNEAT extends Application {
     // Variables para la interfaz gráfica
     private Canvas gameCanvas;
     private GraphicsContext gc;
+    private final GameRenderer renderer = new GameRenderer(CANVAS_WIDTH, CANVAS_HEIGHT);
     private AnimationTimer gameLoop;
     private int gameSpeed = 1;
     private boolean showAllAgents = true;
@@ -1152,7 +1154,7 @@ public class FlappyBirdNEAT extends Application {
                 if (networkWindow.isShowing()) {
                     FlappyBirdAgent bestAgent = simulationController.getPopulation().getBestAgent();
                     if (!bestAgent.isDead()) {
-                        Pipe nextPipe = getNextPipe(bestAgent);
+                        Pipe nextPipe = simulationController.getGame().getNextPipe(bestAgent);
                         networkWindow.update(bestAgent, nextPipe);
                     }
                 }
@@ -1162,141 +1164,12 @@ public class FlappyBirdNEAT extends Application {
     }
 
     /**
-     * Obtiene el próximo tubo para un agente
-     */
-    private Pipe getNextPipe(FlappyBirdAgent agent) {
-        FlappyBirdGame game = simulationController.getGame();
-        final float BIRD_X_POSITION = 50; // Posición X fija del pájaro
-        for (Pipe pipe : game.getPipes()) {
-            if (pipe.getX() + pipe.getWidth() > BIRD_X_POSITION) {
-                return pipe;
-            }
-        }
-        return null;
-    }
-
-    /**
      * Dibuja el estado actual del juego
      */
-    /**
-     * Versión mejorada de drawGame() con estilo visual similar a FlappyBirdGameUI
-     */
     private void drawGame() {
-        FlappyBirdGame game = simulationController.getGame();
         EvolvingPopulation population = simulationController.getPopulation();
-
-        // Dibujar fondo
-        gc.setFill(Color.SKYBLUE);
-        gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        // Dibujar nubes decorativas
-        gc.setFill(Color.WHITE);
-        gc.setFill(Color.WHITE);
-        gc.fillOval(100, 100, 80, 40);
-        gc.fillOval(300, 150, 100, 50);
-        gc.fillOval(600, 80, 120, 60);
-
-        // Dibujar tubos
-        for (Pipe pipe : game.getPipes()) {
-            // Tubo superior (desde arriba hasta inicio del gap)
-            gc.setFill(Color.GREEN);
-            double gapTop = pipe.getGapY() - pipe.getGapSize() / 2;
-            gc.fillRect(pipe.getX(), 0, pipe.getWidth(), gapTop);
-
-            // Borde del tubo superior
-            gc.setFill(Color.DARKGREEN);
-            gc.fillRect(pipe.getX() - 3, gapTop - 20, pipe.getWidth() + 6, 20);
-
-            // Tubo inferior (desde fin del gap hasta el suelo)
-            gc.setFill(Color.GREEN);
-            double gapBottom = pipe.getGapY() + pipe.getGapSize() / 2;
-            gc.fillRect(pipe.getX(), gapBottom, pipe.getWidth(), CANVAS_HEIGHT - gapBottom);
-
-            // Borde del tubo inferior
-            gc.setFill(Color.DARKGREEN);
-            gc.fillRect(pipe.getX() - 3, gapBottom, pipe.getWidth() + 6, 20);
-        }
-
-        // Dibujar pájaros (agentes)
-        FlappyBirdAgent bestOverall = population.getBestAgent();
-
-        // En modo replay o con población de 1, el único agente es el mejor
-        boolean isSingleAgentMode = population.getAgents().length == 1;
-
-        for (FlappyBirdAgent agent : population.getAgents()) {
-            if (!agent.isDead()) {
-                // Si es el mejor agente O estamos en modo replay con 1 agente
-                if (agent == bestOverall || isSingleAgentMode || simulationController.isReplayMode()) {
-                    // El mejor agente de todas las generaciones se dibuja en rojo
-                    gc.setFill(Color.RED);
-                    gc.fillOval(50, agent.getY(), 30, 30);
-
-                    // Ojo del pájaro
-                    gc.setFill(Color.WHITE);
-                    gc.fillOval(65, agent.getY() + 8, 8, 8);
-                    gc.setFill(Color.BLACK);
-                    gc.fillOval(67, agent.getY() + 10, 4, 4);
-
-                    // Pico
-                    gc.setFill(Color.ORANGE);
-                    gc.fillPolygon(
-                            new double[] {80, 90, 80},
-                            new double[] {agent.getY() + 15, agent.getY() + 18, agent.getY() + 21},
-                            3
-                    );
-
-                    // Indicador visual de que es el mejor agente
-                    gc.setStroke(Color.GOLD);
-                    gc.setLineWidth(3);
-                    gc.strokeOval(45, agent.getY() - 5, 40, 40);
-
-                    // Efecto de brillo adicional
-                    gc.setStroke(new Color(1, 0.84, 0, 0.5));
-                    gc.setLineWidth(6);
-                    gc.strokeOval(42, agent.getY() - 8, 46, 46);
-                } else if (showAllAgents) {
-                    // El resto en amarillo, semitransparente para ver mejor
-                    gc.setFill(new Color(1, 1, 0, 0.3));
-                    gc.fillOval(50, agent.getY(), 30, 30);
-                }
-            }
-        }
-
-        // Texto indicador si estamos en modo replay
-        if (simulationController.isReplayMode()) {
-            gc.setFill(new Color(0, 0, 0, 0.7));
-            gc.fillRect(10, 10, 350, 40);
-            gc.setFill(Color.GOLD);
-            gc.setFont(Font.font("System", FontWeight.BOLD, 20));
-            gc.fillText("★ REPRODUCIENDO MEJOR AGENTE ★", 20, 35);
-        }
-
-        // Dibujar suelo
-        gc.setFill(Color.SADDLEBROWN);
-        gc.fillRect(0, CANVAS_HEIGHT - 20, CANVAS_WIDTH, 20);
-
-        // Textura del suelo
-        gc.setFill(Color.SANDYBROWN);
-        for (int i = 0; i < CANVAS_WIDTH; i += 30) {
-            gc.fillRect(i, CANVAS_HEIGHT - 20, 15, 5);
-        }
-
-        // Mostrar puntuación en pantalla con estilo de FlappyBirdGameUI
-        gc.setFill(Color.WHITE);
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1.5);
-        gc.setFont(Font.font("System", FontWeight.BOLD, 30));
-        String scoreText = String.valueOf(game.getScore());
-        gc.fillText(scoreText, CANVAS_WIDTH/2 - 15, 50);
-        gc.strokeText(scoreText, CANVAS_WIDTH/2 - 15, 50);
-
-        // Si estamos en modo reproducción de mejor agente, indicarlo
-        if (!showAllAgents) {
-            gc.setFill(new Color(0, 0, 0, 0.7));
-            gc.fillRect(10, CANVAS_HEIGHT - 60, 300, 30);
-            gc.setFill(Color.WHITE);
-            gc.setFont(Font.font("System", FontWeight.BOLD, 16));
-            gc.fillText("Mostrando al mejor agente", 20, CANVAS_HEIGHT - 40);
-        }
+        renderer.render(gc, simulationController.getGame(), population.getAgents(), population.getBestAgent(),
+                GameRenderer.Options.liveSimulation(showAllAgents, simulationController.isReplayMode(),
+                        population.getAgents().length == 1));
     }
 }

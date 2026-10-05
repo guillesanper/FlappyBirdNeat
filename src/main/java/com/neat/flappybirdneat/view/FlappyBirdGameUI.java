@@ -53,6 +53,7 @@ public class FlappyBirdGameUI {
     // Variables para la interfaz gráfica
     private Canvas canvas;
     private GraphicsContext gc;
+    private final GameRenderer renderer = new GameRenderer(CANVAS_WIDTH, CANVAS_HEIGHT);
     private Label generationLabel;
     private Label aliveLabel;
     private Label scoreLabel;
@@ -104,10 +105,6 @@ public class FlappyBirdGameUI {
                 lastUpdate = now;
 
                 if (!gamePaused) {
-                    // Limpiar pantalla
-                    gc.setFill(Color.SKYBLUE);
-                    gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
                     // Actualizar juego
                     game.update(population.getAgents());
 
@@ -125,7 +122,7 @@ public class FlappyBirdGameUI {
 
                         // Si hay un agente vivo, visualizar su red neuronal
                         if (bestActiveAgent != null) {
-                            Pipe nextPipe = getNextPipe(bestActiveAgent);
+                            Pipe nextPipe = game.getNextPipe(bestActiveAgent);
                             networkWindow.update(bestActiveAgent, nextPipe);
                         }
                     }
@@ -157,36 +154,11 @@ public class FlappyBirdGameUI {
                 } else {
                     // Si está pausado, seguir dibujando la escena estática
                     drawGame();
-                    drawPausedOverlay();
+                    renderer.renderPausedOverlay(gc);
                 }
             }
         };
         gameLoop.start();
-    }
-
-    /**
-     * Obtiene el próximo tubo al que se enfrentará el agente
-     * (Replicado de FlappyBirdGame para obtener la info para la visualización)
-     */
-    private Pipe getNextPipe(FlappyBirdAgent agent) {
-        for (Pipe pipe : game.getPipes()) {
-            if (pipe.getX() + pipe.getWidth() > 50) { // 50 es x del pájaro
-                return pipe;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Dibuja un overlay cuando el juego está pausado
-     */
-    private void drawPausedOverlay() {
-        gc.setFill(new Color(0, 0, 0, 0.3)); // Color semitransparente
-        gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        gc.setFill(Color.WHITE);
-        gc.setFont(Font.font("System", FontWeight.BOLD, 30));
-        gc.fillText("SIMULACIÓN PAUSADA", CANVAS_WIDTH/2 - 150, CANVAS_HEIGHT/2);
     }
 
     /**
@@ -330,91 +302,9 @@ public class FlappyBirdGameUI {
         return infoPanel;
     }
 
-    /**
-     * Dibuja el estado actual del juego
-     */
     private void drawGame() {
-        // Dibujar fondo
-        gc.setFill(Color.SKYBLUE);
-        gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        // Dibujar nubes decorativas
-        gc.setFill(Color.WHITE);
-        gc.fillOval(100, 100, 80, 40);
-        gc.fillOval(300, 150, 100, 50);
-        gc.fillOval(600, 80, 120, 60);
-
-        // Dibujar tubos
-        for (Pipe pipe : game.getPipes()) {
-            // Tubo superior
-            gc.setFill(Color.GREEN);
-            gc.fillRect(pipe.getX(), 0, pipe.getWidth(), pipe.getGapY() - pipe.getGapSize()/2);
-
-            // Borde del tubo superior
-            gc.setFill(Color.DARKGREEN);
-            gc.fillRect(pipe.getX() - 3, pipe.getGapY() - pipe.getGapSize()/2 - 20,
-                    pipe.getWidth() + 6, 20);
-
-            // Tubo inferior
-            gc.setFill(Color.GREEN);
-            gc.fillRect(pipe.getX(), pipe.getGapY() + pipe.getGapSize()/2,
-                    pipe.getWidth(), CANVAS_HEIGHT - (pipe.getGapY() + pipe.getGapSize()/2));
-
-            // Borde del tubo inferior
-            gc.setFill(Color.DARKGREEN);
-            gc.fillRect(pipe.getX() - 3, pipe.getGapY() + pipe.getGapSize()/2,
-                    pipe.getWidth() + 6, 20);
-        }
-
-        // Dibujar pájaros (agentes)
-        FlappyBirdAgent bestOverall = population.getBestAgent();
-
-        for (FlappyBirdAgent agent : population.getAgents()) {
-            if (!agent.isDead()) {
-                if (agent == bestOverall) {
-                    // El mejor agente de todas las generaciones se dibuja en rojo
-                    gc.setFill(Color.RED);
-                    gc.fillOval(50, agent.getY(), 30, 30);
-
-                    // Ojo del pájaro
-                    gc.setFill(Color.WHITE);
-                    gc.fillOval(65, agent.getY() + 8, 8, 8);
-                    gc.setFill(Color.BLACK);
-                    gc.fillOval(67, agent.getY() + 10, 4, 4);
-
-                    // Pico
-                    gc.setFill(Color.ORANGE);
-                    gc.fillPolygon(
-                            new double[] {80, 90, 80},
-                            new double[] {agent.getY() + 15, agent.getY() + 18, agent.getY() + 21},
-                            3
-                    );
-                } else if (showAllAgents) {
-                    // El resto en amarillo, semitransparente para ver mejor
-                    gc.setFill(new Color(1, 1, 0, 0.3));
-                    gc.fillOval(50, agent.getY(), 30, 30);
-                }
-            }
-        }
-
-        // Dibujar suelo
-        gc.setFill(Color.SADDLEBROWN);
-        gc.fillRect(0, CANVAS_HEIGHT - 20, CANVAS_WIDTH, 20);
-
-        // Textura del suelo
-        gc.setFill(Color.SANDYBROWN);
-        for (int i = 0; i < CANVAS_WIDTH; i += 30) {
-            gc.fillRect(i, CANVAS_HEIGHT - 20, 15, 5);
-        }
-
-        // Mostrar puntuación en pantalla
-        gc.setFill(Color.WHITE);
-        gc.setStroke(Color.BLACK);
-        gc.setLineWidth(1.5);
-        gc.setFont(Font.font("System", FontWeight.BOLD, 30));
-        String scoreText = String.valueOf(game.getScore());
-        gc.fillText(scoreText, CANVAS_WIDTH/2 - 15, 50);
-        gc.strokeText(scoreText, CANVAS_WIDTH/2 - 15, 50);
+        renderer.render(gc, game, population.getAgents(), population.getBestAgent(),
+                GameRenderer.Options.generationReplay(showAllAgents));
     }
 
     /**
