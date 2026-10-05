@@ -253,8 +253,12 @@ public class SimulationController {
                     // Ejecutar generación actual hasta que todos mueran
                     boolean allDead = false;
                     int alive = populationSize;
+                    int frames = 0;
 
-                    while (!allDead && !isCancelled()) {
+                    // El fitness de un agente es el nº de frames que sobrevive, así que cortar la
+                    // generación al llegar al umbral óptimo evita que un agente que ya no muere
+                    // la deje corriendo indefinidamente (la detección de óptimo de abajo nunca llegaría).
+                    while (!allDead && !isCancelled() && frames++ < OPTIMAL_FITNESS_THRESHOLD) {
                         // Actualizar juego sin renderizar (modo headless)
                         game.update(population.getAgents());
 
