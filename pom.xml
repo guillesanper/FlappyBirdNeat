@@ -70,6 +70,56 @@
                 <version>3.2.5</version>
             </plugin>
             <plugin>
+                <!-- Coverage of the engine (game, neural, neat, simulation, benchmark, history, config).
+                     The JavaFX view layer and the launchers are excluded: they are checked by running the app. -->
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>com/neat/flappybirdneat/view/**</exclude>
+                        <exclude>com/neat/flappybirdneat/FlappyBirdNEAT.class</exclude>
+                        <exclude>com/neat/flappybirdneat/Main.class</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <phase>test</phase>
+                    </execution>
+                    <execution>
+                        <!-- Fails `mvn verify` if engine line coverage drops below the floor -->
+                        <id>check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.75</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <!-- Formatting: ./mvnw spotless:apply to fix, ./mvnw spotless:check (run in CI) to verify -->
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>

@@ -3,7 +3,9 @@
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![JavaFX 17](https://img.shields.io/badge/JavaFX-17-blue)
-![Tests](https://img.shields.io/badge/tests-130%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-138%20passing-brightgreen)
+![Coverage](.github/badges/jacoco.svg)
+![Branches](.github/badges/branches.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **A neuroevolution lab built from scratch in Java: 50 birds, each controlled by its own neural network, learn to play Flappy Bird with no training data. All they get is natural selection.**
@@ -20,7 +22,7 @@ There are no ML libraries involved. The neural networks, both evolution engines 
 - **16 pluggable genetic operators** (7 selection, 3 crossover, 3 mutation and 3 fitness-scaling, on top of NEAT's own) behind the Strategy pattern. You can mix and match them from the UI at runtime.
 - **A live view inside the agent's head:** a network visualizer that shows every activation and the jump decision frame by frame.
 - **Experiment tooling:** a headless fast-training mode, generation history and replay, CSV export, and a benchmark mode that compares operator configurations across repeated seeded runs.
-- **Seeded and tested:** the game, the populations and the networks take an injected `Random`, so a seeded run gives the same fitness curve every time. That property is covered by tests, along with the operators, the NEAT genome and the simulation loop (130 JUnit tests, run in CI on every push).
+- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome and the simulation loop (138 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
 
 ## Screenshots
 
@@ -72,7 +74,8 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph View["view (JavaFX)"]
-        UI[FlappyBirdNEAT<br/>main window]
+        UI[MainWindow<br/>control panel · charts · game loop]
+        GR[GameRenderer]
         NV[NeuralNetworkVisualizer]
         SW[StatisticsWindow]
         BW[BenchmarkWindow]
@@ -99,6 +102,7 @@ flowchart TB
     BM[benchmark<br/>seeded multi-run comparison]
 
     UI --> SC
+    UI --> GR
     NV --> BR
     SC --> G
     SC --> EP
@@ -132,7 +136,17 @@ java -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar
 
 # Run the test suite
 ./mvnw test
+
+# Reproduce a run: the app logs its seed at startup
+java -Dseed=42 -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar
 ```
+
+### Development
+
+- `./mvnw verify` runs the tests, writes the JaCoCo report to `target/site/jacoco/` and fails if engine line coverage drops below 75%. The JavaFX view layer is excluded from coverage; it is checked by running the app.
+- Code is formatted with [palantir-java-format](https://github.com/palantir/palantir-java-format) through Spotless. Run `./mvnw spotless:apply` before committing; CI runs `spotless:check`. The bulk reformat is listed in `.git-blame-ignore-revs` (`git config blame.ignoreRevsFile .git-blame-ignore-revs`).
+- Logging goes through SLF4J (slf4j-simple). Use `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug` for more detail.
+- Dependabot opens weekly update PRs for Maven dependencies and GitHub Actions.
 
 Quick tour: on the **Estadísticas y Control** tab, choose an engine (`Fixed MLP` or `NEAT`), press **Iniciar Entrenamiento** to train headless, then **Ver Mejor** to watch the best generation play, and open **Mostrar Red Neuronal** to see inside its head. *(The UI is in Spanish.)*
 
@@ -149,7 +163,8 @@ src/main/java/com/neat/flappybirdneat
 ├── benchmark/    Seeded multi-run comparison of operator configurations, CSV export
 ├── history/      Per-generation snapshots for replay and export
 ├── config/       Genetic-operator configuration shared with the UI
-└── view/         JavaFX windows: game, network visualizer, statistics, benchmark, operator config
+└── view/         JavaFX windows: GameRenderer, network visualizer, statistics, benchmark, operator config
+    └── main/     Main window: control panel, charts, simulation panel, history browser, game loop
 docs/
 ├── media/        Screenshots and demo GIF
 ├── dev-notes/    Development notes (Spanish)
@@ -158,7 +173,7 @@ docs/
 
 ## Roadmap
 
-- [ ] Split the main window class and unify the two renderers into one shared `GameRenderer`
+- [x] Split the main window class and unify the two renderers into one shared `GameRenderer`
 - [ ] Headless CLI (`--engine neat --seed 42 --generations 200`) for scripted experiments
 - [ ] Parallel fitness evaluation with virtual threads
 - [ ] Published NEAT-vs-GA results across many seeds, with confidence intervals and significance tests
