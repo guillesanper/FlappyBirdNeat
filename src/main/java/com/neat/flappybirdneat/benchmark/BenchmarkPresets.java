@@ -1,15 +1,15 @@
 package com.neat.flappybirdneat.benchmark;
 
-import com.neat.flappybirdneat.neat.crossover.CruceAritmetico;
-import com.neat.flappybirdneat.neat.crossover.CrucePuntoUnico;
-import com.neat.flappybirdneat.neat.crossover.CruceUniforme;
-import com.neat.flappybirdneat.neat.mutation.MutacionGaussiana;
-import com.neat.flappybirdneat.neat.mutation.MutacionNoUniforme;
-import com.neat.flappybirdneat.neat.mutation.MutacionUniforme;
-import com.neat.flappybirdneat.neat.scaling.EscaladoSigma;
-import com.neat.flappybirdneat.neat.selection.SeleccionRuleta;
-import com.neat.flappybirdneat.neat.selection.SeleccionTorneoDeterministico;
-import com.neat.flappybirdneat.neat.selection.SeleccionTruncamiento;
+import com.neat.flappybirdneat.neat.crossover.ArithmeticCrossover;
+import com.neat.flappybirdneat.neat.crossover.SinglePointCrossover;
+import com.neat.flappybirdneat.neat.crossover.UniformCrossover;
+import com.neat.flappybirdneat.neat.mutation.GaussianMutation;
+import com.neat.flappybirdneat.neat.mutation.NonUniformMutation;
+import com.neat.flappybirdneat.neat.mutation.UniformMutation;
+import com.neat.flappybirdneat.neat.scaling.SigmaScaling;
+import com.neat.flappybirdneat.neat.selection.RouletteSelection;
+import com.neat.flappybirdneat.neat.selection.DeterministicTournamentSelection;
+import com.neat.flappybirdneat.neat.selection.TruncationSelection;
 
 import java.util.List;
 
@@ -22,18 +22,18 @@ public final class BenchmarkPresets {
     private BenchmarkPresets() {
     }
 
-    /** @param generations usado por {@code MutacionNoUniforme}, que decrece su magnitud a lo largo de las generaciones. */
+    /** @param generations usado por {@code NonUniformMutation}, que decrece su magnitud a lo largo de las generaciones. */
     public static List<BenchmarkConfig> defaultConfigs(int generations) {
         return List.of(
                 new BenchmarkConfig("Ruleta + Gaussiana + Uniforme",
-                        SeleccionRuleta::new, () -> null, MutacionGaussiana::new, CruceUniforme::new),
+                        RouletteSelection::new, () -> null, GaussianMutation::new, UniformCrossover::new),
                 new BenchmarkConfig("Torneo Determinístico + Uniforme + Punto Único",
-                        SeleccionTorneoDeterministico::new, () -> null, MutacionUniforme::new, CrucePuntoUnico::new),
+                        DeterministicTournamentSelection::new, () -> null, UniformMutation::new, SinglePointCrossover::new),
                 new BenchmarkConfig("Truncamiento + No Uniforme + Aritmético",
-                        SeleccionTruncamiento::new, () -> null,
-                        () -> new MutacionNoUniforme(Math.max(generations, 1)), CruceAritmetico::new),
+                        TruncationSelection::new, () -> null,
+                        () -> new NonUniformMutation(Math.max(generations, 1)), ArithmeticCrossover::new),
                 new BenchmarkConfig("Ruleta + Escalado Sigma + Gaussiana + Uniforme",
-                        SeleccionRuleta::new, EscaladoSigma::new, MutacionGaussiana::new, CruceUniforme::new)
+                        RouletteSelection::new, SigmaScaling::new, GaussianMutation::new, UniformCrossover::new)
         );
     }
 }

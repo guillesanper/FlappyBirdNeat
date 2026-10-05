@@ -115,7 +115,7 @@ flowchart TB
 A few design decisions behind it:
 
 - **The engine is abstracted away from the game.** `FlappyBirdGame` and `FlappyBirdAgent` only know about the `Brain` interface (`double[] feedForward(double[])`), and the simulation only knows about `EvolvingPopulation`. Switching between the GA and NEAT is a dropdown in the UI, not a code change.
-- **Operators are strategies built by factories** (`SeleccionFactory`, `CruceFactory`, `MutacionFactory`, `EscaladoFactory`). Adding a new selection method means writing one class; `Population` doesn't change.
+- **Operators are strategies built by factories** (`SelectionFactory`, `CrossoverFactory`, `MutationFactory`, `ScalingFactory`). Adding a new selection method means writing one class; `Population` doesn't change.
 - **Randomness is injected.** The game, the populations and the networks accept a `Random`. That is what lets the benchmark mode compare configurations over the same seeds, and lets tests assert that the same seed gives the same evolution.
 
 ## Getting started

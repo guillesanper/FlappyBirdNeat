@@ -4,18 +4,18 @@ package com.neat.flappybirdneat.neat.selection;
  * Selección por ruleta.
  * Cada individuo tiene una probabilidad de ser seleccionado proporcional a su fitness.
  */
-public class SeleccionRuleta extends Seleccion {
+public class RouletteSelection extends SelectionStrategy {
     @Override
-    public int[] getSeleccion(Seleccionable[] list, int tamPoblacion) {
-        int[] seleccion = new int[tamPoblacion];
+    public int[] select(Selectable[] list, int count) {
+        int[] selected = new int[count];
         // Suma total de probabilidades acumuladas (normalmente 1.0, salvo si el fitness total
         // de la población es 0, en cuyo caso todas las prob quedan a 0 y no hay señal que seguir).
         double total = list.length == 0 ? 0 : list[list.length - 1].getAccProb() + list[list.length - 1].getProb();
 
-        for (int seleccionados = 0; seleccionados < tamPoblacion; seleccionados++) {
+        for (int selectedSoFar = 0; selectedSoFar < count; selectedSoFar++) {
             if (total <= 0) {
                 // Sin señal de fitness: elegir uniformemente para no bloquear la selección.
-                seleccion[seleccionados] = list[this.rand.nextInt(list.length)].getIndex();
+                selected[selectedSoFar] = list[this.rand.nextInt(list.length)].getIndex();
                 continue;
             }
 
@@ -30,8 +30,8 @@ public class SeleccionRuleta extends Seleccion {
                     break;
                 }
             }
-            seleccion[seleccionados] = list[chosen].getIndex();
+            selected[selectedSoFar] = list[chosen].getIndex();
         }
-        return seleccion;
+        return selected;
     }
 }

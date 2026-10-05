@@ -8,11 +8,11 @@ import java.util.Random;
  * Reemplaza completamente el peso por un nuevo valor aleatorio en el rango [-1, 1].
  * Proporciona mayor diversidad pero es más disruptiva que la gaussiana.
  */
-public class MutacionUniforme implements MutacionStrategy {
+public class UniformMutation implements MutationStrategy {
 
     private Random random;
 
-    public MutacionUniforme() {
+    public UniformMutation() {
         this.random = new Random();
     }
 

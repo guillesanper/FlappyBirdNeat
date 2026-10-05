@@ -7,7 +7,7 @@ import java.util.Random;
 /**
  * Interfaz para estrategias de cruce de redes neuronales.
  */
-public interface CruceStrategy {
+public interface CrossoverStrategy {
     /**
      * Realiza el cruce entre dos redes neuronales padres.
      * @param parent1 Primera red neuronal padre

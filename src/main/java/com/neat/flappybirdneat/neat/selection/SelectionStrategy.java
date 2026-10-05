@@ -5,10 +5,10 @@ import java.util.Random;
 /**
  * Clase base abstracta para todos los métodos de selección.
  */
-public abstract class Seleccion {
+public abstract class SelectionStrategy {
     protected Random rand;
 
-    public Seleccion() {
+    public SelectionStrategy() {
         this.rand = new Random();
     }
 
@@ -23,8 +23,8 @@ public abstract class Seleccion {
     /**
      * Realiza la selección de individuos.
      * @param list Array de individuos seleccionables con sus probabilidades calculadas
-     * @param tamPoblacion Tamaño de la población
+     * @param count Tamaño de la población
      * @return Array de índices de los individuos seleccionados
      */
-    public abstract int[] getSeleccion(Seleccionable[] list, int tamPoblacion);
+    public abstract int[] select(Selectable[] list, int count);
 }

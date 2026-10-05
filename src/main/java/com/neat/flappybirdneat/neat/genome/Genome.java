@@ -166,7 +166,7 @@ public class Genome implements Brain {
      * Perturbación de pesos: cada conexión muta con probabilidad {@code weightMutationRate}.
      * Al mutar, con un 10% de probabilidad se le asigna un peso nuevo al azar en [-1, 1]
      * (equivalente a una re-inicialización) y con un 90% se perturba con ruido gaussiano
-     * sobre el peso actual (equivalente en espíritu a {@code MutacionGaussiana} pero aplicado
+     * sobre el peso actual (equivalente en espíritu a {@code GaussianMutation} pero aplicado
      * gen a gen, ya que el genoma no tiene arrays de pesos fijos).
      */
     public void mutateWeights(Random random, double weightMutationRate) {

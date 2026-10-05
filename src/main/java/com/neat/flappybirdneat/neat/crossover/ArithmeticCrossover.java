@@ -6,13 +6,13 @@ import com.neat.flappybirdneat.neural.NeuralNetwork;
  * Implementación de cruce aritmético.
  * Los genes del hijo son una combinación lineal de los padres: child = alpha * parent1 + (1-alpha) * parent2
  */
-public class CruceAritmetico implements CruceStrategy {
+public class ArithmeticCrossover implements CrossoverStrategy {
     private final double alpha;
 
     /**
      * Constructor con alpha por defecto (0.5)
      */
-    public CruceAritmetico() {
+    public ArithmeticCrossover() {
         this.alpha = 0.5;
     }
 
@@ -20,7 +20,7 @@ public class CruceAritmetico implements CruceStrategy {
      * Constructor con alpha personalizado
      * @param alpha Peso del primer padre (entre 0 y 1)
      */
-    public CruceAritmetico(double alpha) {
+    public ArithmeticCrossover(double alpha) {
         this.alpha = Math.max(0.0, Math.min(1.0, alpha));
     }
 

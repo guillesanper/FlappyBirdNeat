@@ -21,13 +21,13 @@ class CrossoverOperatorsTest {
     private static final int HIDDEN_SIZE = 8;
     private static final int OUTPUT_SIZE = 1;
 
-    static Stream<CruceStrategy> strategies() {
-        return Stream.of(new CruceUniforme(), new CrucePuntoUnico(), new CruceAritmetico());
+    static Stream<CrossoverStrategy> strategies() {
+        return Stream.of(new UniformCrossover(), new SinglePointCrossover(), new ArithmeticCrossover());
     }
 
     @ParameterizedTest
     @MethodSource("strategies")
-    void childPreservesParentTopology(CruceStrategy strategy) {
+    void childPreservesParentTopology(CrossoverStrategy strategy) {
         strategy.setRandom(new Random(1));
         NeuralNetwork parent1 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(10));
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(20));
@@ -41,7 +41,7 @@ class CrossoverOperatorsTest {
 
     @ParameterizedTest
     @MethodSource("strategies")
-    void sameSeedProducesIdenticalChild(CruceStrategy strategy) {
+    void sameSeedProducesIdenticalChild(CrossoverStrategy strategy) {
         NeuralNetwork parent1 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(10));
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(20));
         double[] inputs = {0.1, 0.2, 0.3, 0.4};
@@ -57,7 +57,7 @@ class CrossoverOperatorsTest {
 
     @Test
     void uniformCrossoverGenesComeFromEitherParent() {
-        CruceUniforme strategy = new CruceUniforme();
+        UniformCrossover strategy = new UniformCrossover();
         strategy.setRandom(new Random(3));
         NeuralNetwork parent1 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(1));
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(2));
@@ -76,7 +76,7 @@ class CrossoverOperatorsTest {
 
     @Test
     void arithmeticCrossoverIsMidpointForDefaultAlpha() {
-        CruceAritmetico strategy = new CruceAritmetico(0.5);
+        ArithmeticCrossover strategy = new ArithmeticCrossover(0.5);
         NeuralNetwork parent1 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(1));
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(2));
 
@@ -94,7 +94,7 @@ class CrossoverOperatorsTest {
     @Test
     void arithmeticCrossoverIsDeterministic() {
         // No depende de Random: mismos padres deben producir siempre el mismo hijo.
-        CruceAritmetico strategy = new CruceAritmetico(0.3);
+        ArithmeticCrossover strategy = new ArithmeticCrossover(0.3);
         NeuralNetwork parent1 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(1));
         NeuralNetwork parent2 = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(2));
         double[] inputs = {0.1, -0.2, 0.3, -0.4};

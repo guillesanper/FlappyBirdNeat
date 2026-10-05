@@ -5,31 +5,31 @@ package com.neat.flappybirdneat.neat.selection;
  * Mejora de la ruleta que reduce el sesgo usando múltiples punteros equidistantes.
  * Proporciona una selección más justa y con menor varianza.
  */
-public class SeleccionEstocasticoUniversal extends Seleccion {
+public class StochasticUniversalSelection extends SelectionStrategy {
     @Override
-    public int[] getSeleccion(Seleccionable[] list, int tamPoblacion) {
-        int[] seleccion = new int[tamPoblacion];
+    public int[] select(Selectable[] list, int count) {
+        int[] selected = new int[count];
 
         // Generar un valor aleatorio entre 0 y 1/tamPoblacion
-        double r = this.rand.nextDouble() / tamPoblacion;
+        double r = this.rand.nextDouble() / count;
 
         // Para cada punto de selección
-        for (int i = 0; i < tamPoblacion; i++) {
+        for (int i = 0; i < count; i++) {
             // Calcular el punto de selección actual
-            double punto = r + ((double) i / tamPoblacion);
+            double punto = r + ((double) i / count);
 
             // Encontrar el individuo correspondiente
             int j = 0;
-            while (j < tamPoblacion && punto > list[j].getAccProb()) {
+            while (j < count && punto > list[j].getAccProb()) {
                 j++;
             }
 
             // Evitar índice fuera de rango
-            if (j >= tamPoblacion) j = tamPoblacion - 1;
+            if (j >= count) j = count - 1;
 
-            seleccion[i] = list[j].getIndex();
+            selected[i] = list[j].getIndex();
         }
 
-        return seleccion;
+        return selected;
     }
 }

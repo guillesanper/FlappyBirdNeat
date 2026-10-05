@@ -7,15 +7,15 @@ import com.neat.flappybirdneat.neural.NeuralNetwork;
  * Añade ruido gaussiano a los pesos con una magnitud fija.
  * Esta clase es un wrapper para mantener consistencia con las otras estrategias.
  */
-public class MutacionGaussiana implements MutacionStrategy {
+public class GaussianMutation implements MutationStrategy {
 
     private final double magnitude;
 
-    public MutacionGaussiana() {
+    public GaussianMutation() {
         this.magnitude = 0.1;
     }
 
-    public MutacionGaussiana(double magnitude) {
+    public GaussianMutation(double magnitude) {
         this.magnitude = magnitude;
     }
 

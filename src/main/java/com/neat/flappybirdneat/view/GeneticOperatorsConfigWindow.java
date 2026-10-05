@@ -339,33 +339,33 @@ public class GeneticOperatorsConfigWindow {
             // Aplicar Cruce
             String cruceType = cruceComboBox.getValue();
             if ("Uniforme".equals(cruceType)) {
-                population.setCruceStrategy(new CruceUniforme());
+                population.setCrossoverStrategy(new UniformCrossover());
             } else if ("Punto Único".equals(cruceType)) {
-                population.setCruceStrategy(new CrucePuntoUnico());
+                population.setCrossoverStrategy(new SinglePointCrossover());
             } else if ("Aritmético".equals(cruceType)) {
                 double alpha = Double.parseDouble(cruceParam1Field.getText());
-                population.setCruceStrategy(new CruceAritmetico(alpha));
+                population.setCrossoverStrategy(new ArithmeticCrossover(alpha));
             }
 
             // Aplicar Selección
             String seleccionType = seleccionComboBox.getValue();
             if ("Ruleta".equals(seleccionType)) {
-                population.setSeleccionStrategy(new SeleccionRuleta());
+                population.setSelectionStrategy(new RouletteSelection());
             } else if ("Torneo Determinístico".equals(seleccionType)) {
-                population.setSeleccionStrategy(new SeleccionTorneoDeterministico());
+                population.setSelectionStrategy(new DeterministicTournamentSelection());
             } else if ("Torneo Probabilístico".equals(seleccionType)) {
                 double prob = Double.parseDouble(seleccionParam1Field.getText());
-                population.setSeleccionStrategy(new SeleccionTorneoProbabilistico(prob));
+                population.setSelectionStrategy(new ProbabilisticTournamentSelection(prob));
             } else if ("Ranking".equals(seleccionType)) {
                 double beta = Double.parseDouble(seleccionParam1Field.getText());
-                population.setSeleccionStrategy(new SeleccionRanking(beta));
+                population.setSelectionStrategy(new RankingSelection(beta));
             } else if ("Truncamiento".equals(seleccionType)) {
                 double trunc = Double.parseDouble(seleccionParam1Field.getText());
-                population.setSeleccionStrategy(new SeleccionTruncamiento(trunc));
+                population.setSelectionStrategy(new TruncationSelection(trunc));
             } else if ("Estocástico Universal".equals(seleccionType)) {
-                population.setSeleccionStrategy(new SeleccionEstocasticoUniversal());
+                population.setSelectionStrategy(new StochasticUniversalSelection());
             } else if ("Restos".equals(seleccionType)) {
-                population.setSeleccionStrategy(new SeleccionRestos());
+                population.setSelectionStrategy(new RemainderSelection());
             }
 
             // Aplicar Mutación
@@ -373,39 +373,39 @@ public class GeneticOperatorsConfigWindow {
             if ("Gaussiana".equals(mutacionType)) {
                 if (mutacionParam1Field.isVisible()) {
                     double sigma = Double.parseDouble(mutacionParam1Field.getText());
-                    population.setMutacionStrategy(new MutacionGaussiana(sigma));
+                    population.setMutationStrategy(new GaussianMutation(sigma));
                 } else {
-                    population.setMutacionStrategy(new MutacionGaussiana());
+                    population.setMutationStrategy(new GaussianMutation());
                 }
             } else if ("Uniforme".equals(mutacionType)) {
-                population.setMutacionStrategy(new MutacionUniforme());
+                population.setMutationStrategy(new UniformMutation());
             } else if ("No Uniforme".equals(mutacionType)) {
                 int maxGen = Integer.parseInt(mutacionParam2Field.getText());
                 double b = Double.parseDouble(mutacionParam3Field.getText());
-                population.setMutacionStrategy(new MutacionNoUniforme(b, maxGen, 0.0));
+                population.setMutationStrategy(new NonUniformMutation(b, maxGen, 0.0));
             }
 
             // Aplicar Escalado
             String escaladoType = escaladoComboBox.getValue();
             if ("Ninguno".equals(escaladoType)) {
-                population.setEscaladoStrategy((Escalado) null);
+                population.setScalingStrategy((ScalingStrategy) null);
             } else if ("Lineal".equals(escaladoType)) {
                 if (escaladoParam1Field.isVisible()) {
                     double a = Double.parseDouble(escaladoParam1Field.getText());
                     double b = Double.parseDouble(escaladoParam2Field.getText());
-                    population.setEscaladoStrategy(new EscaladoLineal(a, b));
+                    population.setScalingStrategy(new LinearScaling(a, b));
                 } else {
-                    population.setEscaladoStrategy(new EscaladoLineal());
+                    population.setScalingStrategy(new LinearScaling());
                 }
             } else if ("Sigma".equals(escaladoType)) {
-                population.setEscaladoStrategy(new EscaladoSigma());
+                population.setScalingStrategy(new SigmaScaling());
             } else if ("Boltzmann".equals(escaladoType)) {
                 if (escaladoParam1Field.isVisible()) {
                     double t0 = Double.parseDouble(escaladoParam1Field.getText());
                     double tmin = Double.parseDouble(escaladoParam2Field.getText());
-                    population.setEscaladoStrategy(new EscaladoBoltzmann(t0, tmin));
+                    population.setScalingStrategy(new BoltzmannScaling(t0, tmin));
                 } else {
-                    population.setEscaladoStrategy(new EscaladoBoltzmann(100.0));
+                    population.setScalingStrategy(new BoltzmannScaling(100.0));
                 }
             }
 
@@ -437,14 +437,14 @@ public class GeneticOperatorsConfigWindow {
      */
     private void loadCurrentConfiguration() {
         // Cargar Cruce
-        CruceStrategy cruce = population.getCruceStrategy();
+        CrossoverStrategy cruce = population.getCrossoverStrategy();
         if (cruce != null) {
             String cruceClassName = cruce.getClass().getSimpleName();
-            if (cruceClassName.equals("CruceUniforme")) {
+            if (cruceClassName.equals("UniformCrossover")) {
                 cruceComboBox.setValue("Uniforme");
-            } else if (cruceClassName.equals("CrucePuntoUnico")) {
+            } else if (cruceClassName.equals("SinglePointCrossover")) {
                 cruceComboBox.setValue("Punto Único");
-            } else if (cruceClassName.equals("CruceAritmetico")) {
+            } else if (cruceClassName.equals("ArithmeticCrossover")) {
                 cruceComboBox.setValue("Aritmético");
                 try {
                     // Usar reflexión para obtener alpha
@@ -460,14 +460,14 @@ public class GeneticOperatorsConfigWindow {
         updateCruceParameters();
 
         // Cargar Selección
-        Seleccion seleccion = population.getSeleccionStrategy();
+        SelectionStrategy seleccion = population.getSelectionStrategy();
         if (seleccion != null) {
             String seleccionClassName = seleccion.getClass().getSimpleName();
-            if (seleccionClassName.equals("SeleccionRuleta")) {
+            if (seleccionClassName.equals("RouletteSelection")) {
                 seleccionComboBox.setValue("Ruleta");
-            } else if (seleccionClassName.equals("SeleccionTorneoDeterministico")) {
+            } else if (seleccionClassName.equals("DeterministicTournamentSelection")) {
                 seleccionComboBox.setValue("Torneo Determinístico");
-            } else if (seleccionClassName.equals("SeleccionTorneoProbabilistico")) {
+            } else if (seleccionClassName.equals("ProbabilisticTournamentSelection")) {
                 seleccionComboBox.setValue("Torneo Probabilístico");
                 try {
                     java.lang.reflect.Field probField = seleccion.getClass().getDeclaredField("probability");
@@ -477,7 +477,7 @@ public class GeneticOperatorsConfigWindow {
                 } catch (Exception e) {
                     seleccionParam1Field.setText("0.75");
                 }
-            } else if (seleccionClassName.equals("SeleccionRanking")) {
+            } else if (seleccionClassName.equals("RankingSelection")) {
                 seleccionComboBox.setValue("Ranking");
                 try {
                     java.lang.reflect.Field betaField = seleccion.getClass().getDeclaredField("beta");
@@ -487,7 +487,7 @@ public class GeneticOperatorsConfigWindow {
                 } catch (Exception e) {
                     seleccionParam1Field.setText("2.0");
                 }
-            } else if (seleccionClassName.equals("SeleccionTruncamiento")) {
+            } else if (seleccionClassName.equals("TruncationSelection")) {
                 seleccionComboBox.setValue("Truncamiento");
                 try {
                     java.lang.reflect.Field truncField = seleccion.getClass().getDeclaredField("truncamiento");
@@ -497,19 +497,19 @@ public class GeneticOperatorsConfigWindow {
                 } catch (Exception e) {
                     seleccionParam1Field.setText("0.5");
                 }
-            } else if (seleccionClassName.equals("SeleccionEstocasticoUniversal")) {
+            } else if (seleccionClassName.equals("StochasticUniversalSelection")) {
                 seleccionComboBox.setValue("Estocástico Universal");
-            } else if (seleccionClassName.equals("SeleccionRestos")) {
+            } else if (seleccionClassName.equals("RemainderSelection")) {
                 seleccionComboBox.setValue("Restos");
             }
         }
         updateSeleccionParameters();
 
         // Cargar Mutación
-        MutacionStrategy mutacion = population.getMutacionStrategy();
+        MutationStrategy mutacion = population.getMutationStrategy();
         if (mutacion != null) {
             String mutacionClassName = mutacion.getClass().getSimpleName();
-            if (mutacionClassName.equals("MutacionGaussiana")) {
+            if (mutacionClassName.equals("GaussianMutation")) {
                 mutacionComboBox.setValue("Gaussiana");
                 try {
                     java.lang.reflect.Field magField = mutacion.getClass().getDeclaredField("magnitude");
@@ -519,9 +519,9 @@ public class GeneticOperatorsConfigWindow {
                 } catch (Exception e) {
                     mutacionParam1Field.setText("0.1");
                 }
-            } else if (mutacionClassName.equals("MutacionUniforme")) {
+            } else if (mutacionClassName.equals("UniformMutation")) {
                 mutacionComboBox.setValue("Uniforme");
-            } else if (mutacionClassName.equals("MutacionNoUniforme")) {
+            } else if (mutacionClassName.equals("NonUniformMutation")) {
                 mutacionComboBox.setValue("No Uniforme");
                 try {
                     java.lang.reflect.Field bField = mutacion.getClass().getDeclaredField("b");
@@ -542,12 +542,12 @@ public class GeneticOperatorsConfigWindow {
         updateMutacionParameters();
 
         // Cargar Escalado
-        Escalado escalado = population.getEscaladoStrategy();
+        ScalingStrategy escalado = population.getScalingStrategy();
         if (escalado == null) {
             escaladoComboBox.setValue("Ninguno");
         } else {
             String escaladoClassName = escalado.getClass().getSimpleName();
-            if (escaladoClassName.equals("EscaladoLineal")) {
+            if (escaladoClassName.equals("LinearScaling")) {
                 escaladoComboBox.setValue("Lineal");
                 try {
                     java.lang.reflect.Field aField = escalado.getClass().getDeclaredField("a");
@@ -563,9 +563,9 @@ public class GeneticOperatorsConfigWindow {
                     escaladoParam1Field.setText("2.0");
                     escaladoParam2Field.setText("1.0");
                 }
-            } else if (escaladoClassName.equals("EscaladoSigma")) {
+            } else if (escaladoClassName.equals("SigmaScaling")) {
                 escaladoComboBox.setValue("Sigma");
-            } else if (escaladoClassName.equals("EscaladoBoltzmann")) {
+            } else if (escaladoClassName.equals("BoltzmannScaling")) {
                 escaladoComboBox.setValue("Boltzmann");
                 try {
                     java.lang.reflect.Field t0Field = escalado.getClass().getDeclaredField("T0");

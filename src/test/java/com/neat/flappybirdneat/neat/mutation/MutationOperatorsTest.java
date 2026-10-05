@@ -16,13 +16,13 @@ class MutationOperatorsTest {
     private static final int HIDDEN_SIZE = 8;
     private static final int OUTPUT_SIZE = 1;
 
-    static Stream<MutacionStrategy> strategies() {
-        return Stream.of(new MutacionGaussiana(), new MutacionUniforme(), new MutacionNoUniforme(100));
+    static Stream<MutationStrategy> strategies() {
+        return Stream.of(new GaussianMutation(), new UniformMutation(), new NonUniformMutation(100));
     }
 
     @ParameterizedTest
     @MethodSource("strategies")
-    void zeroMutationRateLeavesNetworkUnchanged(MutacionStrategy strategy) {
+    void zeroMutationRateLeavesNetworkUnchanged(MutationStrategy strategy) {
         strategy.setRandom(new Random(1));
         NeuralNetwork network = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(2));
         double[] inputs = {0.1, -0.2, 0.3, -0.4};
@@ -36,7 +36,7 @@ class MutationOperatorsTest {
 
     @ParameterizedTest
     @MethodSource("strategies")
-    void mutationPreservesNetworkTopology(MutacionStrategy strategy) {
+    void mutationPreservesNetworkTopology(MutationStrategy strategy) {
         strategy.setRandom(new Random(3));
         NeuralNetwork network = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(4));
 
@@ -49,9 +49,9 @@ class MutationOperatorsTest {
 
     @Test
     void uniformMutationReplacesWeightsWithinRange() {
-        // Regresión: MutacionUniforme delegaba en la mutación gaussiana y nunca aplicaba
+        // Regresión: UniformMutation delegaba en la mutación gaussiana y nunca aplicaba
         // reemplazo uniforme real. Con tasa 1.0, todo peso mutado debe caer en [-1, 1].
-        MutacionUniforme strategy = new MutacionUniforme();
+        UniformMutation strategy = new UniformMutation();
         strategy.setRandom(new Random(6));
         NeuralNetwork network = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(7));
 
@@ -73,7 +73,7 @@ class MutationOperatorsTest {
     void uniformMutationActuallyChangesWeightsWithFullRate() {
         // Con seeds fijas y tasa 1.0, el reemplazo uniforme debe producir pesos distintos
         // a los originales (la probabilidad de que new random == old random es despreciable).
-        MutacionUniforme strategy = new MutacionUniforme();
+        UniformMutation strategy = new UniformMutation();
         strategy.setRandom(new Random(8));
         NeuralNetwork network = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(9));
         double[] inputs = {0.1, 0.2, 0.3, 0.4};
@@ -87,13 +87,13 @@ class MutationOperatorsTest {
 
     @Test
     void nonUniformMutationMagnitudeDecreasesAsGenerationsAdvance() {
-        MutacionNoUniforme strategy = new MutacionNoUniforme(0.5, 100, 2.0);
+        NonUniformMutation strategy = new NonUniformMutation(0.5, 100, 2.0);
 
-        double initialMagnitude = strategy.getMagnitudeActual();
+        double initialMagnitude = strategy.getCurrentMagnitude();
         strategy.update(50);
-        double midMagnitude = strategy.getMagnitudeActual();
+        double midMagnitude = strategy.getCurrentMagnitude();
         strategy.update(99);
-        double lateMagnitude = strategy.getMagnitudeActual();
+        double lateMagnitude = strategy.getCurrentMagnitude();
 
         assertTrue(midMagnitude < initialMagnitude);
         assertTrue(lateMagnitude < midMagnitude);
@@ -103,7 +103,7 @@ class MutationOperatorsTest {
     void nonUniformMutationActuallyAppliesDecreasingMagnitude() {
         // Regresión: antes de la corrección, mutate() ignoraba la magnitud calculada
         // y usaba siempre la magnitud fija por defecto de NeuralNetwork.mutate(rate).
-        MutacionNoUniforme strategy = new MutacionNoUniforme(0.5, 100, 2.0);
+        NonUniformMutation strategy = new NonUniformMutation(0.5, 100, 2.0);
         strategy.setRandom(new Random(11));
         strategy.update(90); // Magnitud ya muy pequeña (cerca del final de la evolución)
 
@@ -120,7 +120,7 @@ class MutationOperatorsTest {
             }
         }
 
-        double magnitude = strategy.getMagnitudeActual();
+        double magnitude = strategy.getCurrentMagnitude();
         // El ruido gaussiano rara vez excede ~4 desviaciones estándar.
         assertTrue(maxDelta < magnitude * 4,
                 "El cambio máximo (" + maxDelta + ") excede con holgura la magnitud esperada (" + magnitude + ")");

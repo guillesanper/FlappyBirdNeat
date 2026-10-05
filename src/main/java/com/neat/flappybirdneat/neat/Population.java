@@ -19,10 +19,10 @@ public class Population implements EvolvingPopulation {
     private final Random random;
 
     // Operadores genéticos configurables
-    private Seleccion seleccionStrategy;
-    private Escalado escaladoStrategy;
-    private MutacionStrategy mutacionStrategy;
-    private CruceStrategy cruceStrategy;
+    private SelectionStrategy selectionStrategy;
+    private ScalingStrategy scalingStrategy;
+    private MutationStrategy mutationStrategy;
+    private CrossoverStrategy crossoverStrategy;
 
     public Population(int size) {
         this(size, new Random());
@@ -47,17 +47,17 @@ public class Population implements EvolvingPopulation {
         bestAgent = new FlappyBirdAgent(4, 8, 1, random);
 
         // Inicializar estrategias por defecto
-        seleccionStrategy = new SeleccionRuleta();
-        escaladoStrategy = null;
-        mutacionStrategy = new MutacionGaussiana();
-        cruceStrategy = new CruceUniforme();
+        selectionStrategy = new RouletteSelection();
+        scalingStrategy = null;
+        mutationStrategy = new GaussianMutation();
+        crossoverStrategy = new UniformCrossover();
         applyRandomToStrategies();
     }
 
     private void applyRandomToStrategies() {
-        if (seleccionStrategy != null) seleccionStrategy.setRandom(random);
-        if (cruceStrategy != null) cruceStrategy.setRandom(random);
-        if (mutacionStrategy != null) mutacionStrategy.setRandom(random);
+        if (selectionStrategy != null) selectionStrategy.setRandom(random);
+        if (crossoverStrategy != null) crossoverStrategy.setRandom(random);
+        if (mutationStrategy != null) mutationStrategy.setRandom(random);
     }
 
     @Override
@@ -71,8 +71,8 @@ public class Population implements EvolvingPopulation {
         }
 
         // Aplicar escalado si está configurado
-        if (escaladoStrategy != null) {
-            escaladoStrategy.escalarFitness(agents);
+        if (scalingStrategy != null) {
+            scalingStrategy.scaleFitness(agents);
         }
 
         // Elitismo
@@ -87,10 +87,10 @@ public class Population implements EvolvingPopulation {
         }
 
         // Calcular probabilidades
-        Seleccionable[] seleccionables = calcularProbabilidades();
+        Selectable[] seleccionables = computeSelectionProbabilities();
 
         // Selección
-        int[] selected = seleccionStrategy.getSeleccion(seleccionables, agents.length - eliteSize);
+        int[] selected = selectionStrategy.select(seleccionables, agents.length - eliteSize);
 
         // Cruce y mutación
         for (int i = 0; i < selected.length; i += 2) {
@@ -101,16 +101,16 @@ public class Population implements EvolvingPopulation {
             FlappyBirdAgent parent2 = agents[idx2];
 
             FlappyBirdAgent child1 = new FlappyBirdAgent(4, 8, 1, random);
-            brainOf(child1).setBrain(cruceStrategy.crossover(
+            brainOf(child1).setBrain(crossoverStrategy.crossover(
                     brainOf(parent1), brainOf(parent2)));
-            mutacionStrategy.mutate(brainOf(child1), mutationRate);
+            mutationStrategy.mutate(brainOf(child1), mutationRate);
             newAgents[eliteSize + i] = child1;
 
             if (eliteSize + i + 1 < agents.length) {
                 FlappyBirdAgent child2 = new FlappyBirdAgent(4, 8, 1, random);
-                brainOf(child2).setBrain(cruceStrategy.crossover(
+                brainOf(child2).setBrain(crossoverStrategy.crossover(
                         brainOf(parent2), brainOf(parent1)));
-                mutacionStrategy.mutate(brainOf(child2), mutationRate);
+                mutationStrategy.mutate(brainOf(child2), mutationRate);
                 newAgents[eliteSize + i + 1] = child2;
             }
         }
@@ -122,11 +122,11 @@ public class Population implements EvolvingPopulation {
 
         agents = newAgents;
         generation++;
-        mutacionStrategy.update(generation);
+        mutationStrategy.update(generation);
     }
 
-    private Seleccionable[] calcularProbabilidades() {
-        Seleccionable[] seleccionables = new Seleccionable[agents.length];
+    private Selectable[] computeSelectionProbabilities() {
+        Selectable[] seleccionables = new Selectable[agents.length];
         double totalFitness = 0;
         for (int i = 0; i < agents.length; i++) {
             totalFitness += Math.max(0, agents[i].getFitness());
@@ -136,7 +136,7 @@ public class Population implements EvolvingPopulation {
         double accProb = 0;
         for (int i = 0; i < agents.length; i++) {
             double prob = Math.max(0, agents[i].getFitness()) / totalFitness;
-            seleccionables[i] = new Seleccionable(i, agents[i].getFitness());
+            seleccionables[i] = new Selectable(i, agents[i].getFitness());
             seleccionables[i].setProb(prob);
             seleccionables[i].setAccProb(accProb);
             accProb += prob;
@@ -171,39 +171,39 @@ public class Population implements EvolvingPopulation {
     // Setters para configurar operadores
     // Nota: cada setter propaga el generador aleatorio compartido de la población a la nueva
     // estrategia, para que la evolución completa siga siendo reproducible con una semilla fija.
-    public void setSeleccionStrategy(Seleccion strategy) {
-        this.seleccionStrategy = strategy;
+    public void setSelectionStrategy(SelectionStrategy strategy) {
+        this.selectionStrategy = strategy;
         if (strategy != null) strategy.setRandom(random);
     }
 
-    public void setEscaladoStrategy(Escalado strategy) {
-        this.escaladoStrategy = strategy;
+    public void setScalingStrategy(ScalingStrategy strategy) {
+        this.scalingStrategy = strategy;
     }
 
-    public void setMutacionStrategy(MutacionStrategy strategy) {
-        this.mutacionStrategy = strategy;
+    public void setMutationStrategy(MutationStrategy strategy) {
+        this.mutationStrategy = strategy;
         if (strategy != null) strategy.setRandom(random);
     }
 
-    public void setCruceStrategy(CruceStrategy strategy) {
-        this.cruceStrategy = strategy;
+    public void setCrossoverStrategy(CrossoverStrategy strategy) {
+        this.crossoverStrategy = strategy;
         if (strategy != null) strategy.setRandom(random);
     }
 
-    public void setSeleccionStrategy(String tipo) {
-        setSeleccionStrategy(SeleccionFactory.getInstance().getSeleccionStrategy(tipo));
+    public void setSelectionStrategy(String tipo) {
+        setSelectionStrategy(SelectionFactory.getInstance().getSelectionStrategy(tipo));
     }
 
-    public void setEscaladoStrategy(String tipo) {
-        setEscaladoStrategy(EscaladoFactory.getInstance().getEscaladoStrategy(tipo));
+    public void setScalingStrategy(String tipo) {
+        setScalingStrategy(ScalingFactory.getInstance().getScalingStrategy(tipo));
     }
 
-    public void setMutacionStrategy(String tipo) {
-        setMutacionStrategy(MutacionFactory.getInstance().getMutacionStrategy(tipo));
+    public void setMutationStrategy(String tipo) {
+        setMutationStrategy(MutationFactory.getInstance().getMutationStrategy(tipo));
     }
 
-    public void setCruceStrategy(String tipo) {
-        setCruceStrategy(CruceFactory.getInstance().getCruceStrategy(tipo));
+    public void setCrossoverStrategy(String tipo) {
+        setCrossoverStrategy(CrossoverFactory.getInstance().getCrossoverStrategy(tipo));
     }
 
     /**
@@ -263,10 +263,10 @@ public class Population implements EvolvingPopulation {
     public void setElitismRate(double elitismRate) { this.elitismRate = elitismRate; }
     @Override
     public FlappyBirdAgent getBestAgent() { return bestAgent; }
-    public Seleccion getSeleccionStrategy() { return seleccionStrategy; }
-    public Escalado getEscaladoStrategy() { return escaladoStrategy; }
-    public MutacionStrategy getMutacionStrategy() { return mutacionStrategy; }
-    public CruceStrategy getCruceStrategy() { return cruceStrategy; }
+    public SelectionStrategy getSelectionStrategy() { return selectionStrategy; }
+    public ScalingStrategy getScalingStrategy() { return scalingStrategy; }
+    public MutationStrategy getMutationStrategy() { return mutationStrategy; }
+    public CrossoverStrategy getCrossoverStrategy() { return crossoverStrategy; }
 
     @Override
     public Population deepCopy() {
@@ -281,10 +281,10 @@ public class Population implements EvolvingPopulation {
         if (this.bestAgent != null) {
             copy.bestAgent = new FlappyBirdAgent(this.bestAgent);
         }
-        copy.seleccionStrategy = this.seleccionStrategy;
-        copy.escaladoStrategy = this.escaladoStrategy;
-        copy.mutacionStrategy = this.mutacionStrategy;
-        copy.cruceStrategy = this.cruceStrategy;
+        copy.selectionStrategy = this.selectionStrategy;
+        copy.scalingStrategy = this.scalingStrategy;
+        copy.mutationStrategy = this.mutationStrategy;
+        copy.crossoverStrategy = this.crossoverStrategy;
         return copy;
     }
 }

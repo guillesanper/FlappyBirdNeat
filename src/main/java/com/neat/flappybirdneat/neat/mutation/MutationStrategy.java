@@ -7,7 +7,7 @@ import java.util.Random;
 /**
  * Interfaz para estrategias de mutación de redes neuronales.
  */
-public interface MutacionStrategy {
+public interface MutationStrategy {
     /**
      * Aplica mutación a una red neuronal.
      * @param network Red neuronal a mutar

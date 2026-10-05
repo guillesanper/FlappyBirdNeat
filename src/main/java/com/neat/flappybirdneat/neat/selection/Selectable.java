@@ -4,13 +4,13 @@ package com.neat.flappybirdneat.neat.selection;
  * Clase auxiliar que encapsula información de un individuo para la selección.
  * Almacena índice, fitness, probabilidad y probabilidad acumulada.
  */
-public class Seleccionable implements Comparable<Seleccionable> {
+public class Selectable implements Comparable<Selectable> {
     private final int index;
     private final double fitness;
     private double prob;
     private double accProb;
 
-    public Seleccionable(int index, double fitness) {
+    public Selectable(int index, double fitness) {
         this.index = index;
         this.fitness = fitness;
     }
@@ -40,7 +40,7 @@ public class Seleccionable implements Comparable<Seleccionable> {
     }
 
     @Override
-    public int compareTo(Seleccionable o) {
+    public int compareTo(Selectable o) {
         return Double.compare(this.fitness, o.fitness);
     }
 }

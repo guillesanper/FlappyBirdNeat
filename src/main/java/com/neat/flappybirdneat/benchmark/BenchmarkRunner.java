@@ -54,10 +54,10 @@ public final class BenchmarkRunner {
                                            int populationSize, int canvasWidth, int canvasHeight) {
         Random random = new Random(seed);
         Population population = new Population(populationSize, random);
-        population.setSeleccionStrategy(config.newSeleccion());
-        population.setEscaladoStrategy(config.newEscalado());
-        population.setMutacionStrategy(config.newMutacion());
-        population.setCruceStrategy(config.newCruce());
+        population.setSelectionStrategy(config.newSelection());
+        population.setScalingStrategy(config.newScaling());
+        population.setMutationStrategy(config.newMutation());
+        population.setCrossoverStrategy(config.newCrossover());
 
         FlappyBirdGame game = new FlappyBirdGame(canvasWidth, canvasHeight, random);
         List<Double> curve = new ArrayList<>(generations);
