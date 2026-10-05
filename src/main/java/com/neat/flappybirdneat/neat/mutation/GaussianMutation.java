@@ -21,7 +21,7 @@ public class GaussianMutation implements MutationStrategy {
 
     @Override
     public void mutate(NeuralNetwork network, double mutationRate) {
-        // Delegar al método mutate existente en NeuralNetwork
-        network.mutate(mutationRate);
+        // Delegar en NeuralNetwork con la magnitud configurada (sigma del ruido gaussiano)
+        network.mutate(mutationRate, magnitude);
     }
 }

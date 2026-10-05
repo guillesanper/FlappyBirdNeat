@@ -126,6 +126,25 @@ class MutationOperatorsTest {
                 "El cambio máximo (" + maxDelta + ") excede con holgura la magnitud esperada (" + magnitude + ")");
     }
 
+    @Test
+    void gaussianMutationUsesConfiguredMagnitude() {
+        // Regresión: GaussianMutation ignoraba su magnitud y aplicaba siempre sigma = 0.1.
+        GaussianMutation small = new GaussianMutation(0.001);
+        small.setRandom(new Random(5));
+        NeuralNetwork network = new NeuralNetwork(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, new Random(6));
+        double[][] before = deepCopy(network.getWeightsInputHidden());
+
+        small.mutate(network, 1.0);
+
+        double[][] after = network.getWeightsInputHidden();
+        for (int i = 0; i < before.length; i++) {
+            for (int j = 0; j < before[i].length; j++) {
+                assertTrue(Math.abs(after[i][j] - before[i][j]) < 0.001 * 6,
+                        "Una mutación con sigma = 0.001 no debería mover un peso más de 6 sigmas");
+            }
+        }
+    }
+
     private double[][] deepCopy(double[][] source) {
         double[][] copy = new double[source.length][];
         for (int i = 0; i < source.length; i++) {
