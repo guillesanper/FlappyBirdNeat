@@ -13,11 +13,23 @@ import java.util.Map;
 public class InnovationTracker {
     private final Map<Long, Integer> connectionInnovations = new HashMap<>();
     private final Map<Integer, Integer> nodeSplitInnovations = new HashMap<>();
+    private final Map<Integer, Integer> initialNodeIds = new HashMap<>();
     private int nextInnovationNumber = 0;
     private int nextNodeId = 0;
 
     public int nextNodeId() {
         return nextNodeId++;
+    }
+
+    /**
+     * Id del nodo inicial (entrada, bias o salida) que ocupa la posición {@code slot} en el
+     * genoma mínimo. Todos los genomas de una misma ejecución deben compartir estos nodos:
+     * si cada genoma inicial reservase ids propios, sus conexiones tendrían innovation numbers
+     * distintos, no habría genes "matching" entre individuos (la especiación y el crossover
+     * dejarían de tener sentido) y un crossover con empate heredaría las entradas de ambos padres.
+     */
+    public int getInitialNodeId(int slot) {
+        return initialNodeIds.computeIfAbsent(slot, k -> nextNodeId());
     }
 
     public int getInnovationNumber(int inNode, int outNode) {

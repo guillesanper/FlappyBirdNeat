@@ -110,6 +110,23 @@ class NeatCrossoverTest {
         }
     }
 
+    @Test
+    void equalFitnessCrossoverOfIndependentlyCreatedGenomesKeepsInputCount() {
+        // Regresión: cada genoma inicial reservaba ids de nodo propios, así que dos genomas
+        // creados por separado no compartían ningún gen y un crossover con empate heredaba las
+        // entradas de ambos padres (8 nodos INPUT para 4 entradas -> ArrayIndexOutOfBounds).
+        InnovationTracker tracker = new InnovationTracker();
+        Genome parent1 = new Genome(4, 1, new Random(1), tracker);
+        Genome parent2 = new Genome(4, 1, new Random(2), tracker);
+
+        Genome offspring = NeatCrossover.crossover(parent1, 5.0, parent2, 5.0, new Random(3));
+
+        long inputNodes = offspring.getNodes().stream().filter(n -> n.getType() == NodeType.INPUT).count();
+        assertEquals(4, inputNodes);
+        assertEquals(parent1.getConnections().size(), offspring.getConnections().size());
+        assertDoesNotThrow(() -> offspring.feedForward(new double[]{0.1, 0.2, 0.3, 0.4}));
+    }
+
     private Map<Integer, Double> byInnovation(Genome genome, Function<ConnectionGene, Double> extractor) {
         return genome.getConnections().stream()
                 .collect(java.util.stream.Collectors.toMap(ConnectionGene::getInnovationNumber, extractor));

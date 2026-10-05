@@ -40,20 +40,23 @@ public class Genome implements Brain {
         this.numInputs = numInputs;
         this.numOutputs = numOutputs;
 
+        // Los nodos iniciales se identifican por su posición (slot), no por un id nuevo, para que
+        // todos los genomas creados con el mismo tracker compartan entradas, bias y salidas.
+        int slot = 0;
         List<NodeGene> inputNodes = new ArrayList<>();
         for (int i = 0; i < numInputs; i++) {
-            NodeGene node = new NodeGene(tracker.nextNodeId(), NodeType.INPUT);
+            NodeGene node = new NodeGene(tracker.getInitialNodeId(slot++), NodeType.INPUT);
             nodes.add(node);
             inputNodes.add(node);
         }
 
-        NodeGene biasNode = new NodeGene(tracker.nextNodeId(), NodeType.BIAS);
+        NodeGene biasNode = new NodeGene(tracker.getInitialNodeId(slot++), NodeType.BIAS);
         nodes.add(biasNode);
         this.biasNodeId = biasNode.getId();
 
         List<NodeGene> outputNodes = new ArrayList<>();
         for (int i = 0; i < numOutputs; i++) {
-            NodeGene node = new NodeGene(tracker.nextNodeId(), NodeType.OUTPUT);
+            NodeGene node = new NodeGene(tracker.getInitialNodeId(slot++), NodeType.OUTPUT);
             nodes.add(node);
             outputNodes.add(node);
         }

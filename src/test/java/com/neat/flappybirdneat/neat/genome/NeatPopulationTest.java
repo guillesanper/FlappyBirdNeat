@@ -28,6 +28,20 @@ class NeatPopulationTest {
     }
 
     @Test
+    void initialGenomesShareNodesAndInnovationNumbers() {
+        NeatPopulation population = new NeatPopulation(POPULATION_SIZE, 4, 1, new Random(1), new NeatConfig());
+        Genome first = (Genome) population.getAgents()[0].getBrain();
+
+        for (FlappyBirdAgent agent : population.getAgents()) {
+            Genome genome = (Genome) agent.getBrain();
+            assertEquals(first.getNodes().stream().map(NodeGene::getId).toList(),
+                    genome.getNodes().stream().map(NodeGene::getId).toList());
+            assertEquals(first.getConnections().stream().map(ConnectionGene::getInnovationNumber).toList(),
+                    genome.getConnections().stream().map(ConnectionGene::getInnovationNumber).toList());
+        }
+    }
+
+    @Test
     void naturalSelectionKeepsPopulationSizeConstant() {
         NeatPopulation population = new NeatPopulation(POPULATION_SIZE, 4, 1, new Random(1), new NeatConfig());
         assignFitness(population, new Random(2));
