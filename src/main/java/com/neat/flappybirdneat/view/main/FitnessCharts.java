@@ -2,6 +2,7 @@ package com.neat.flappybirdneat.view.main;
 
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.ChartBandUtil;
+import java.util.List;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.chart.LineChart;
@@ -13,8 +14,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
-
-import java.util.List;
 
 /**
  * Charts of the statistics tab: fitness per generation (best, average and best-so-far, with a
@@ -80,7 +79,9 @@ final class FitnessCharts {
 
         bestFitnessSeries.getNode().setStyle("-fx-stroke: red; -fx-stroke-width: 2px;");
         avgFitnessSeries.getNode().setStyle("-fx-stroke: blue; -fx-stroke-width: 1.5px;");
-        bestAbsoluteSeries.getNode().setStyle("-fx-stroke: green; -fx-stroke-width: 2.5px; -fx-stroke-dash-array: 5 5;");
+        bestAbsoluteSeries
+                .getNode()
+                .setStyle("-fx-stroke: green; -fx-stroke-width: 2.5px; -fx-stroke-dash-array: 5 5;");
 
         // Shaded band between each generation's minimum and best fitness
         minMaxBand.setFill(new Color(1, 0, 0, 0.12));
@@ -89,8 +90,8 @@ final class FitnessCharts {
         return chart;
     }
 
-    private static LineChart<Number, Number> metricChart(String yLabel, String title,
-                                                         XYChart.Series<Number, Number> series) {
+    private static LineChart<Number, Number> metricChart(
+            String yLabel, String title, XYChart.Series<Number, Number> series) {
         NumberAxis xAxis = new NumberAxis();
         xAxis.setLabel("Generación");
         NumberAxis yAxis = new NumberAxis();

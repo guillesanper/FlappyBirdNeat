@@ -195,23 +195,61 @@ public class NeuralNetwork implements Brain {
     }
 
     // Getters para acceder a la estructura de la red
-    public int getInputSize() { return inputSize; }
-    public int getHiddenSize() { return hiddenSize; }
-    public int getOutputSize() { return outputSize; }
+    public int getInputSize() {
+        return inputSize;
+    }
+
+    public int getHiddenSize() {
+        return hiddenSize;
+    }
+
+    public int getOutputSize() {
+        return outputSize;
+    }
 
     // Getters y setters para pesos y bias (para estrategias de cruce)
-    public double[][] getWeightsInputHidden() { return weightsInputHidden; }
-    public double[][] getWeightsHiddenOutput() { return weightsHiddenOutput; }
-    public double[] getBiasHidden() { return biasHidden; }
-    public double[] getBiasOutput() { return biasOutput; }
+    public double[][] getWeightsInputHidden() {
+        return weightsInputHidden;
+    }
 
-    public void setWeightsInputHidden(double[][] weights) { this.weightsInputHidden = weights; }
-    public void setWeightsHiddenOutput(double[][] weights) { this.weightsHiddenOutput = weights; }
-    public void setBiasHidden(double[] bias) { this.biasHidden = bias; }
-    public void setBiasOutput(double[] bias) { this.biasOutput = bias; }
+    public double[][] getWeightsHiddenOutput() {
+        return weightsHiddenOutput;
+    }
+
+    public double[] getBiasHidden() {
+        return biasHidden;
+    }
+
+    public double[] getBiasOutput() {
+        return biasOutput;
+    }
+
+    public void setWeightsInputHidden(double[][] weights) {
+        this.weightsInputHidden = weights;
+    }
+
+    public void setWeightsHiddenOutput(double[][] weights) {
+        this.weightsHiddenOutput = weights;
+    }
+
+    public void setBiasHidden(double[] bias) {
+        this.biasHidden = bias;
+    }
+
+    public void setBiasOutput(double[] bias) {
+        this.biasOutput = bias;
+    }
 
     // Getters for visualization (returns last computation state)
-    public double[] getLastInputs() { return lastInputs; }
-    public double[] getLastHiddenActivations() { return lastHiddenActivations; }
-    public double[] getLastOutputs() { return lastOutputs; }
+    public double[] getLastInputs() {
+        return lastInputs;
+    }
+
+    public double[] getLastHiddenActivations() {
+        return lastHiddenActivations;
+    }
+
+    public double[] getLastOutputs() {
+        return lastOutputs;
+    }
 }

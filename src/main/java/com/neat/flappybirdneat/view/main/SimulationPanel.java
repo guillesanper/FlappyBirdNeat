@@ -28,8 +28,13 @@ final class SimulationPanel {
     private final GameRenderer renderer;
     private final VBox view;
 
-    SimulationPanel(SimulationController controller, int canvasWidth, int canvasHeight, LiveViewSettings settings,
-                    NeuralNetworkWindow networkWindow, HistoryBrowser historyBrowser) {
+    SimulationPanel(
+            SimulationController controller,
+            int canvasWidth,
+            int canvasHeight,
+            LiveViewSettings settings,
+            NeuralNetworkWindow networkWindow,
+            HistoryBrowser historyBrowser) {
         this.controller = controller;
         this.settings = settings;
         this.canvas = new Canvas(canvasWidth, canvasHeight);
@@ -69,17 +74,24 @@ final class SimulationPanel {
         playSelectedGenButton.setOnAction(e -> historyBrowser.playSelectedGeneration());
 
         Label infoLabel = new Label();
-        infoLabel.textProperty().bind(Bindings.concat(
-                "Generación: ", controller.currentGenerationProperty().asString(), "\n",
-                "Mejor Fitness: ", Bindings.format("%.2f", controller.bestFitnessProperty())));
+        infoLabel
+                .textProperty()
+                .bind(Bindings.concat(
+                        "Generación: ",
+                        controller.currentGenerationProperty().asString(),
+                        "\n",
+                        "Mejor Fitness: ",
+                        Bindings.format("%.2f", controller.bestFitnessProperty())));
 
         Button toggleAgentsButton = new Button("Alternar vista (todos/mejor)");
         toggleAgentsButton.setOnAction(e -> {
             settings.setShowAllAgents(!settings.isShowAllAgents());
-            toggleAgentsButton.setText(settings.isShowAllAgents() ? "Mostrar solo el mejor" : "Mostrar todos los agentes");
+            toggleAgentsButton.setText(
+                    settings.isShowAllAgents() ? "Mostrar solo el mejor" : "Mostrar todos los agentes");
         });
 
-        VBox controlsPanel = new VBox(10,
+        VBox controlsPanel = new VBox(
+                10,
                 speedBox,
                 showAllCheckbox,
                 showNetworkButton,
@@ -104,9 +116,12 @@ final class SimulationPanel {
     /** Draws the current state of the live game. */
     void draw() {
         EvolvingPopulation population = controller.getPopulation();
-        renderer.render(canvas.getGraphicsContext2D(), controller.getGame(), population.getAgents(),
+        renderer.render(
+                canvas.getGraphicsContext2D(),
+                controller.getGame(),
+                population.getAgents(),
                 population.getBestAgent(),
-                GameRenderer.Options.liveSimulation(settings.isShowAllAgents(), controller.isReplayMode(),
-                        population.getAgents().length == 1));
+                GameRenderer.Options.liveSimulation(
+                        settings.isShowAllAgents(), controller.isReplayMode(), population.getAgents().length == 1));
     }
 }

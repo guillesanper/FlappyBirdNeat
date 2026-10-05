@@ -1,10 +1,9 @@
 package com.neat.flappybirdneat.view;
 
+import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.genome.Genome;
-import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
-
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -108,8 +107,8 @@ public class NeuralNetworkWindow {
 
         // Si no hay datos (primera ejecución), usar valores por defecto
         if (inputs == null || outputs == null) {
-            inputs = new double[]{0.5, 0.5, 0.5, 0.5};
-            outputs = new double[]{0.5};
+            inputs = new double[] {0.5, 0.5, 0.5, 0.5};
+            outputs = new double[] {0.5};
         }
 
         // Información adicional para mostrar al usuario
@@ -120,16 +119,10 @@ public class NeuralNetworkWindow {
         // Dibujar la red: MLP fija o grafo NEAT de topología variable
         if (agent.getBrain() instanceof NeuralNetwork network) {
             NeuralNetworkVisualizer.drawNetwork(
-                    gc, network,
-                    120, 70, canvasWidth - 240, canvasHeight - 100,
-                    inputs, outputs
-            );
+                    gc, network, 120, 70, canvasWidth - 240, canvasHeight - 100, inputs, outputs);
         } else if (agent.getBrain() instanceof Genome genome) {
             NeuralNetworkVisualizer.drawGenome(
-                    gc, genome,
-                    120, 70, canvasWidth - 240, canvasHeight - 100,
-                    inputs, outputs
-            );
+                    gc, genome, 120, 70, canvasWidth - 240, canvasHeight - 100, inputs, outputs);
         }
 
         // Información adicional
@@ -139,7 +132,8 @@ public class NeuralNetworkWindow {
         gc.fillText("Posición Y: " + String.format("%.2f", agent.getY()), 40, canvasHeight - 40);
 
         if (nextPipe != null) {
-            gc.fillText("Distancia al próximo tubo: " + String.format("%.2f", distanceToNextPipe), 40, canvasHeight - 20);
+            gc.fillText(
+                    "Distancia al próximo tubo: " + String.format("%.2f", distanceToNextPipe), 40, canvasHeight - 20);
             gc.fillText("Altura del hueco: " + String.format("%.2f", heightOfNextPipe), 300, canvasHeight - 40);
             gc.fillText("Tamaño del hueco: " + String.format("%.2f", gapSize), 300, canvasHeight - 20);
         }

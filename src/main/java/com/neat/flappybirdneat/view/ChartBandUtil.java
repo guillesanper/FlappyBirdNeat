@@ -1,12 +1,11 @@
 package com.neat.flappybirdneat.view;
 
+import java.util.ArrayList;
+import java.util.List;
 import javafx.scene.Group;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.shape.Polygon;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Dibuja una banda semitransparente (p. ej. min-max o media ± desviación estándar) superpuesta a
@@ -17,8 +16,7 @@ import java.util.List;
  */
 public final class ChartBandUtil {
 
-    private ChartBandUtil() {
-    }
+    private ChartBandUtil() {}
 
     /**
      * Recalcula (y adjunta si aún no lo estaba) el polígono de la banda a partir de dos curvas

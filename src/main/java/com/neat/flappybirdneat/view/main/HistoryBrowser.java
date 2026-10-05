@@ -6,6 +6,7 @@ import com.neat.flappybirdneat.history.RunHistory;
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.Dialogs;
 import com.neat.flappybirdneat.view.FlappyBirdGameUI;
+import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
@@ -17,8 +18,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Browser of the recorded runs (the current one and previous ones) and their generations, from
@@ -179,19 +178,29 @@ final class HistoryBrowser {
         try {
             Stage replayStage = new Stage();
             replayStage.setTitle("Simulación de Generación " + generationNumber);
-            new FlappyBirdGameUI().prepareStage(replayStage, selectedGen.getSavedPopulation(), generationNumber,
-                    controller.derivedRandom(generationNumber));
+            new FlappyBirdGameUI()
+                    .prepareStage(
+                            replayStage,
+                            selectedGen.getSavedPopulation(),
+                            generationNumber,
+                            controller.derivedRandom(generationNumber));
             replayStage.setOnHidden(e -> resumeLiveLoop.run());
             replayStage.show();
 
-            Dialogs.show(Alert.AlertType.INFORMATION, "Reproducción Histórica", null,
+            Dialogs.show(
+                    Alert.AlertType.INFORMATION,
+                    "Reproducción Histórica",
+                    null,
                     "Reproduciendo generación " + generationNumber + " con fitness "
                             + String.format("%.2f", selectedGen.getBestFitness())
                             + "\n\nSe abrirá una nueva ventana con la simulación visual.");
         } catch (Exception e) {
             resumeLiveLoop.run();
             LOG.error("Could not open the replay of generation {}", generationNumber, e);
-            Dialogs.show(Alert.AlertType.ERROR, "Error", "Error al cargar la simulación",
+            Dialogs.show(
+                    Alert.AlertType.ERROR,
+                    "Error",
+                    "Error al cargar la simulación",
                     "No se pudo iniciar la simulación visual: " + e.getMessage());
         }
     }

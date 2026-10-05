@@ -1,14 +1,13 @@
 package com.neat.flappybirdneat.neat.crossover;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.neat.flappybirdneat.neural.NeuralNetwork;
+import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Random;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Invariantes comunes a todas las estrategias de cruce: la red hija debe conservar
@@ -70,7 +69,8 @@ class CrossoverOperatorsTest {
         for (int i = 0; i < INPUT_SIZE; i++) {
             for (int j = 0; j < HIDDEN_SIZE; j++) {
                 double value = child.getWeightsInputHidden()[i][j];
-                assertTrue(value == parent1.getWeightsInputHidden()[i][j]
+                assertTrue(
+                        value == parent1.getWeightsInputHidden()[i][j]
                                 || value == parent2.getWeightsInputHidden()[i][j],
                         "El gen hijo no proviene de ninguno de los dos padres");
             }
@@ -87,8 +87,7 @@ class CrossoverOperatorsTest {
 
         for (int i = 0; i < INPUT_SIZE; i++) {
             for (int j = 0; j < HIDDEN_SIZE; j++) {
-                double expected = (parent1.getWeightsInputHidden()[i][j]
-                        + parent2.getWeightsInputHidden()[i][j]) / 2.0;
+                double expected = (parent1.getWeightsInputHidden()[i][j] + parent2.getWeightsInputHidden()[i][j]) / 2.0;
                 assertEquals(expected, child.getWeightsInputHidden()[i][j], 1e-9);
             }
         }

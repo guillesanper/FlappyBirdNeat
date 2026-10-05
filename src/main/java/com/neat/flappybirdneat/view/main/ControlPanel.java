@@ -7,6 +7,8 @@ import com.neat.flappybirdneat.view.BenchmarkWindow;
 import com.neat.flappybirdneat.view.Dialogs;
 import com.neat.flappybirdneat.view.GeneticOperatorsConfigWindow;
 import com.neat.flappybirdneat.view.StatisticsWindow;
+import java.io.File;
+import java.io.PrintWriter;
 import javafx.animation.AnimationTimer;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
@@ -26,9 +28,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.FileChooser;
-
-import java.io.File;
-import java.io.PrintWriter;
 
 /**
  * Top of the statistics tab: live statistics, the headless training controls (engine, number of
@@ -52,8 +51,14 @@ final class ControlPanel {
     private final Label speciesLabel = new Label("🧬 Especies: -");
     private final VBox view;
 
-    ControlPanel(SimulationController controller, int populationSize, int canvasWidth, int canvasHeight,
-                 LiveViewSettings settings, StatisticsWindow statisticsWindow, MainWindowActions actions) {
+    ControlPanel(
+            SimulationController controller,
+            int populationSize,
+            int canvasWidth,
+            int canvasHeight,
+            LiveViewSettings settings,
+            StatisticsWindow statisticsWindow,
+            MainWindowActions actions) {
         this.controller = controller;
         this.populationSize = populationSize;
         this.canvasWidth = canvasWidth;
@@ -84,34 +89,44 @@ final class ControlPanel {
         statsTitle.setTextFill(Color.DARKBLUE);
 
         Label genLabel = boldLabel();
-        genLabel.textProperty().bind(Bindings.concat("🔄 Generación: ",
-                controller.currentGenerationProperty().asString()));
+        genLabel.textProperty()
+                .bind(Bindings.concat(
+                        "🔄 Generación: ",
+                        controller.currentGenerationProperty().asString()));
 
         Label bestFitnessLabel = boldLabel();
-        bestFitnessLabel.textProperty().bind(Bindings.concat("🏆 Mejor Fitness: ",
-                Bindings.format("%.2f", controller.bestFitnessProperty())));
+        bestFitnessLabel
+                .textProperty()
+                .bind(Bindings.concat("🏆 Mejor Fitness: ", Bindings.format("%.2f", controller.bestFitnessProperty())));
 
         Label avgFitnessLabel = boldLabel();
-        avgFitnessLabel.textProperty().bind(Bindings.concat("📈 Fitness Promedio: ",
-                Bindings.format("%.2f", controller.averageFitnessProperty())));
+        avgFitnessLabel
+                .textProperty()
+                .bind(Bindings.concat(
+                        "📈 Fitness Promedio: ", Bindings.format("%.2f", controller.averageFitnessProperty())));
 
         Label aliveLabel = boldLabel();
-        aliveLabel.textProperty().bind(Bindings.concat("💚 Agentes Vivos: ",
-                controller.aliveCountProperty().asString(), " / ", populationSize));
+        aliveLabel
+                .textProperty()
+                .bind(Bindings.concat(
+                        "💚 Agentes Vivos: ", controller.aliveCountProperty().asString(), " / ", populationSize));
 
         speciesLabel.setFont(LABEL_FONT);
         showSpeciesLabel(false);
 
         Label statusLabel = boldLabel();
-        statusLabel.textProperty().bind(
-                Bindings.when(controller.runningProperty())
+        statusLabel
+                .textProperty()
+                .bind(Bindings.when(controller.runningProperty())
                         .then("⚡ Estado: SIMULACIÓN RÁPIDA EN CURSO...")
                         .otherwise("⏸ Estado: Pausado"));
-        controller.runningProperty().addListener((obs, wasRunning, running) ->
-                statusLabel.setTextFill(running ? Color.GREEN : Color.ORANGE));
+        controller
+                .runningProperty()
+                .addListener(
+                        (obs, wasRunning, running) -> statusLabel.setTextFill(running ? Color.GREEN : Color.ORANGE));
 
-        VBox infoPanel = new VBox(5, statsTitle, genLabel, bestFitnessLabel, avgFitnessLabel, aliveLabel,
-                speciesLabel, statusLabel);
+        VBox infoPanel = new VBox(
+                5, statsTitle, genLabel, bestFitnessLabel, avgFitnessLabel, aliveLabel, speciesLabel, statusLabel);
         infoPanel.setPadding(new Insets(10));
         infoPanel.setStyle("-fx-background-color: #f0f0f0; -fx-background-radius: 5;");
         return infoPanel;
@@ -168,9 +183,11 @@ final class ControlPanel {
         genInputBox.setAlignment(Pos.CENTER_LEFT);
 
         Button runButton = new Button("▶ Iniciar Entrenamiento");
-        runButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
+        runButton.setStyle(
+                "-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
         Button stopButton = new Button("⏹ Detener");
-        stopButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
+        stopButton.setStyle(
+                "-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
         stopButton.setDisable(true);
         controller.runningProperty().addListener((obs, wasRunning, running) -> {
             stopButton.setDisable(!running);
@@ -191,10 +208,11 @@ final class ControlPanel {
             progressBar.progressProperty().unbind();
         });
 
-        VBox fastSimPanel = new VBox(10, fastSimLabel, fastSimDescription, modeBox, genInputBox, buttonBox,
-                progressLabel, progressBar);
+        VBox fastSimPanel = new VBox(
+                10, fastSimLabel, fastSimDescription, modeBox, genInputBox, buttonBox, progressLabel, progressBar);
         fastSimPanel.setPadding(new Insets(10));
-        fastSimPanel.setStyle("-fx-background-color: #e8f4f8; -fx-background-radius: 5; -fx-border-color: #4CAF50; -fx-border-radius: 5; -fx-border-width: 2;");
+        fastSimPanel.setStyle(
+                "-fx-background-color: #e8f4f8; -fx-background-radius: 5; -fx-border-color: #4CAF50; -fx-border-radius: 5; -fx-border-width: 2;");
         return fastSimPanel;
     }
 
@@ -220,10 +238,14 @@ final class ControlPanel {
 
         controller.runFastSimulation(generations);
 
-        progressBar.progressProperty().bind(Bindings.createDoubleBinding(() -> {
-            int current = controller.currentGenerationProperty().getValue();
-            return Math.min(1.0, (double) (current - startGeneration) / generations);
-        }, controller.currentGenerationProperty()));
+        progressBar
+                .progressProperty()
+                .bind(Bindings.createDoubleBinding(
+                        () -> {
+                            int current = controller.currentGenerationProperty().getValue();
+                            return Math.min(1.0, (double) (current - startGeneration) / generations);
+                        },
+                        controller.currentGenerationProperty()));
 
         // Once this run finishes, offer to replay its best generation (one-shot listener)
         controller.runningProperty().addListener(new ChangeListener<>() {
@@ -287,17 +309,27 @@ final class ControlPanel {
         Button benchmarkButton = new Button("🔬 Comparar Operadores (Benchmark)");
         benchmarkButton.setOnAction(e -> new BenchmarkWindow(populationSize, canvasWidth, canvasHeight).show());
 
-        HBox actionsRow = new HBox(20, resetButton, exportDataButton, playBestButton, configOperatorsButton,
-                statsWindowButton, benchmarkButton);
+        HBox actionsRow = new HBox(
+                20,
+                resetButton,
+                exportDataButton,
+                playBestButton,
+                configOperatorsButton,
+                statsWindowButton,
+                benchmarkButton);
         actionsRow.setPadding(new Insets(10, 0, 10, 0));
         actionsRow.setAlignment(Pos.CENTER_LEFT);
-        actionsRow.setStyle("-fx-border-color: transparent transparent lightgray transparent; -fx-border-width: 0 0 1 0;");
+        actionsRow.setStyle(
+                "-fx-border-color: transparent transparent lightgray transparent; -fx-border-width: 0 0 1 0;");
         return actionsRow;
     }
 
     private void playBestAgent() {
         if (controller.getHistoryManager().getBestGeneration() == null) {
-            Dialogs.show(Alert.AlertType.WARNING, "Sin datos", "No hay datos disponibles",
+            Dialogs.show(
+                    Alert.AlertType.WARNING,
+                    "Sin datos",
+                    "No hay datos disponibles",
                     "Ejecuta primero una simulación para encontrar el mejor individuo.");
             return;
         }
@@ -305,7 +337,9 @@ final class ControlPanel {
 
         double bestFitnessEver = controller.getHistoryManager().getBestFitnessEver();
         if (bestFitnessEver >= SimulationController.getOptimalFitnessThreshold()) {
-            Dialogs.show(Alert.AlertType.INFORMATION, "Reproducir Mejor Individuo",
+            Dialogs.show(
+                    Alert.AlertType.INFORMATION,
+                    "Reproducir Mejor Individuo",
                     "🎯 ¡AGENTE ÓPTIMO ENCONTRADO! 🎯",
                     "Fitness alcanzado: " + String.format("%.2f", bestFitnessEver) + "\n\n"
                             + "¡Este agente ha alcanzado el umbral óptimo!\n"
@@ -313,7 +347,9 @@ final class ControlPanel {
                             + "Cambia a la pestaña 'Simulación Visual' para verlo en acción.\n"
                             + "El agente aparecerá marcado en rojo con un borde dorado brillante.");
         } else {
-            Dialogs.show(Alert.AlertType.INFORMATION, "Reproducir Mejor Individuo",
+            Dialogs.show(
+                    Alert.AlertType.INFORMATION,
+                    "Reproducir Mejor Individuo",
                     "Mejor fitness encontrado: " + String.format("%.2f", bestFitnessEver),
                     "Se reproducirá el mejor agente encontrado.\n\n"
                             + "Cambia a la pestaña 'Simulación Visual' para verlo en acción.\n"
@@ -327,7 +363,10 @@ final class ControlPanel {
 
     private void openOperatorsConfig() {
         if (!(controller.getPopulation() instanceof Population fixedPopulation)) {
-            Dialogs.show(Alert.AlertType.INFORMATION, "No disponible en modo NEAT", null,
+            Dialogs.show(
+                    Alert.AlertType.INFORMATION,
+                    "No disponible en modo NEAT",
+                    null,
                     "Los operadores genéticos configurables (cruce, selección, mutación, escalado) "
                             + "solo aplican en modo 'Fixed MLP'. En modo NEAT, la topología y los pesos evolucionan "
                             + "mediante las reglas propias de NEAT.");
@@ -350,11 +389,14 @@ final class ControlPanel {
         try (PrintWriter writer = new PrintWriter(file)) {
             FitnessCsvExporter.write(controller, writer);
         } catch (Exception e) {
-            Dialogs.show(Alert.AlertType.ERROR, "Error", "Error al exportar datos",
+            Dialogs.show(
+                    Alert.AlertType.ERROR,
+                    "Error",
+                    "Error al exportar datos",
                     "Se produjo un error: " + e.getMessage());
             return;
         }
-        Dialogs.show(Alert.AlertType.INFORMATION, "Exportación Completa", null,
-                "Los datos se han exportado correctamente.");
+        Dialogs.show(
+                Alert.AlertType.INFORMATION, "Exportación Completa", null, "Los datos se han exportado correctamente.");
     }
 }

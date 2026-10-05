@@ -1,31 +1,27 @@
 package com.neat.flappybirdneat.view;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
-
+import java.util.Random;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.control.Label;
-import javafx.scene.control.Button;
-import javafx.scene.control.Slider;
-import javafx.scene.control.CheckBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
-
-import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Componente principal que integra el algoritmo evolutivo de redes neuronales
@@ -71,7 +67,7 @@ public class FlappyBirdGameUI {
 
     public FlappyBirdGameUI() {
         // El constructor vacío no inicializa nada, se hará mediante prepareStage
-        networkWindow = null;  // Se inicializará bajo demanda
+        networkWindow = null; // Se inicializará bajo demanda
     }
 
     /**
@@ -283,27 +279,32 @@ public class FlappyBirdGameUI {
 
         VBox infoPanel = new VBox(10);
         infoPanel.setPadding(new Insets(10));
-        infoPanel.getChildren().addAll(
-                generationLabel,
-                aliveLabel,
-                scoreLabel,
-                bestFitnessLabel,
-                speedLabel,
-                pauseButton,
-                speedSliderLabel,
-                speedSlider,
-                loopCheckbox,
-                maxGenLabel,
-                maxGenSlider,
-                showAllAgentsCheckbox,
-                showNetworkButton
-        );
+        infoPanel
+                .getChildren()
+                .addAll(
+                        generationLabel,
+                        aliveLabel,
+                        scoreLabel,
+                        bestFitnessLabel,
+                        speedLabel,
+                        pauseButton,
+                        speedSliderLabel,
+                        speedSlider,
+                        loopCheckbox,
+                        maxGenLabel,
+                        maxGenSlider,
+                        showAllAgentsCheckbox,
+                        showNetworkButton);
 
         return infoPanel;
     }
 
     private void drawGame() {
-        renderer.render(gc, game, population.getAgents(), population.getBestAgent(),
+        renderer.render(
+                gc,
+                game,
+                population.getAgents(),
+                population.getBestAgent(),
                 GameRenderer.Options.generationReplay(showAllAgents));
     }
 

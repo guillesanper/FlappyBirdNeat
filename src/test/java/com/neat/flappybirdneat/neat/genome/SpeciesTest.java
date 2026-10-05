@@ -1,12 +1,11 @@
 package com.neat.flappybirdneat.neat.genome;
 
-import com.neat.flappybirdneat.neat.FlappyBirdAgent;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import java.util.List;
 import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class SpeciesTest {
 
@@ -50,7 +49,7 @@ class SpeciesTest {
     @Test
     void survivorsKeepsOnlyTopFractionRoundedUp() {
         Species species = new Species(new Genome(2, 1, new Random(1), new InnovationTracker()));
-        for (double fitness : new double[]{10, 40, 20, 30, 5}) {
+        for (double fitness : new double[] {10, 40, 20, 30, 5}) {
             species.addMember(agentWithFitness(fitness));
         }
 

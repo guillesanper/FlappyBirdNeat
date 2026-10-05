@@ -1,10 +1,9 @@
 package com.neat.flappybirdneat.neural;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class NeuralNetworkTest {
 
@@ -12,7 +11,7 @@ class NeuralNetworkTest {
     void feedForwardProducesOutputVectorOfExpectedSize() {
         NeuralNetwork network = new NeuralNetwork(4, 8, 1, new Random(42));
 
-        double[] outputs = network.feedForward(new double[]{0.1, -0.2, 0.3, 0.4});
+        double[] outputs = network.feedForward(new double[] {0.1, -0.2, 0.3, 0.4});
 
         assertEquals(1, outputs.length);
     }
@@ -21,7 +20,7 @@ class NeuralNetworkTest {
     void feedForwardOutputsAreBoundedBySigmoid() {
         NeuralNetwork network = new NeuralNetwork(4, 8, 1, new Random(1));
 
-        double[] outputs = network.feedForward(new double[]{5, -5, 100, -100});
+        double[] outputs = network.feedForward(new double[] {5, -5, 100, -100});
 
         for (double output : outputs) {
             assertTrue(output > 0.0 && output < 1.0);

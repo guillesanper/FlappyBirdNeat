@@ -3,7 +3,6 @@ package com.neat.flappybirdneat.neat;
 import com.neat.flappybirdneat.neat.genome.Genome;
 import com.neat.flappybirdneat.neural.Brain;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
-
 import java.util.Random;
 
 /**
@@ -64,10 +63,10 @@ public class FlappyBirdAgent {
     public void think(float birdY, float distanceToNextPipe, float heightOfNextPipe, float nextPipeGapSize) {
         // Normalizar entradas
         double[] inputs = new double[4];
-        inputs[0] = birdY / 600.0;  // Posición Y normalizada
-        inputs[1] = velocity / 15.0;  // Velocidad normalizada
-        inputs[2] = distanceToNextPipe / 800.0;  // Distancia normalizada
-        inputs[3] = heightOfNextPipe / 600.0;  // Altura del hueco normalizada
+        inputs[0] = birdY / 600.0; // Posición Y normalizada
+        inputs[1] = velocity / 15.0; // Velocidad normalizada
+        inputs[2] = distanceToNextPipe / 800.0; // Distancia normalizada
+        inputs[3] = heightOfNextPipe / 600.0; // Altura del hueco normalizada
 
         double[] outputs = brain.feedForward(inputs);
 

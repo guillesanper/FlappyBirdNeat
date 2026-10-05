@@ -1,8 +1,7 @@
 package com.neat.flappybirdneat.neat.crossover;
 
-import java.util.Random;
-
 import com.neat.flappybirdneat.neural.NeuralNetwork;
+import java.util.Random;
 
 /**
  * Implementación de cruce aritmético.
@@ -35,33 +34,27 @@ public class ArithmeticCrossover implements CrossoverStrategy {
         // Cruzar pesos de entrada a capa oculta
         for (int i = 0; i < parent1.getInputSize(); i++) {
             for (int j = 0; j < parent1.getHiddenSize(); j++) {
-                child.getWeightsInputHidden()[i][j] =
-                        alpha * parent1.getWeightsInputHidden()[i][j] +
-                        (1 - alpha) * parent2.getWeightsInputHidden()[i][j];
+                child.getWeightsInputHidden()[i][j] = alpha * parent1.getWeightsInputHidden()[i][j]
+                        + (1 - alpha) * parent2.getWeightsInputHidden()[i][j];
             }
         }
 
         // Cruzar bias de capa oculta
         for (int i = 0; i < parent1.getHiddenSize(); i++) {
-            child.getBiasHidden()[i] =
-                    alpha * parent1.getBiasHidden()[i] +
-                    (1 - alpha) * parent2.getBiasHidden()[i];
+            child.getBiasHidden()[i] = alpha * parent1.getBiasHidden()[i] + (1 - alpha) * parent2.getBiasHidden()[i];
         }
 
         // Cruzar pesos de capa oculta a salida
         for (int i = 0; i < parent1.getHiddenSize(); i++) {
             for (int j = 0; j < parent1.getOutputSize(); j++) {
-                child.getWeightsHiddenOutput()[i][j] =
-                        alpha * parent1.getWeightsHiddenOutput()[i][j] +
-                        (1 - alpha) * parent2.getWeightsHiddenOutput()[i][j];
+                child.getWeightsHiddenOutput()[i][j] = alpha * parent1.getWeightsHiddenOutput()[i][j]
+                        + (1 - alpha) * parent2.getWeightsHiddenOutput()[i][j];
             }
         }
 
         // Cruzar bias de salida
         for (int i = 0; i < parent1.getOutputSize(); i++) {
-            child.getBiasOutput()[i] =
-                    alpha * parent1.getBiasOutput()[i] +
-                    (1 - alpha) * parent2.getBiasOutput()[i];
+            child.getBiasOutput()[i] = alpha * parent1.getBiasOutput()[i] + (1 - alpha) * parent2.getBiasOutput()[i];
         }
 
         return child;

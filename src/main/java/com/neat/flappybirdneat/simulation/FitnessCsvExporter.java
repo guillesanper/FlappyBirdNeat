@@ -13,8 +13,7 @@ public final class FitnessCsvExporter {
 
     static final String HEADER = "Generacion,MejorFitness,FitnessPromedio,FitnessMinimo,NumEspecies,Diversidad";
 
-    private FitnessCsvExporter() {
-    }
+    private FitnessCsvExporter() {}
 
     public static void write(SimulationController controller, Writer out) {
         PrintWriter writer = new PrintWriter(out);

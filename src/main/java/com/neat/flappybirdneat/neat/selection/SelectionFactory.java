@@ -1,7 +1,5 @@
 package com.neat.flappybirdneat.neat.selection;
 
-import java.util.Random;
-
 /**
  * Factory (singleton) para crear instancias de estrategias de selección.
  * La instancia concreta ({@link SelectionFactoryImpl}) solo se obtiene a través de {@link #getInstance()}.

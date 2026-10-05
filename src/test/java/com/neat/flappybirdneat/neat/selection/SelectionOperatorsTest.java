@@ -1,13 +1,12 @@
 package com.neat.flappybirdneat.neat.selection;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Random;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Invariantes comunes a todas las estrategias de selección: deben devolver
@@ -29,8 +28,7 @@ class SelectionOperatorsTest {
                 new StochasticUniversalSelection(),
                 new DeterministicTournamentSelection(),
                 new ProbabilisticTournamentSelection(),
-                new TruncationSelection()
-        );
+                new TruncationSelection());
     }
 
     private Selectable[] buildSelectables(long seed) {
@@ -73,8 +71,7 @@ class SelectionOperatorsTest {
         int[] selection = strategy.select(list, POPULATION_SIZE, random);
 
         for (int index : selection) {
-            assertTrue(index >= 0 && index < POPULATION_SIZE,
-                    "Índice fuera de rango: " + index);
+            assertTrue(index >= 0 && index < POPULATION_SIZE, "Índice fuera de rango: " + index);
         }
     }
 
@@ -97,10 +94,7 @@ class SelectionOperatorsTest {
         // suficientes sorteos, debe ganar la gran mayoría de las veces.
         // select exige list.length == tamPoblacion, así que repetimos la selección
         // sobre una población de 2 individuos en vez de inflar tamPoblacion.
-        Selectable[] list = {
-                new Selectable(0, 1.0),
-                new Selectable(1, 100.0)
-        };
+        Selectable[] list = {new Selectable(0, 1.0), new Selectable(1, 100.0)};
         DeterministicTournamentSelection strategy = new DeterministicTournamentSelection();
         random = new Random(99);
 
@@ -110,12 +104,14 @@ class SelectionOperatorsTest {
         for (int t = 0; t < trials; t++) {
             int[] selection = strategy.select(list, 2, random);
             totalSelections += selection.length;
-            timesFitterWon += java.util.Arrays.stream(selection).filter(i -> i == 1).count();
+            timesFitterWon +=
+                    java.util.Arrays.stream(selection).filter(i -> i == 1).count();
         }
 
-        assertTrue(timesFitterWon > totalSelections * 0.8,
-                "El individuo más apto debería ganar la gran mayoría de los torneos: "
-                        + timesFitterWon + "/" + totalSelections);
+        assertTrue(
+                timesFitterWon > totalSelections * 0.8,
+                "El individuo más apto debería ganar la gran mayoría de los torneos: " + timesFitterWon + "/"
+                        + totalSelections);
     }
 
     @Test

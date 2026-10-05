@@ -19,7 +19,7 @@ public class RemainderSelection extends SelectionStrategy {
             if (filled == count) break;
             long copies = Math.round(list[i].getProb() * count);
 
-            if(copies < count - filled) {
+            if (copies < count - filled) {
                 for (int j = 0; j < copies; j++) {
                     selected[filled++] = list[i].getIndex();
                 }
@@ -32,8 +32,7 @@ public class RemainderSelection extends SelectionStrategy {
             DeterministicTournamentSelection tournament = new DeterministicTournamentSelection();
             int[] newSelection = tournament.select(list, count - filled, random);
 
-            if (count - filled >= 0)
-                System.arraycopy(newSelection, 0, selected, filled, count - filled);
+            if (count - filled >= 0) System.arraycopy(newSelection, 0, selected, filled, count - filled);
         }
 
         return selected;

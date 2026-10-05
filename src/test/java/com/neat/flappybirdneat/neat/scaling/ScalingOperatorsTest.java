@@ -1,15 +1,13 @@
 package com.neat.flappybirdneat.neat.scaling;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import java.util.Random;
-
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class ScalingOperatorsTest {
 
@@ -56,7 +54,8 @@ class ScalingOperatorsTest {
         strategy.scaleFitness(agents);
 
         for (int i = 0; i < agents.length - 1; i++) {
-            assertTrue(agents[i].getFitness() <= agents[i + 1].getFitness(),
+            assertTrue(
+                    agents[i].getFitness() <= agents[i + 1].getFitness(),
                     "El escalado invirtió el orden relativo del fitness");
         }
     }

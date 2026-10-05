@@ -16,8 +16,7 @@ public final class CompatibilityDistance {
 
     private static final int SMALL_GENOME_THRESHOLD = 20;
 
-    private CompatibilityDistance() {
-    }
+    private CompatibilityDistance() {}
 
     public static double distance(Genome genome1, Genome genome2, NeatConfig config) {
         Map<Integer, ConnectionGene> genes1 = indexByInnovation(genome1);

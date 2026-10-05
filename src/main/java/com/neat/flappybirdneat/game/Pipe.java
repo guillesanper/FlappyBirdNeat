@@ -59,7 +59,7 @@ public class Pipe implements Serializable {
         }
 
         // Si el pájaro está dentro del hueco, no hay colisión
-        if (birdY > gapY - gapSize/2 && birdY + birdSize < gapY + gapSize/2) {
+        if (birdY > gapY - gapSize / 2 && birdY + birdSize < gapY + gapSize / 2) {
             return false;
         }
 

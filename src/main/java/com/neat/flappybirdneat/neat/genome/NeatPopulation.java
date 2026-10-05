@@ -2,7 +2,6 @@ package com.neat.flappybirdneat.neat.genome;
 
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -44,9 +43,17 @@ public class NeatPopulation implements EvolvingPopulation {
     }
 
     /** Constructor usado por {@link #deepCopy()} y por réplicas de un único agente para el historial. */
-    private NeatPopulation(int populationSize, int numInputs, int numOutputs, Random random, NeatConfig config,
-                            InnovationTracker tracker, FlappyBirdAgent[] agents, int generation,
-                            double bestFitness, FlappyBirdAgent bestAgent) {
+    private NeatPopulation(
+            int populationSize,
+            int numInputs,
+            int numOutputs,
+            Random random,
+            NeatConfig config,
+            InnovationTracker tracker,
+            FlappyBirdAgent[] agents,
+            int generation,
+            double bestFitness,
+            FlappyBirdAgent bestAgent) {
         this.populationSize = populationSize;
         this.numInputs = numInputs;
         this.numOutputs = numOutputs;
@@ -60,10 +67,19 @@ public class NeatPopulation implements EvolvingPopulation {
     }
 
     /** Crea una población de un único agente (usada para reproducir el mejor agente histórico). */
-    public static NeatPopulation singleAgent(FlappyBirdAgent agent, int numInputs, int numOutputs, Random random,
-                                             NeatConfig config) {
-        NeatPopulation single = new NeatPopulation(1, numInputs, numOutputs, random, config,
-                new InnovationTracker(), new FlappyBirdAgent[]{agent}, 1, agent.getFitness(), agent);
+    public static NeatPopulation singleAgent(
+            FlappyBirdAgent agent, int numInputs, int numOutputs, Random random, NeatConfig config) {
+        NeatPopulation single = new NeatPopulation(
+                1,
+                numInputs,
+                numOutputs,
+                random,
+                config,
+                new InnovationTracker(),
+                new FlappyBirdAgent[] {agent},
+                1,
+                agent.getFitness(),
+                agent);
         return single;
     }
 
@@ -142,9 +158,7 @@ public class NeatPopulation implements EvolvingPopulation {
         FlappyBirdAgent parent2 = parents.get(random.nextInt(parents.size()));
 
         Genome childGenome = NeatCrossover.crossover(
-                genomeOf(parent1), parent1.getFitness(),
-                genomeOf(parent2), parent2.getFitness(),
-                random);
+                genomeOf(parent1), parent1.getFitness(), genomeOf(parent2), parent2.getFitness(), random);
 
         childGenome.mutateWeights(random, config.getWeightMutationRate());
         if (random.nextDouble() < config.getAddConnectionRate()) {
@@ -172,7 +186,8 @@ public class NeatPopulation implements EvolvingPopulation {
             Genome genome = genomeOf(agent);
             Species match = null;
             for (Species s : newSpecies) {
-                if (CompatibilityDistance.distance(genome, s.getRepresentative(), config) < config.getCompatibilityThreshold()) {
+                if (CompatibilityDistance.distance(genome, s.getRepresentative(), config)
+                        < config.getCompatibilityThreshold()) {
                     match = s;
                     break;
                 }
@@ -186,7 +201,8 @@ public class NeatPopulation implements EvolvingPopulation {
 
         newSpecies.removeIf(s -> s.getMembers().isEmpty());
         for (Species s : newSpecies) {
-            s.setRepresentative(genomeOf(s.getMembers().get(random.nextInt(s.getMembers().size()))));
+            s.setRepresentative(
+                    genomeOf(s.getMembers().get(random.nextInt(s.getMembers().size()))));
         }
         species = newSpecies;
     }
@@ -267,7 +283,16 @@ public class NeatPopulation implements EvolvingPopulation {
             copiedAgents[i] = new FlappyBirdAgent(agents[i]);
         }
         FlappyBirdAgent copiedBest = bestAgent != null ? new FlappyBirdAgent(bestAgent) : null;
-        return new NeatPopulation(populationSize, numInputs, numOutputs, random, config, tracker,
-                copiedAgents, generation, bestFitness, copiedBest);
+        return new NeatPopulation(
+                populationSize,
+                numInputs,
+                numOutputs,
+                random,
+                config,
+                tracker,
+                copiedAgents,
+                generation,
+                bestFitness,
+                copiedBest);
     }
 }

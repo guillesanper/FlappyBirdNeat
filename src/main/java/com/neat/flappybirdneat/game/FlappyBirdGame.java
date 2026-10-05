@@ -1,7 +1,6 @@
 package com.neat.flappybirdneat.game;
 
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -89,11 +88,10 @@ public class FlappyBirdGame {
                             agent.getY(),
                             nextPipe.getX() - BIRD_X_POSITION, // Distancia horizontal al tubo
                             nextPipe.getGapY(),
-                            nextPipe.getGapSize()
-                    );
+                            nextPipe.getGapSize());
                 } else {
                     // Si no hay tubo, usar valores predeterminados
-                    agent.think(agent.getY(), canvasWidth, canvasHeight/2, 150);
+                    agent.think(agent.getY(), canvasWidth, canvasHeight / 2, 150);
                 }
 
                 // Actualizar física del agente

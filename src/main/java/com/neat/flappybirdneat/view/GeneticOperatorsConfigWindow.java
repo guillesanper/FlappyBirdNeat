@@ -3,8 +3,8 @@ package com.neat.flappybirdneat.view;
 import com.neat.flappybirdneat.neat.Population;
 import com.neat.flappybirdneat.neat.crossover.*;
 import com.neat.flappybirdneat.neat.mutation.*;
-import com.neat.flappybirdneat.neat.selection.*;
 import com.neat.flappybirdneat.neat.scaling.*;
+import com.neat.flappybirdneat.neat.selection.*;
 import com.neat.flappybirdneat.simulation.SimulationController;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -122,10 +122,16 @@ public class GeneticOperatorsConfigWindow {
 
         gridPane.add(new Label("Método de Selección:"), 0, row);
         seleccionComboBox = new ComboBox<>();
-        seleccionComboBox.getItems().addAll(
-            "Ruleta", "Torneo Determinístico", "Torneo Probabilístico",
-            "Ranking", "Truncamiento", "Estocástico Universal", "Restos"
-        );
+        seleccionComboBox
+                .getItems()
+                .addAll(
+                        "Ruleta",
+                        "Torneo Determinístico",
+                        "Torneo Probabilístico",
+                        "Ranking",
+                        "Truncamiento",
+                        "Estocástico Universal",
+                        "Restos");
         seleccionComboBox.setValue("Ruleta");
         seleccionComboBox.setPrefWidth(200);
         seleccionComboBox.setOnAction(e -> updateSeleccionParameters());
@@ -230,11 +236,13 @@ public class GeneticOperatorsConfigWindow {
         buttonBox.setAlignment(Pos.CENTER);
 
         Button applyButton = new Button("Aplicar");
-        applyButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 30;");
+        applyButton.setStyle(
+                "-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 30;");
         applyButton.setOnAction(e -> applyConfiguration());
 
         Button cancelButton = new Button("Cancelar");
-        cancelButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 30;");
+        cancelButton.setStyle(
+                "-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 30;");
         cancelButton.setOnAction(e -> stage.close());
 
         buttonBox.getChildren().addAll(applyButton, cancelButton);

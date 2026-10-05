@@ -1,7 +1,6 @@
 package com.neat.flappybirdneat.neat.crossover;
 
 import com.neat.flappybirdneat.neural.NeuralNetwork;
-
 import java.util.Random;
 
 /**
@@ -16,5 +15,4 @@ public interface CrossoverStrategy {
      * @return Nueva red neuronal hijo resultado del cruce
      */
     NeuralNetwork crossover(NeuralNetwork parent1, NeuralNetwork parent2, Random random);
-
 }

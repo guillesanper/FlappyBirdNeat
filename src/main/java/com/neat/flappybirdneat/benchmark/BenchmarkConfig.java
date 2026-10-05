@@ -4,7 +4,6 @@ import com.neat.flappybirdneat.neat.crossover.CrossoverStrategy;
 import com.neat.flappybirdneat.neat.mutation.MutationStrategy;
 import com.neat.flappybirdneat.neat.scaling.ScalingStrategy;
 import com.neat.flappybirdneat.neat.selection.SelectionStrategy;
-
 import java.util.function.Supplier;
 
 /**
@@ -20,8 +19,12 @@ public class BenchmarkConfig {
     private final Supplier<MutationStrategy> mutationSupplier;
     private final Supplier<CrossoverStrategy> crossoverSupplier;
 
-    public BenchmarkConfig(String label, Supplier<SelectionStrategy> selectionSupplier, Supplier<ScalingStrategy> scalingSupplier,
-                            Supplier<MutationStrategy> mutationSupplier, Supplier<CrossoverStrategy> crossoverSupplier) {
+    public BenchmarkConfig(
+            String label,
+            Supplier<SelectionStrategy> selectionSupplier,
+            Supplier<ScalingStrategy> scalingSupplier,
+            Supplier<MutationStrategy> mutationSupplier,
+            Supplier<CrossoverStrategy> crossoverSupplier) {
         this.label = label;
         this.selectionSupplier = selectionSupplier;
         this.scalingSupplier = scalingSupplier;
@@ -29,9 +32,23 @@ public class BenchmarkConfig {
         this.crossoverSupplier = crossoverSupplier;
     }
 
-    public String getLabel() { return label; }
-    public SelectionStrategy newSelection() { return selectionSupplier.get(); }
-    public ScalingStrategy newScaling() { return scalingSupplier != null ? scalingSupplier.get() : null; }
-    public MutationStrategy newMutation() { return mutationSupplier.get(); }
-    public CrossoverStrategy newCrossover() { return crossoverSupplier.get(); }
+    public String getLabel() {
+        return label;
+    }
+
+    public SelectionStrategy newSelection() {
+        return selectionSupplier.get();
+    }
+
+    public ScalingStrategy newScaling() {
+        return scalingSupplier != null ? scalingSupplier.get() : null;
+    }
+
+    public MutationStrategy newMutation() {
+        return mutationSupplier.get();
+    }
+
+    public CrossoverStrategy newCrossover() {
+        return crossoverSupplier.get();
+    }
 }

@@ -31,8 +31,12 @@ public final class GameRenderer {
      * @param replayBanner    show the "replaying best agent" banner
      * @param bestOnlyNotice  show the "showing the best agent" notice when other agents are hidden
      */
-    public record Options(boolean showAllAgents, boolean highlightAll, boolean bestHalo,
-                          boolean replayBanner, boolean bestOnlyNotice) {
+    public record Options(
+            boolean showAllAgents,
+            boolean highlightAll,
+            boolean bestHalo,
+            boolean replayBanner,
+            boolean bestOnlyNotice) {
 
         /** Main window: live training, or the replay of the best agent ever found. */
         public static Options liveSimulation(boolean showAllAgents, boolean replayMode, boolean singleAgent) {
@@ -56,8 +60,8 @@ public final class GameRenderer {
     /**
      * @param best the agent drawn in red (the population's best agent so far)
      */
-    public void render(GraphicsContext gc, FlappyBirdGame game, FlappyBirdAgent[] agents,
-                       FlappyBirdAgent best, Options options) {
+    public void render(
+            GraphicsContext gc, FlappyBirdGame game, FlappyBirdAgent[] agents, FlappyBirdAgent best, Options options) {
         drawSky(gc);
         for (Pipe pipe : game.getPipes()) {
             drawPipe(gc, pipe);

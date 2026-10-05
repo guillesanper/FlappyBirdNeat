@@ -1,7 +1,6 @@
 package com.neat.flappybirdneat.neat.mutation;
 
 import com.neat.flappybirdneat.neural.NeuralNetwork;
-
 import java.util.Random;
 
 /**

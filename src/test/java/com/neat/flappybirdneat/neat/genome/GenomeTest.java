@@ -1,11 +1,10 @@
 package com.neat.flappybirdneat.neat.genome;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Map;
 import java.util.Random;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class GenomeTest {
 
@@ -15,12 +14,18 @@ class GenomeTest {
         int numOutputs = 1;
         Genome genome = new Genome(numInputs, numOutputs, new Random(1), new InnovationTracker());
 
-        assertEquals(numInputs + 1 + numOutputs, genome.getNodes().size(),
+        assertEquals(
+                numInputs + 1 + numOutputs,
+                genome.getNodes().size(),
                 "Debe haber inputs + 1 nodo de bias + outputs, sin nodos ocultos");
-        assertEquals((numInputs + 1) * numOutputs, genome.getConnections().size(),
+        assertEquals(
+                (numInputs + 1) * numOutputs,
+                genome.getConnections().size(),
                 "Cada entrada y el bias deben conectar con cada salida");
 
-        long hiddenNodes = genome.getNodes().stream().filter(n -> n.getType() == NodeType.HIDDEN).count();
+        long hiddenNodes = genome.getNodes().stream()
+                .filter(n -> n.getType() == NodeType.HIDDEN)
+                .count();
         assertEquals(0, hiddenNodes);
 
         for (ConnectionGene connection : genome.getConnections()) {
@@ -32,7 +37,7 @@ class GenomeTest {
     void feedForwardReturnsOneOutputPerOutputNodeInSigmoidRange() {
         Genome genome = new Genome(4, 2, new Random(1), new InnovationTracker());
 
-        double[] outputs = genome.feedForward(new double[]{0.5, -0.3, 0.1, 0.9});
+        double[] outputs = genome.feedForward(new double[] {0.5, -0.3, 0.1, 0.9});
 
         assertEquals(2, outputs.length);
         for (double output : outputs) {
@@ -44,7 +49,7 @@ class GenomeTest {
     void feedForwardRejectsWrongInputSize() {
         Genome genome = new Genome(4, 1, new Random(1), new InnovationTracker());
 
-        assertThrows(IllegalArgumentException.class, () -> genome.feedForward(new double[]{1.0, 2.0}));
+        assertThrows(IllegalArgumentException.class, () -> genome.feedForward(new double[] {1.0, 2.0}));
     }
 
     @Test
@@ -64,7 +69,7 @@ class GenomeTest {
         double sum = x0 * weightInput0 + x1 * weightInput1 + 1.0 * weightBias;
         double expectedOutput = 1.0 / (1.0 + Math.exp(-sum));
 
-        double[] outputs = genome.feedForward(new double[]{x0, x1});
+        double[] outputs = genome.feedForward(new double[] {x0, x1});
 
         assertEquals(1, outputs.length);
         assertEquals(expectedOutput, outputs[0], 1e-9);
@@ -113,9 +118,13 @@ class GenomeTest {
 
         Map<Integer, Integer> layers = genome.computeNodeLayers();
         NodeGene hidden = genome.getNodes().stream()
-                .filter(n -> n.getType() == NodeType.HIDDEN).findFirst().orElseThrow();
+                .filter(n -> n.getType() == NodeType.HIDDEN)
+                .findFirst()
+                .orElseThrow();
         NodeGene output = genome.getNodes().stream()
-                .filter(n -> n.getType() == NodeType.OUTPUT).findFirst().orElseThrow();
+                .filter(n -> n.getType() == NodeType.OUTPUT)
+                .findFirst()
+                .orElseThrow();
 
         assertEquals(1, layers.get(hidden.getId()), "El nodo oculto va después de la columna de inputs");
         assertEquals(2, layers.get(output.getId()), "La salida siempre queda tras el oculto más profundo");
@@ -132,7 +141,9 @@ class GenomeTest {
 
         assertArrayEquals(inputs, genome.getLastInputs());
         assertArrayEquals(outputs, genome.getLastOutputs());
-        assertEquals(genome.getNodes().size(), genome.getLastActivations().size(),
+        assertEquals(
+                genome.getNodes().size(),
+                genome.getLastActivations().size(),
                 "Debe registrarse la activación de todos los nodos, no solo las salidas");
     }
 }

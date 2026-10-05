@@ -15,10 +15,10 @@ public class SinglePointCrossover implements CrossoverStrategy {
         NeuralNetwork child = new NeuralNetwork(parent1);
 
         // Calcular el número total de genes (pesos + bias)
-        int totalGenes = parent1.getInputSize() * parent1.getHiddenSize() +
-                         parent1.getHiddenSize() +
-                         parent1.getHiddenSize() * parent1.getOutputSize() +
-                         parent1.getOutputSize();
+        int totalGenes = parent1.getInputSize() * parent1.getHiddenSize()
+                + parent1.getHiddenSize()
+                + parent1.getHiddenSize() * parent1.getOutputSize()
+                + parent1.getOutputSize();
 
         // Elegir punto de corte aleatorio
         int crossoverPoint = random.nextInt(totalGenes);

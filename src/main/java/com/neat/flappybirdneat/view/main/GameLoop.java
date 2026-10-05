@@ -29,8 +29,12 @@ final class GameLoop extends AnimationTimer {
      * @param drawFrame  draws the current game state
      * @param onProgress refreshes statistics and history after a generation (or periodically while training)
      */
-    GameLoop(SimulationController controller, LiveViewSettings settings, NeuralNetworkWindow networkWindow,
-             Runnable drawFrame, Runnable onProgress) {
+    GameLoop(
+            SimulationController controller,
+            LiveViewSettings settings,
+            NeuralNetworkWindow networkWindow,
+            Runnable drawFrame,
+            Runnable onProgress) {
         this.controller = controller;
         this.settings = settings;
         this.networkWindow = networkWindow;
@@ -63,8 +67,11 @@ final class GameLoop extends AnimationTimer {
                 for (FlappyBirdAgent agent : controller.getPopulation().getAgents()) {
                     agent.reset();
                 }
-                LOG.info("Best agent died with fitness {}; restarting the replay",
-                        String.format("%.2f", controller.getPopulation().getAgents()[0].getFitness()));
+                LOG.info(
+                        "Best agent died with fitness {}; restarting the replay",
+                        String.format(
+                                "%.2f",
+                                controller.getPopulation().getAgents()[0].getFitness()));
             } else {
                 controller.nextGeneration();
                 onProgress.run();

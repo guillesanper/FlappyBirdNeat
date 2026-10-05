@@ -35,16 +35,16 @@ public final class MainWindow implements MainWindowActions {
         this.canvasHeight = canvasHeight;
         LiveViewSettings settings = new LiveViewSettings();
 
-        controlPanel = new ControlPanel(controller, populationSize, canvasWidth, canvasHeight, settings,
-                statisticsWindow, this);
+        controlPanel = new ControlPanel(
+                controller, populationSize, canvasWidth, canvasHeight, settings, statisticsWindow, this);
         charts = new FitnessCharts();
         refreshStatistics();
         VBox statsPanel = new VBox(10, controlPanel.getView(), charts.getView());
         statsPanel.setPadding(new Insets(15));
 
         historyBrowser = new HistoryBrowser(controller, this::pauseGameLoop, this::resumeGameLoop);
-        SimulationPanel simulationPanel = new SimulationPanel(controller, canvasWidth, canvasHeight, settings,
-                networkWindow, historyBrowser);
+        SimulationPanel simulationPanel =
+                new SimulationPanel(controller, canvasWidth, canvasHeight, settings, networkWindow, historyBrowser);
 
         gameLoop = new GameLoop(controller, settings, networkWindow, simulationPanel::draw, () -> {
             refreshStatistics();
@@ -94,7 +94,6 @@ public final class MainWindow implements MainWindowActions {
     public void offerBestGenerationReplay() {
         historyBrowser.offerBestGenerationReplay(this::showSimulationTab);
     }
-
 
     private void pauseGameLoop() {
         gameLoop.stop();

@@ -1,13 +1,12 @@
 package com.neat.flappybirdneat.neat;
 
+import com.neat.flappybirdneat.neat.crossover.*;
+import com.neat.flappybirdneat.neat.mutation.*;
+import com.neat.flappybirdneat.neat.scaling.*;
+import com.neat.flappybirdneat.neat.selection.*;
+import com.neat.flappybirdneat.neural.NeuralNetwork;
 import java.util.Arrays;
 import java.util.Random;
-import com.neat.flappybirdneat.neural.NeuralNetwork;
-
-import com.neat.flappybirdneat.neat.selection.*;
-import com.neat.flappybirdneat.neat.scaling.*;
-import com.neat.flappybirdneat.neat.mutation.*;
-import com.neat.flappybirdneat.neat.crossover.*;
 
 public class Population implements EvolvingPopulation {
     private FlappyBirdAgent[] agents;
@@ -68,7 +67,7 @@ public class Population implements EvolvingPopulation {
         setBestAgent();
         Arrays.sort(agents, (a1, a2) -> Double.compare(a2.getFitness(), a1.getFitness()));
 
-        int eliteSize = (int)(agents.length * elitismRate);
+        int eliteSize = (int) (agents.length * elitismRate);
         for (int i = 0; i < eliteSize; i++) {
             newAgents[i] = new FlappyBirdAgent(4, 8, 1, random);
             brainOf(newAgents[i]).setBrain(brainOf(agents[i]));
@@ -90,15 +89,13 @@ public class Population implements EvolvingPopulation {
             FlappyBirdAgent parent2 = agents[idx2];
 
             FlappyBirdAgent child1 = new FlappyBirdAgent(4, 8, 1, random);
-            brainOf(child1).setBrain(crossoverStrategy.crossover(
-                    brainOf(parent1), brainOf(parent2), random));
+            brainOf(child1).setBrain(crossoverStrategy.crossover(brainOf(parent1), brainOf(parent2), random));
             mutationStrategy.mutate(brainOf(child1), mutationRate, random);
             newAgents[eliteSize + i] = child1;
 
             if (eliteSize + i + 1 < agents.length) {
                 FlappyBirdAgent child2 = new FlappyBirdAgent(4, 8, 1, random);
-                brainOf(child2).setBrain(crossoverStrategy.crossover(
-                        brainOf(parent2), brainOf(parent1), random));
+                brainOf(child2).setBrain(crossoverStrategy.crossover(brainOf(parent2), brainOf(parent1), random));
                 mutationStrategy.mutate(brainOf(child2), mutationRate, random);
                 newAgents[eliteSize + i + 1] = child2;
             }
@@ -239,19 +236,48 @@ public class Population implements EvolvingPopulation {
 
     // Getters
     @Override
-    public FlappyBirdAgent[] getAgents() { return agents; }
+    public FlappyBirdAgent[] getAgents() {
+        return agents;
+    }
+
     @Override
-    public int getGeneration() { return generation; }
+    public int getGeneration() {
+        return generation;
+    }
+
     @Override
-    public double getBestFitness() { return bestFitness; }
-    public double getElitismRate() { return elitismRate; }
-    public void setElitismRate(double elitismRate) { this.elitismRate = elitismRate; }
+    public double getBestFitness() {
+        return bestFitness;
+    }
+
+    public double getElitismRate() {
+        return elitismRate;
+    }
+
+    public void setElitismRate(double elitismRate) {
+        this.elitismRate = elitismRate;
+    }
+
     @Override
-    public FlappyBirdAgent getBestAgent() { return bestAgent; }
-    public SelectionStrategy getSelectionStrategy() { return selectionStrategy; }
-    public ScalingStrategy getScalingStrategy() { return scalingStrategy; }
-    public MutationStrategy getMutationStrategy() { return mutationStrategy; }
-    public CrossoverStrategy getCrossoverStrategy() { return crossoverStrategy; }
+    public FlappyBirdAgent getBestAgent() {
+        return bestAgent;
+    }
+
+    public SelectionStrategy getSelectionStrategy() {
+        return selectionStrategy;
+    }
+
+    public ScalingStrategy getScalingStrategy() {
+        return scalingStrategy;
+    }
+
+    public MutationStrategy getMutationStrategy() {
+        return mutationStrategy;
+    }
+
+    public CrossoverStrategy getCrossoverStrategy() {
+        return crossoverStrategy;
+    }
 
     /** Constructor de copia: no consume aleatoriedad del original. */
     private Population(Population other, Random random) {

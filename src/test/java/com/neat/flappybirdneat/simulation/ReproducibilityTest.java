@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.simulation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.neat.flappybirdneat.benchmark.BenchmarkPresets;
 import com.neat.flappybirdneat.benchmark.BenchmarkResult;
 import com.neat.flappybirdneat.benchmark.BenchmarkRunner;
@@ -9,12 +11,9 @@ import com.neat.flappybirdneat.neat.crossover.SinglePointCrossover;
 import com.neat.flappybirdneat.neat.mutation.NonUniformMutation;
 import com.neat.flappybirdneat.neat.scaling.BoltzmannScaling;
 import com.neat.flappybirdneat.neat.selection.ProbabilisticTournamentSelection;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 /**
  * End-to-end reproducibility: a run is fully determined by its global seed, including with
@@ -60,10 +59,10 @@ class ReproducibilityTest {
 
     @Test
     void benchmarkIsReproducibleForAGivenBaseSeed() {
-        List<BenchmarkResult> first = BenchmarkRunner.run(BenchmarkPresets.defaultConfigs(4), 500L, 2, 4,
-                15, 800, 600, null);
-        List<BenchmarkResult> second = BenchmarkRunner.run(BenchmarkPresets.defaultConfigs(4), 500L, 2, 4,
-                15, 800, 600, null);
+        List<BenchmarkResult> first =
+                BenchmarkRunner.run(BenchmarkPresets.defaultConfigs(4), 500L, 2, 4, 15, 800, 600, null);
+        List<BenchmarkResult> second =
+                BenchmarkRunner.run(BenchmarkPresets.defaultConfigs(4), 500L, 2, 4, 15, 800, 600, null);
 
         for (int i = 0; i < first.size(); i++) {
             assertEquals(first.get(i).getMeanCurve(), second.get(i).getMeanCurve());
@@ -103,8 +102,12 @@ class ReproducibilityTest {
         for (int gen = 0; gen < GENERATIONS; gen++) {
             playOneGeneration(controller);
             if (evolveReplayMidRun && gen == GENERATIONS / 2) {
-                EvolvingPopulation snapshot = controller.getHistoryManager().getCurrentRun()
-                        .getGenerationDataList().get(gen).getSavedPopulation();
+                EvolvingPopulation snapshot = controller
+                        .getHistoryManager()
+                        .getCurrentRun()
+                        .getGenerationDataList()
+                        .get(gen)
+                        .getSavedPopulation();
                 EvolvingPopulation replay = snapshot.deepCopy(controller.derivedRandom(gen));
                 replay.naturalSelection();
                 replay.naturalSelection();

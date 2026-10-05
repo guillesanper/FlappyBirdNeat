@@ -1,14 +1,12 @@
 package com.neat.flappybirdneat.history;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
-
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HistoryManager {
     private static final Logger LOG = LoggerFactory.getLogger(HistoryManager.class);
@@ -41,10 +39,24 @@ public class HistoryManager {
         currentRun = new RunHistory();
     }
 
-    public void addGenerationData(double bestFitness, double avgFitness, double minFitness, int aliveCount,
-                                   int speciesCount, double diversity, EvolvingPopulation pop, List<Pipe> savedPipes) {
-        GenerationData data = new GenerationData(bestFitness, avgFitness, minFitness, aliveCount, speciesCount,
-                diversity, pop.deepCopy(), new ArrayList<>(savedPipes));
+    public void addGenerationData(
+            double bestFitness,
+            double avgFitness,
+            double minFitness,
+            int aliveCount,
+            int speciesCount,
+            double diversity,
+            EvolvingPopulation pop,
+            List<Pipe> savedPipes) {
+        GenerationData data = new GenerationData(
+                bestFitness,
+                avgFitness,
+                minFitness,
+                aliveCount,
+                speciesCount,
+                diversity,
+                pop.deepCopy(),
+                new ArrayList<>(savedPipes));
         currentRun.addGenerationData(data);
 
         // Registrar el mejor de todos los tiempos

@@ -17,8 +17,7 @@ public class InnovationTracker {
     private int nextInnovationNumber = 0;
     private int nextNodeId = 0;
 
-    public InnovationTracker() {
-    }
+    public InnovationTracker() {}
 
     /** Copia independiente: las innovaciones registradas a partir de aquí no se comparten. */
     public InnovationTracker(InnovationTracker other) {

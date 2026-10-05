@@ -1,10 +1,9 @@
 package com.neat.flappybirdneat.simulation;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.StringWriter;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 class FitnessCsvExporterTest {
 

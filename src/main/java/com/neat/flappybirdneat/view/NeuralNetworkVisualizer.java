@@ -5,16 +5,15 @@ import com.neat.flappybirdneat.neat.genome.Genome;
 import com.neat.flappybirdneat.neat.genome.NodeGene;
 import com.neat.flappybirdneat.neat.genome.NodeType;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 
 /**
  * Clase que dibuja una representación visual de una red neuronal.
@@ -33,9 +32,15 @@ public class NeuralNetworkVisualizer {
      * @param inputs Valores actuales de entrada
      * @param outputs Valores actuales de salida
      */
-    public static void drawNetwork(GraphicsContext gc, NeuralNetwork network,
-                                   double x, double y, double width, double height,
-                                   double[] inputs, double[] outputs) {
+    public static void drawNetwork(
+            GraphicsContext gc,
+            NeuralNetwork network,
+            double x,
+            double y,
+            double width,
+            double height,
+            double[] inputs,
+            double[] outputs) {
         // Network structure: 4-8-1 (input-hidden-output)
         int inputSize = inputs.length;
         int hiddenSize = network.getHiddenSize();
@@ -71,9 +76,8 @@ public class NeuralNetworkVisualizer {
                 double inputY = y + (j + 1) * inputSpacing;
 
                 // Get weight for this connection
-                double weight = (weightsIH != null && j < weightsIH.length && i < weightsIH[j].length)
-                        ? weightsIH[j][i]
-                        : 0.0;
+                double weight =
+                        (weightsIH != null && j < weightsIH.length && i < weightsIH[j].length) ? weightsIH[j][i] : 0.0;
 
                 // Color and thickness based on weight
                 Color connectionColor = getWeightColor(weight);
@@ -93,9 +97,8 @@ public class NeuralNetworkVisualizer {
                 double hiddenY = y + (j + 1) * hiddenSpacing;
 
                 // Get weight for this connection
-                double weight = (weightsHO != null && j < weightsHO.length && i < weightsHO[j].length)
-                        ? weightsHO[j][i]
-                        : 0.0;
+                double weight =
+                        (weightsHO != null && j < weightsHO.length && i < weightsHO[j].length) ? weightsHO[j][i] : 0.0;
 
                 // Color and thickness based on weight
                 Color connectionColor = getWeightColor(weight);
@@ -103,8 +106,7 @@ public class NeuralNetworkVisualizer {
 
                 gc.setStroke(connectionColor);
                 gc.setLineWidth(lineWidth);
-                gc.strokeLine(x + layerSpacing + nodeRadius, hiddenY,
-                        x + 2 * layerSpacing - nodeRadius, outputY);
+                gc.strokeLine(x + layerSpacing + nodeRadius, hiddenY, x + 2 * layerSpacing - nodeRadius, outputY);
             }
         }
 
@@ -132,12 +134,21 @@ public class NeuralNetworkVisualizer {
             gc.setFill(Color.BLACK);
             gc.setFont(Font.font("System", FontWeight.NORMAL, 12));
             String inputLabel;
-            switch(i) {
-                case 0: inputLabel = "Altura"; break;
-                case 1: inputLabel = "Velocidad"; break;
-                case 2: inputLabel = "Dist. Tubo"; break;
-                case 3: inputLabel = "Alt. Hueco"; break;
-                default: inputLabel = "Input " + i;
+            switch (i) {
+                case 0:
+                    inputLabel = "Altura";
+                    break;
+                case 1:
+                    inputLabel = "Velocidad";
+                    break;
+                case 2:
+                    inputLabel = "Dist. Tubo";
+                    break;
+                case 3:
+                    inputLabel = "Alt. Hueco";
+                    break;
+                default:
+                    inputLabel = "Input " + i;
             }
             gc.fillText(inputLabel, x - 100, nodeY + 5);
         }
@@ -153,14 +164,12 @@ public class NeuralNetworkVisualizer {
             Color nodeColor = getColorFromValue(activation);
 
             gc.setFill(nodeColor);
-            gc.fillOval(x + layerSpacing - nodeRadius, nodeY - nodeRadius,
-                    2 * nodeRadius, 2 * nodeRadius);
+            gc.fillOval(x + layerSpacing - nodeRadius, nodeY - nodeRadius, 2 * nodeRadius, 2 * nodeRadius);
 
             // Display activation value
             gc.setFill(Color.WHITE);
             gc.setFont(Font.font("System", FontWeight.BOLD, 10));
-            gc.fillText(String.format("%.2f", activation),
-                    x + layerSpacing - 10, nodeY + 3);
+            gc.fillText(String.format("%.2f", activation), x + layerSpacing - 10, nodeY + 3);
         }
 
         // Draw output neurons
@@ -172,8 +181,7 @@ public class NeuralNetworkVisualizer {
             Color nodeColor = getColorFromValue(outputVal);
 
             gc.setFill(nodeColor);
-            gc.fillOval(x + 2 * layerSpacing - nodeRadius, nodeY - nodeRadius,
-                    2 * nodeRadius, 2 * nodeRadius);
+            gc.fillOval(x + 2 * layerSpacing - nodeRadius, nodeY - nodeRadius, 2 * nodeRadius, 2 * nodeRadius);
 
             gc.setFill(Color.WHITE);
             gc.setFont(Font.font("System", FontWeight.BOLD, 10));
@@ -203,9 +211,15 @@ public class NeuralNetworkVisualizer {
      * @param inputs Valores actuales de entrada
      * @param outputs Valores actuales de salida
      */
-    public static void drawGenome(GraphicsContext gc, Genome genome,
-                                   double x, double y, double width, double height,
-                                   double[] inputs, double[] outputs) {
+    public static void drawGenome(
+            GraphicsContext gc,
+            Genome genome,
+            double x,
+            double y,
+            double width,
+            double height,
+            double[] inputs,
+            double[] outputs) {
         double nodeRadius = 15;
 
         Map<Integer, Integer> nodeLayers = genome.computeNodeLayers();
@@ -232,7 +246,7 @@ public class NeuralNetworkVisualizer {
             double verticalSpacing = height / (column.size() + 1);
             for (int i = 0; i < column.size(); i++) {
                 double nodeY = y + (i + 1) * verticalSpacing;
-                position.put(column.get(i).getId(), new double[]{columnX, nodeY});
+                position.put(column.get(i).getId(), new double[] {columnX, nodeY});
             }
         }
 
@@ -297,9 +311,8 @@ public class NeuralNetworkVisualizer {
                 }
             }
 
-            Color nodeColor = node.getType() == NodeType.BIAS
-                    ? new Color(0.4, 0.4, 0.4, 0.9)
-                    : getColorFromValue(activation);
+            Color nodeColor =
+                    node.getType() == NodeType.BIAS ? new Color(0.4, 0.4, 0.4, 0.9) : getColorFromValue(activation);
             gc.setFill(nodeColor);
             gc.fillOval(nodeX - nodeRadius, nodeY - nodeRadius, 2 * nodeRadius, 2 * nodeRadius);
 

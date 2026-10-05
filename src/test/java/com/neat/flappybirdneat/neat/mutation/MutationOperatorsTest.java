@@ -1,14 +1,13 @@
 package com.neat.flappybirdneat.neat.mutation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.neat.flappybirdneat.neural.NeuralNetwork;
+import java.util.Random;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import java.util.Random;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class MutationOperatorsTest {
 
@@ -125,7 +124,8 @@ class MutationOperatorsTest {
 
         double magnitude = strategy.getCurrentMagnitude();
         // El ruido gaussiano rara vez excede ~4 desviaciones estándar.
-        assertTrue(maxDelta < magnitude * 4,
+        assertTrue(
+                maxDelta < magnitude * 4,
                 "El cambio máximo (" + maxDelta + ") excede con holgura la magnitud esperada (" + magnitude + ")");
     }
 
@@ -142,7 +142,8 @@ class MutationOperatorsTest {
         double[][] after = network.getWeightsInputHidden();
         for (int i = 0; i < before.length; i++) {
             for (int j = 0; j < before[i].length; j++) {
-                assertTrue(Math.abs(after[i][j] - before[i][j]) < 0.001 * 6,
+                assertTrue(
+                        Math.abs(after[i][j] - before[i][j]) < 0.001 * 6,
                         "Una mutación con sigma = 0.001 no debería mover un peso más de 6 sigmas");
             }
         }

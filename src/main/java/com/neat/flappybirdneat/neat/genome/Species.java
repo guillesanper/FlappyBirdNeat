@@ -1,7 +1,6 @@
 package com.neat.flappybirdneat.neat.genome;
 
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -52,7 +51,9 @@ public class Species {
 
     /** El miembro con mayor fitness de la especie. */
     public FlappyBirdAgent champion() {
-        return members.stream().max(Comparator.comparingDouble(FlappyBirdAgent::getFitness)).orElse(null);
+        return members.stream()
+                .max(Comparator.comparingDouble(FlappyBirdAgent::getFitness))
+                .orElse(null);
     }
 
     /**

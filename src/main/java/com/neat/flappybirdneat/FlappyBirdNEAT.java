@@ -2,12 +2,11 @@ package com.neat.flappybirdneat;
 
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.main.MainWindow;
+import java.util.concurrent.ThreadLocalRandom;
 import javafx.application.Application;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * JavaFX entry point: creates the simulation (seeded for reproducibility) and opens the main window.

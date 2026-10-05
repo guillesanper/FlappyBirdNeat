@@ -1,7 +1,6 @@
 package com.neat.flappybirdneat.neat.genome;
 
 import com.neat.flappybirdneat.neural.Brain;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,7 +70,8 @@ public class Genome implements Brain {
      * Construye un genoma directamente a partir de listas de genes ya resueltas
      * (usado por {@link #copy()} y por el crossover NEAT para ensamblar el genoma hijo).
      */
-    private Genome(int numInputs, int numOutputs, int biasNodeId, List<NodeGene> nodes, List<ConnectionGene> connections) {
+    private Genome(
+            int numInputs, int numOutputs, int biasNodeId, List<NodeGene> nodes, List<ConnectionGene> connections) {
         this.numInputs = numInputs;
         this.numOutputs = numOutputs;
         this.biasNodeId = biasNodeId;
@@ -79,7 +79,8 @@ public class Genome implements Brain {
         this.connections.addAll(connections);
     }
 
-    static Genome fromGenes(int numInputs, int numOutputs, int biasNodeId, List<NodeGene> nodes, List<ConnectionGene> connections) {
+    static Genome fromGenes(
+            int numInputs, int numOutputs, int biasNodeId, List<NodeGene> nodes, List<ConnectionGene> connections) {
         return new Genome(numInputs, numOutputs, biasNodeId, nodes, connections);
     }
 
@@ -91,8 +92,12 @@ public class Genome implements Brain {
         }
         List<ConnectionGene> connectionCopies = new ArrayList<>();
         for (ConnectionGene connection : connections) {
-            connectionCopies.add(new ConnectionGene(connection.getInNode(), connection.getOutNode(),
-                    connection.getWeight(), connection.isEnabled(), connection.getInnovationNumber()));
+            connectionCopies.add(new ConnectionGene(
+                    connection.getInNode(),
+                    connection.getOutNode(),
+                    connection.getWeight(),
+                    connection.isEnabled(),
+                    connection.getInnovationNumber()));
         }
         return new Genome(numInputs, numOutputs, biasNodeId, nodeCopies, connectionCopies);
     }
@@ -113,7 +118,7 @@ public class Genome implements Brain {
                 if (target.getType() == NodeType.INPUT || target.getType() == NodeType.BIAS) continue;
                 if (source.getId() == target.getId()) continue;
                 if (connectionExists(source.getId(), target.getId())) continue;
-                candidates.add(new int[]{source.getId(), target.getId()});
+                candidates.add(new int[] {source.getId(), target.getId()});
             }
         }
         Collections.shuffle(candidates, random);
@@ -205,7 +210,8 @@ public class Genome implements Brain {
         return false;
     }
 
-    private void connectFullyConnected(NodeGene source, List<NodeGene> targets, Random random, InnovationTracker tracker) {
+    private void connectFullyConnected(
+            NodeGene source, List<NodeGene> targets, Random random, InnovationTracker tracker) {
         for (NodeGene target : targets) {
             double weight = random.nextDouble() * 2 - 1;
             int innovation = tracker.getInnovationNumber(source.getId(), target.getId());
@@ -216,7 +222,8 @@ public class Genome implements Brain {
     @Override
     public double[] feedForward(double[] inputs) {
         if (inputs.length != numInputs) {
-            throw new IllegalArgumentException("Se esperaban " + numInputs + " entradas, se recibieron " + inputs.length);
+            throw new IllegalArgumentException(
+                    "Se esperaban " + numInputs + " entradas, se recibieron " + inputs.length);
         }
 
         List<NodeGene> inputNodes = getNodesOfType(NodeType.INPUT);
@@ -279,7 +286,8 @@ public class Genome implements Brain {
             layer.put(nodeId, Math.max(1, maxIncoming));
         }
 
-        int maxHiddenLayer = layer.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int maxHiddenLayer =
+                layer.values().stream().mapToInt(Integer::intValue).max().orElse(0);
         int outputLayer = maxHiddenLayer + 1;
         for (NodeGene node : nodes) {
             if (node.getType() == NodeType.OUTPUT) layer.put(node.getId(), outputLayer);

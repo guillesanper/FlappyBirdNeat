@@ -1,8 +1,5 @@
 package com.neat.flappybirdneat.simulation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.neat.flappybirdneat.config.GeneticOperatorsConfig;
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.history.GenerationData;
@@ -12,13 +9,14 @@ import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
 import com.neat.flappybirdneat.neat.genome.NeatConfig;
 import com.neat.flappybirdneat.neat.genome.NeatPopulation;
-import javafx.application.Platform;
-import javafx.beans.property.*;
-import javafx.concurrent.Task;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import javafx.application.Platform;
+import javafx.beans.property.*;
+import javafx.concurrent.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controlador que gestiona la ejecución de simulaciones de FlappyBird NEAT,
@@ -38,7 +36,10 @@ public class SimulationController {
     private static final long REPLAY_SALT = -1;
 
     /** Modo de evolución: MLP de topología fija (operadores configurables) o NEAT real. */
-    public enum Mode { FIXED_MLP, NEAT }
+    public enum Mode {
+        FIXED_MLP,
+        NEAT
+    }
 
     // Propiedades observables para actualizar la UI
     private final IntegerProperty currentGeneration = new SimpleIntegerProperty(1);
@@ -72,7 +73,6 @@ public class SimulationController {
     private Mode mode = Mode.FIXED_MLP;
     private final long seed;
     private final Random random;
-
 
     /**
      * Constructor con semilla global. Toda la aleatoriedad de la simulación sale de esta semilla:
@@ -192,8 +192,15 @@ public class SimulationController {
         double diversityThisGen = population.diversity();
 
         // Guardar esta generación en el historial
-        historyManager.addGenerationData(bestFitnessThisGen, avgFitness, minFitnessThisGen, aliveCount.get(),
-                speciesCountThisGen, diversityThisGen, population, game.getPipes());
+        historyManager.addGenerationData(
+                bestFitnessThisGen,
+                avgFitness,
+                minFitnessThisGen,
+                aliveCount.get(),
+                speciesCountThisGen,
+                diversityThisGen,
+                population,
+                game.getPipes());
 
         // Guardar historial para gráficos
         bestFitnessHistory.add(bestFitnessThisGen);
@@ -203,8 +210,9 @@ public class SimulationController {
         diversityHistory.add(diversityThisGen);
 
         // Actualizar mejor fitness absoluto
-        double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty() ? 0.0 :
-                                  bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
+        double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty()
+                ? 0.0
+                : bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
         bestAbsoluteFitnessHistory.add(Math.max(bestFitnessThisGen, previousAbsolute));
 
         // Evolucionar población
@@ -221,8 +229,11 @@ public class SimulationController {
         bestFitness.set(bestFitnessThisGen); // Mejor de esta generación, no el histórico
         aliveCount.set(populationSize);
 
-        LOG.info("Generation {} - best fitness {} - average fitness {}", currentGeneration.get(),
-                String.format("%.2f", bestFitness.get()), String.format("%.2f", avgFitness));
+        LOG.info(
+                "Generation {} - best fitness {} - average fitness {}",
+                currentGeneration.get(),
+                String.format("%.2f", bestFitness.get()),
+                String.format("%.2f", avgFitness));
     }
 
     /**
@@ -297,8 +308,15 @@ public class SimulationController {
                     final double currentDiversity = population.diversity();
 
                     // Guardar esta generación en el historial
-                    historyManager.addGenerationData(currentBestFitness, avgFitness, currentMinFitness, alive,
-                            currentSpeciesCount, currentDiversity, population, game.getPipes());
+                    historyManager.addGenerationData(
+                            currentBestFitness,
+                            avgFitness,
+                            currentMinFitness,
+                            alive,
+                            currentSpeciesCount,
+                            currentDiversity,
+                            population,
+                            game.getPipes());
 
                     if (currentBestFitness > globalBestFitness) {
                         globalBestFitness = currentBestFitness;
@@ -319,8 +337,9 @@ public class SimulationController {
                         diversityHistory.add(currentDiversity);
 
                         // Mantener el mejor absoluto
-                        double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty() ? 0.0 :
-                                                  bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
+                        double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty()
+                                ? 0.0
+                                : bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
                         bestAbsoluteFitnessHistory.add(Math.max(currentBestFitness, previousAbsolute));
 
                         Platform.runLater(() -> {
@@ -331,8 +350,10 @@ public class SimulationController {
                             updateProgress(1, 1); // Completar barra de progreso
                         });
 
-                        LOG.info("Optimal fitness reached at generation {} (fitness {}); stopping training",
-                                currentGen, String.format("%.2f", bestFit));
+                        LOG.info(
+                                "Optimal fitness reached at generation {} (fitness {}); stopping training",
+                                currentGen,
+                                String.format("%.2f", bestFit));
 
                         // Salir del bucle - hemos encontrado el óptimo
                         break;
@@ -346,8 +367,9 @@ public class SimulationController {
                     diversityHistory.add(currentDiversity);
 
                     // Mantener el mejor absoluto
-                    double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty() ? 0.0 :
-                                              bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
+                    double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty()
+                            ? 0.0
+                            : bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
                     bestAbsoluteFitnessHistory.add(Math.max(currentBestFitness, previousAbsolute));
 
                     // Actualizar UI solo cada N generaciones o en la última
@@ -366,8 +388,11 @@ public class SimulationController {
                             updateProgress(finalI + 1, generations);
                         });
 
-                        LOG.info("Generation {} - best fitness {} - average fitness {}", currentGen,
-                                String.format("%.2f", bestFit), String.format("%.2f", avgFit));
+                        LOG.info(
+                                "Generation {} - best fitness {} - average fitness {}",
+                                currentGen,
+                                String.format("%.2f", bestFit),
+                                String.format("%.2f", avgFit));
                     }
 
                     // Evolucionar población
@@ -391,7 +416,9 @@ public class SimulationController {
                     updateProgress(1, 1); // Completar la barra de progreso
 
                     if (!reachedOptimal) {
-                        LOG.info("Training finished. Best generation: {} with fitness {}", finalBestGeneration,
+                        LOG.info(
+                                "Training finished. Best generation: {} with fitness {}",
+                                finalBestGeneration,
                                 String.format("%.2f", finalGlobalBestFitness));
                     }
                 });
@@ -429,8 +456,8 @@ public class SimulationController {
             return singleAgentPop;
         }
 
-        return NeatPopulation.singleAgent(clonedBestAgent, AGENT_INPUTS, AGENT_OUTPUTS,
-                derivedRandom(REPLAY_SALT), neatConfig);
+        return NeatPopulation.singleAgent(
+                clonedBestAgent, AGENT_INPUTS, AGENT_OUTPUTS, derivedRandom(REPLAY_SALT), neatConfig);
     }
 
     /**
@@ -528,25 +555,65 @@ public class SimulationController {
     }
 
     // Getters para propiedades observables
-    public IntegerProperty currentGenerationProperty() { return currentGeneration; }
-    public DoubleProperty bestFitnessProperty() { return bestFitness; }
-    public DoubleProperty averageFitnessProperty() { return averageFitness; }
-    public IntegerProperty aliveCountProperty() { return aliveCount; }
-    public BooleanProperty runningProperty() { return running; }
+    public IntegerProperty currentGenerationProperty() {
+        return currentGeneration;
+    }
+
+    public DoubleProperty bestFitnessProperty() {
+        return bestFitness;
+    }
+
+    public DoubleProperty averageFitnessProperty() {
+        return averageFitness;
+    }
+
+    public IntegerProperty aliveCountProperty() {
+        return aliveCount;
+    }
+
+    public BooleanProperty runningProperty() {
+        return running;
+    }
 
     // Getters para datos y objetos
-    public List<Double> getBestFitnessHistory() { return bestFitnessHistory; }
-    public List<Double> getAvgFitnessHistory() { return avgFitnessHistory; }
-    public List<Double> getBestAbsoluteFitnessHistory() { return bestAbsoluteFitnessHistory; }
-    public List<Double> getMinFitnessHistory() { return minFitnessHistory; }
-    public List<Integer> getSpeciesCountHistory() { return speciesCountHistory; }
-    public List<Double> getDiversityHistory() { return diversityHistory; }
-    public EvolvingPopulation getPopulation() { return population; }
+    public List<Double> getBestFitnessHistory() {
+        return bestFitnessHistory;
+    }
+
+    public List<Double> getAvgFitnessHistory() {
+        return avgFitnessHistory;
+    }
+
+    public List<Double> getBestAbsoluteFitnessHistory() {
+        return bestAbsoluteFitnessHistory;
+    }
+
+    public List<Double> getMinFitnessHistory() {
+        return minFitnessHistory;
+    }
+
+    public List<Integer> getSpeciesCountHistory() {
+        return speciesCountHistory;
+    }
+
+    public List<Double> getDiversityHistory() {
+        return diversityHistory;
+    }
+
+    public EvolvingPopulation getPopulation() {
+        return population;
+    }
 
     /** @return nº de especies actuales en modo NEAT, o -1 si el modo activo es Fixed MLP. */
     public int getSpeciesCount() {
         return population instanceof NeatPopulation neatPopulation ? neatPopulation.getSpeciesCount() : -1;
     }
-    public FlappyBirdGame getGame() { return game; }
-    public boolean isFastMode() { return fastMode; }
+
+    public FlappyBirdGame getGame() {
+        return game;
+    }
+
+    public boolean isFastMode() {
+        return fastMode;
+    }
 }

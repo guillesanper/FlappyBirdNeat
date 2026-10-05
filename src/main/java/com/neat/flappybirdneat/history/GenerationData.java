@@ -2,7 +2,6 @@ package com.neat.flappybirdneat.history;
 
 import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
-
 import java.io.Serializable;
 import java.util.List;
 
@@ -15,13 +14,20 @@ public class GenerationData implements Serializable {
     private int speciesCount;
     /** Diversidad genética de la población en esta generación (ver {@link EvolvingPopulation#diversity()}). */
     private double diversity;
+
     private EvolvingPopulation savedPopulation;
     private int generationNumber;
     private List<Pipe> savedPipes;
 
-
-    public GenerationData(double bestFitness, double avgFitness, double minFitness, int aliveCount,
-                           int speciesCount, double diversity, EvolvingPopulation population, List<Pipe> savedPipes) {
+    public GenerationData(
+            double bestFitness,
+            double avgFitness,
+            double minFitness,
+            int aliveCount,
+            int speciesCount,
+            double diversity,
+            EvolvingPopulation population,
+            List<Pipe> savedPipes) {
         this.bestFitness = bestFitness;
         this.avgFitness = avgFitness;
         this.minFitness = minFitness;

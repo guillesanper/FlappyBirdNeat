@@ -3,7 +3,6 @@ package com.neat.flappybirdneat.benchmark;
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -17,17 +16,21 @@ import java.util.Random;
  */
 public final class BenchmarkRunner {
 
-    private BenchmarkRunner() {
-    }
+    private BenchmarkRunner() {}
 
     @FunctionalInterface
     public interface ProgressListener {
         void onProgress(int completedRuns, int totalRuns, String message);
     }
 
-    public static List<BenchmarkResult> run(List<BenchmarkConfig> configs, int seeds, int generations,
-                                              int populationSize, int canvasWidth, int canvasHeight,
-                                              ProgressListener listener) {
+    public static List<BenchmarkResult> run(
+            List<BenchmarkConfig> configs,
+            int seeds,
+            int generations,
+            int populationSize,
+            int canvasWidth,
+            int canvasHeight,
+            ProgressListener listener) {
         return run(configs, 0L, seeds, generations, populationSize, canvasWidth, canvasHeight, listener);
     }
 
@@ -36,9 +39,15 @@ public final class BenchmarkRunner {
      *                 la semilla {@code baseSeed + i}, así que todas las configuraciones se comparan
      *                 sobre los mismos escenarios y el benchmark completo es reproducible.
      */
-    public static List<BenchmarkResult> run(List<BenchmarkConfig> configs, long baseSeed, int seeds, int generations,
-                                              int populationSize, int canvasWidth, int canvasHeight,
-                                              ProgressListener listener) {
+    public static List<BenchmarkResult> run(
+            List<BenchmarkConfig> configs,
+            long baseSeed,
+            int seeds,
+            int generations,
+            int populationSize,
+            int canvasWidth,
+            int canvasHeight,
+            ProgressListener listener) {
         int totalRuns = configs.size() * seeds;
         int completed = 0;
         List<BenchmarkResult> results = new ArrayList<>();
@@ -61,8 +70,8 @@ public final class BenchmarkRunner {
      *  cuelgue el benchmark (no hay usuario que pueda pulsar "Detener" en un run headless por lotes). */
     private static final int MAX_STEPS_PER_GENERATION = 5000;
 
-    private static List<Double> runSingle(BenchmarkConfig config, long seed, int generations,
-                                           int populationSize, int canvasWidth, int canvasHeight) {
+    private static List<Double> runSingle(
+            BenchmarkConfig config, long seed, int generations, int populationSize, int canvasWidth, int canvasHeight) {
         Random random = new Random(seed);
         Population population = new Population(populationSize, random);
         population.setSelectionStrategy(config.newSelection());

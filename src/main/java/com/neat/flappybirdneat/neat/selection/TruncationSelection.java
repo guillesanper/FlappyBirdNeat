@@ -1,9 +1,8 @@
 package com.neat.flappybirdneat.neat.selection;
 
-import java.util.Random;
-
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 
 /**
  * Selección por truncamiento.

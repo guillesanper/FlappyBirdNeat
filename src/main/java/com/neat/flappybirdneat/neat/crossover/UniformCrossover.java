@@ -27,8 +27,7 @@ public class UniformCrossover implements CrossoverStrategy {
 
         // Cruzar pesos y bias de capa oculta
         for (int i = 0; i < parent1.getHiddenSize(); i++) {
-            child.getBiasHidden()[i] = random.nextBoolean() ?
-                    parent1.getBiasHidden()[i] : parent2.getBiasHidden()[i];
+            child.getBiasHidden()[i] = random.nextBoolean() ? parent1.getBiasHidden()[i] : parent2.getBiasHidden()[i];
 
             for (int j = 0; j < parent1.getOutputSize(); j++) {
                 if (random.nextBoolean()) {
@@ -41,8 +40,7 @@ public class UniformCrossover implements CrossoverStrategy {
 
         // Cruzar bias de salida
         for (int i = 0; i < parent1.getOutputSize(); i++) {
-            child.getBiasOutput()[i] = random.nextBoolean() ?
-                    parent1.getBiasOutput()[i] : parent2.getBiasOutput()[i];
+            child.getBiasOutput()[i] = random.nextBoolean() ? parent1.getBiasOutput()[i] : parent2.getBiasOutput()[i];
         }
 
         return child;

@@ -1,11 +1,10 @@
 package com.neat.flappybirdneat.simulation;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.genome.Genome;
 import org.junit.jupiter.api.Test;
-
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Verifica que el modo NEAT funciona de punta a punta a través de {@link SimulationController}:

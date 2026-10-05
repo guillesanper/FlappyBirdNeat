@@ -1,11 +1,10 @@
 package com.neat.flappybirdneat.neat.genome;
 
-import com.neat.flappybirdneat.neat.FlappyBirdAgent;
-import org.junit.jupiter.api.Test;
-
-import java.util.Random;
-
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.neat.flappybirdneat.neat.FlappyBirdAgent;
+import java.util.Random;
+import org.junit.jupiter.api.Test;
 
 class NeatPopulationTest {
 
@@ -34,10 +33,16 @@ class NeatPopulationTest {
 
         for (FlappyBirdAgent agent : population.getAgents()) {
             Genome genome = (Genome) agent.getBrain();
-            assertEquals(first.getNodes().stream().map(NodeGene::getId).toList(),
+            assertEquals(
+                    first.getNodes().stream().map(NodeGene::getId).toList(),
                     genome.getNodes().stream().map(NodeGene::getId).toList());
-            assertEquals(first.getConnections().stream().map(ConnectionGene::getInnovationNumber).toList(),
-                    genome.getConnections().stream().map(ConnectionGene::getInnovationNumber).toList());
+            assertEquals(
+                    first.getConnections().stream()
+                            .map(ConnectionGene::getInnovationNumber)
+                            .toList(),
+                    genome.getConnections().stream()
+                            .map(ConnectionGene::getInnovationNumber)
+                            .toList());
         }
     }
 
@@ -82,7 +87,8 @@ class NeatPopulationTest {
         config.setAddNodeRate(0.9);
 
         NeatPopulation population = new NeatPopulation(POPULATION_SIZE, 4, 1, new Random(1), config);
-        int initialConnectionCount = ((Genome) population.getAgents()[0].getBrain()).getConnections().size();
+        int initialConnectionCount =
+                ((Genome) population.getAgents()[0].getBrain()).getConnections().size();
 
         Random fitnessSource = new Random(3);
         int maxNodesSeen = 0;
@@ -90,12 +96,14 @@ class NeatPopulationTest {
             assignFitness(population, fitnessSource);
             population.naturalSelection();
             for (FlappyBirdAgent agent : population.getAgents()) {
-                maxNodesSeen = Math.max(maxNodesSeen, ((Genome) agent.getBrain()).getNodes().size());
+                maxNodesSeen = Math.max(
+                        maxNodesSeen, ((Genome) agent.getBrain()).getNodes().size());
             }
         }
 
         int initialNodeCount = 4 + 1 + 1; // inputs + bias + output
-        assertTrue(maxNodesSeen > initialNodeCount,
+        assertTrue(
+                maxNodesSeen > initialNodeCount,
                 "Tras 15 generaciones con mutación estructural agresiva, la topología debería haber crecido");
     }
 
@@ -141,11 +149,15 @@ class NeatPopulationTest {
             for (int i = 0; i < agents1.length; i++) {
                 Genome genome1 = (Genome) agents1[i].getBrain();
                 Genome genome2 = (Genome) agents2[i].getBrain();
-                assertEquals(genome1.getConnections().size(), genome2.getConnections().size(),
+                assertEquals(
+                        genome1.getConnections().size(),
+                        genome2.getConnections().size(),
                         "Divergencia en generación " + population1.getGeneration() + ", agente " + i);
                 for (int c = 0; c < genome1.getConnections().size(); c++) {
-                    assertEquals(genome1.getConnections().get(c).getWeight(),
-                            genome2.getConnections().get(c).getWeight(), 1e-9,
+                    assertEquals(
+                            genome1.getConnections().get(c).getWeight(),
+                            genome2.getConnections().get(c).getWeight(),
+                            1e-9,
                             "Divergencia de peso en generación " + population1.getGeneration() + ", agente " + i);
                 }
             }

@@ -1,11 +1,10 @@
 package com.neat.flappybirdneat.neat;
 
-import com.neat.flappybirdneat.neural.NeuralNetwork;
-import org.junit.jupiter.api.Test;
-
-import java.util.Random;
-
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.neat.flappybirdneat.neural.NeuralNetwork;
+import java.util.Random;
+import org.junit.jupiter.api.Test;
 
 class PopulationTest {
 

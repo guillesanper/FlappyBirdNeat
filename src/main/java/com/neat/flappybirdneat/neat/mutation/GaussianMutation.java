@@ -1,8 +1,7 @@
 package com.neat.flappybirdneat.neat.mutation;
 
-import java.util.Random;
-
 import com.neat.flappybirdneat.neural.NeuralNetwork;
+import java.util.Random;
 
 /**
  * Mutación gaussiana (ya existente en NeuralNetwork).

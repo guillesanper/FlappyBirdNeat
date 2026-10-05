@@ -1,13 +1,12 @@
 package com.neat.flappybirdneat.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.neat.flappybirdneat.neat.Population;
 import com.neat.flappybirdneat.neat.crossover.*;
 import com.neat.flappybirdneat.neat.mutation.*;
-import com.neat.flappybirdneat.neat.selection.*;
 import com.neat.flappybirdneat.neat.scaling.*;
+import com.neat.flappybirdneat.neat.selection.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Almacena la configuración de operadores genéticos
@@ -64,14 +63,36 @@ public class GeneticOperatorsConfig {
     }
 
     // Getters
-    public SelectionStrategy getSelectionStrategy() { return selectionStrategy; }
-    public ScalingStrategy getScalingStrategy() { return scalingStrategy; }
-    public MutationStrategy getMutationStrategy() { return mutationStrategy; }
-    public CrossoverStrategy getCrossoverStrategy() { return crossoverStrategy; }
+    public SelectionStrategy getSelectionStrategy() {
+        return selectionStrategy;
+    }
+
+    public ScalingStrategy getScalingStrategy() {
+        return scalingStrategy;
+    }
+
+    public MutationStrategy getMutationStrategy() {
+        return mutationStrategy;
+    }
+
+    public CrossoverStrategy getCrossoverStrategy() {
+        return crossoverStrategy;
+    }
 
     // Setters
-    public void setSelectionStrategy(SelectionStrategy s) { this.selectionStrategy = s; }
-    public void setScalingStrategy(ScalingStrategy e) { this.scalingStrategy = e; }
-    public void setMutationStrategy(MutationStrategy m) { this.mutationStrategy = m; }
-    public void setCrossoverStrategy(CrossoverStrategy c) { this.crossoverStrategy = c; }
+    public void setSelectionStrategy(SelectionStrategy s) {
+        this.selectionStrategy = s;
+    }
+
+    public void setScalingStrategy(ScalingStrategy e) {
+        this.scalingStrategy = e;
+    }
+
+    public void setMutationStrategy(MutationStrategy m) {
+        this.mutationStrategy = m;
+    }
+
+    public void setCrossoverStrategy(CrossoverStrategy c) {
+        this.crossoverStrategy = c;
+    }
 }
