@@ -42,3 +42,5 @@ build/
 
 ### Mac OS ###
 .DS_Store
+### Experiment output (published results live in docs/results/) ###
+experiments/out/
