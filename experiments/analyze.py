@@ -334,7 +334,22 @@ def style_axes(ax, theme):
     ax.set_axisbelow(True)
 
 
+def theme_rc(theme):
+    """Matplotlib defaults for a theme, so every title, label and tick wears the theme's ink."""
+    return {
+        "text.color": theme["text"],
+        "axes.titlecolor": theme["text"],
+        "axes.labelcolor": theme["text2"],
+        "xtick.color": theme["text2"],
+        "ytick.color": theme["text2"],
+        "axes.edgecolor": theme["axis"],
+        "figure.facecolor": theme["surface"],
+        "axes.facecolor": theme["surface"],
+    }
+
+
 def new_figure(theme, ncols, width=11.0, height=4.2):
+    plt.rcParams.update(theme_rc(theme))
     fig, axes = plt.subplots(1, ncols, figsize=(width, height), squeeze=False)
     fig.patch.set_facecolor(theme["surface"])
     for ax in axes[0]:
@@ -352,8 +367,15 @@ def legend(ax, theme, **kwargs):
 
 
 def suptitle(fig, theme, title, subtitle):
-    fig.suptitle(title, x=0.01, ha="left", fontsize=13, fontweight="bold", color=theme["text"])
-    fig.text(0.01, 0.905, subtitle, ha="left", fontsize=9, color=theme["text2"])
+    height = fig.get_figheight()
+    fig.suptitle(title, x=0.01, y=1 - 0.12 / height, ha="left", va="top", fontsize=13, fontweight="bold",
+                 color=theme["text"])
+    fig.text(0.01, 1 - 0.42 / height, subtitle, ha="left", va="top", fontsize=9, color=theme["text2"])
+
+
+def top(fig) -> float:
+    """Top of the plotting area, just under the title block."""
+    return 1 - 0.6 / fig.get_figheight()
 
 
 def thousands(value, _pos):
@@ -376,7 +398,7 @@ def curves(runs, config, column, generations):
 
 def plot_fitness(runs, configs, generations, max_frames, n_seeds, output, mode, rng_seed, resamples):
     theme = THEMES[mode]
-    fig, axes = new_figure(theme, 2)
+    fig, axes = new_figure(theme, 2, height=4.6)
     x = np.arange(1, generations + 1)
     for ax, column, title in zip(axes, ("best", "mean"), ("Best fitness per generation", "Mean fitness per generation")):
         rng = np.random.default_rng(rng_seed)
@@ -396,10 +418,14 @@ def plot_fitness(runs, configs, generations, max_frames, n_seeds, output, mode, 
             ax.axhline(max_frames, color=theme["muted"], linewidth=1, linestyle=(0, (3, 3)))
             ax.annotate(f"frame cap ({max_frames:,})", xy=(generations, max_frames), xytext=(-4, -12),
                         textcoords="offset points", ha="right", fontsize=8, color=theme["text2"])
-    legend(axes[0], theme, loc="upper left")
+    handles, labels = axes[0].get_legend_handles_labels()
+    leg = fig.legend(handles, labels, loc="lower center", ncol=len(configs), frameon=False, fontsize=8.5,
+                     bbox_to_anchor=(0.5, 0.0), handlelength=3)
+    for text in leg.get_texts():
+        text.set_color(theme["text"])
     suptitle(fig, theme, "NEAT vs GA: fitness over generations",
              f"Mean over {n_seeds} seeds; shaded bands are 95% bootstrap confidence intervals of the mean.")
-    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    fig.tight_layout(rect=(0, 0.06, 1, top(fig)))
     save(fig, output, "fitness_curves", mode)
 
 
@@ -439,7 +465,7 @@ def plot_success(summaries, per_run, configs, generations, n_seeds, output, mode
     ax.grid(False, axis="y")
     suptitle(fig, theme, "NEAT vs GA: how often each configuration solves the game",
              f"{n_seeds} paired seeds, {generations} generations; solved = an agent survives the whole frame cap.")
-    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    fig.tight_layout(rect=(0, 0, 1, top(fig)))
     save(fig, output, "success_rate", mode)
 
 
@@ -466,7 +492,7 @@ def plot_final(per_run, configs, max_frames, generations, output, mode):
     ax.grid(False, axis="x")
     suptitle(fig, theme, f"Final fitness per seed (generation {generations})",
              "One dot per seed; the bar is the median; the dashed line is the frame cap.")
-    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    fig.tight_layout(rect=(0, 0, 1, top(fig)))
     save(fig, output, "final_fitness", mode)
 
 
@@ -506,8 +532,9 @@ def plot_neat(runs, generations, n_seeds, output, mode, rng_seed, resamples):
     for ax in axes:
         ax.set_xlim(1, generations)
     suptitle(fig, theme, "NEAT: speciation and topology growth",
-             f"Mean over {n_seeds} seeds with 95% bootstrap bands (start: 5 inputs incl. bias, 1 output, 5 connections).")
-    fig.tight_layout(rect=(0, 0, 1, 0.86))
+             f"Mean over {n_seeds} seeds with 95% bootstrap bands. Every run starts as one species of minimal genomes "
+             "(4 inputs + bias wired to 1 output).")
+    fig.tight_layout(rect=(0, 0, 1, top(fig)))
     save(fig, output, "neat_dynamics", mode)
 
 
