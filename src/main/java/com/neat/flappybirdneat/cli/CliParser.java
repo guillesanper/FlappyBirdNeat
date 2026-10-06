@@ -30,6 +30,7 @@ public final class CliParser {
             "--generations",
             "--population",
             "--max-frames",
+            "--threads",
             "--selection",
             "--crossover",
             "--mutation",
@@ -37,7 +38,8 @@ public final class CliParser {
             "--out");
     private static final Set<String> GA_OPTIONS = Set.of("--selection", "--crossover", "--mutation", "--scaling");
 
-    static final String USAGE = """
+    static final String USAGE =
+            """
             Usage: java -jar FlappyBirdNEAT.jar --headless --out FILE [options]
                    java -jar FlappyBirdNEAT.jar            (no arguments: open the JavaFX UI)
 
@@ -52,6 +54,8 @@ public final class CliParser {
               --population N        Agents per generation (default: %d)
               --max-frames N        Frame cap per generation; an agent that reaches it
                                     solves the game (default: %d)
+              --threads N           Threads that evaluate each generation's agents
+                                    (default: available cores, %d here)
               --stop-on-solve       Stop after the first solved generation
               -h, --help            Show this help and exit
 
@@ -64,7 +68,7 @@ public final class CliParser {
               --scaling KEY         none (default), linear, sigma, boltzmann
 
             Exit codes: 0 success, 1 runtime error (e.g. FILE cannot be written), 2 invalid arguments.
-            """.formatted(DEFAULT_GENERATIONS, DEFAULT_POPULATION, DEFAULT_MAX_FRAMES);
+            """.formatted(DEFAULT_GENERATIONS, DEFAULT_POPULATION, DEFAULT_MAX_FRAMES, defaultThreads());
 
     private CliParser() {}
 
@@ -135,6 +139,7 @@ public final class CliParser {
         int generations = positiveInt(values, "--generations", DEFAULT_GENERATIONS, 1);
         int population = positiveInt(values, "--population", DEFAULT_POPULATION, 2);
         int maxFrames = positiveInt(values, "--max-frames", DEFAULT_MAX_FRAMES, 1);
+        int threads = positiveInt(values, "--threads", defaultThreads(), 1);
 
         String selection = operatorKey(values, "--selection", SelectionFactory.getInstance()::getSelectionStrategy);
         String crossover = operatorKey(values, "--crossover", CrossoverFactory.getInstance()::getCrossoverStrategy);
@@ -150,12 +155,17 @@ public final class CliParser {
                 generations,
                 population,
                 maxFrames,
+                threads,
                 values.containsKey("--stop-on-solve"),
                 selection,
                 crossover,
                 mutation,
                 scaling,
                 Path.of(out)));
+    }
+
+    static int defaultThreads() {
+        return Runtime.getRuntime().availableProcessors();
     }
 
     private static long parseLong(String name, String value) throws UsageException {

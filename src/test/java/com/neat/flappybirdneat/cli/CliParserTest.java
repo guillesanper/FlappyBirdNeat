@@ -33,6 +33,8 @@ class CliParserTest {
                 "30",
                 "--max-frames",
                 "15000",
+                "--threads",
+                "3",
                 "--stop-on-solve",
                 "--selection",
                 "ranking",
@@ -52,6 +54,7 @@ class CliParserTest {
                         200,
                         30,
                         15000,
+                        3,
                         true,
                         "ranking",
                         "single_point",
@@ -69,6 +72,7 @@ class CliParserTest {
         assertEquals(CliParser.DEFAULT_GENERATIONS, options.generations());
         assertEquals(CliParser.DEFAULT_POPULATION, options.population());
         assertEquals(CliParser.DEFAULT_MAX_FRAMES, options.maxFrames());
+        assertEquals(Runtime.getRuntime().availableProcessors(), options.threads());
         assertFalse(options.stopOnSolve());
         assertNull(options.selection());
         assertNull(options.scaling());
@@ -112,6 +116,7 @@ class CliParserTest {
                 "--headless --out a.csv --generations 2.5 | --generations expects an integer",
                 "--headless --out a.csv --population 1 | --population must be at least 2",
                 "--headless --out a.csv --max-frames -5 | --max-frames must be at least 1",
+                "--headless --out a.csv --threads 0 | --threads must be at least 1, got 0",
                 "--headless --out a.csv --selection ranking | --selection only applies to --engine ga",
                 "--headless --out a.csv --engine ga --mutation wild | Unknown value for --mutation: 'wild'",
                 "--headless --out a.csv --seed 1 --seed 2 | --seed given more than once",

@@ -135,6 +135,51 @@ class CliTest {
     }
 
     @Test
+    void threadCountDoesNotChangeTheCsv() throws IOException {
+        for (String engine : List.of("neat", "ga")) {
+            Path single = tempDir.resolve(engine + "-1-thread.csv");
+            Path many = tempDir.resolve(engine + "-4-threads.csv");
+
+            assertEquals(
+                    Cli.EXIT_OK,
+                    run(
+                            "--headless",
+                            "--engine",
+                            engine,
+                            "--seed",
+                            "8",
+                            "--generations",
+                            "6",
+                            "--population",
+                            "30",
+                            "--threads",
+                            "1",
+                            "--out",
+                            single.toString()),
+                    err());
+            assertEquals(
+                    Cli.EXIT_OK,
+                    run(
+                            "--headless",
+                            "--engine",
+                            engine,
+                            "--seed",
+                            "8",
+                            "--generations",
+                            "6",
+                            "--population",
+                            "30",
+                            "--threads",
+                            "4",
+                            "--out",
+                            many.toString()),
+                    err());
+
+            assertEquals(withoutWallTime(single), withoutWallTime(many), engine);
+        }
+    }
+
+    @Test
     void differentSeedsGiveDifferentCsvs() throws IOException {
         Path first = tempDir.resolve("seed1.csv");
         Path second = tempDir.resolve("seed2.csv");

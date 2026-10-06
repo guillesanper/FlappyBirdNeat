@@ -14,6 +14,7 @@ public record CliOptions(
         int generations,
         int population,
         int maxFrames,
+        int threads,
         boolean stopOnSolve,
         String selection,
         String crossover,

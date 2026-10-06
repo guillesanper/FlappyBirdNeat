@@ -41,15 +41,23 @@ public final class HeadlessTraining {
             long totalMillis) {}
 
     public static Summary run(CliOptions options) throws IOException {
-        TrainingEngine engine = new TrainingEngine(options.population(), CANVAS_WIDTH, CANVAS_HEIGHT, options.seed());
-        engine.reset(options.engine(), operators(options));
+        try (TrainingEngine engine =
+                new TrainingEngine(options.population(), CANVAS_WIDTH, CANVAS_HEIGHT, options.seed())) {
+            engine.setThreads(options.threads());
+            engine.reset(options.engine(), operators(options));
+            return train(engine, options);
+        }
+    }
+
+    private static Summary train(TrainingEngine engine, CliOptions options) throws IOException {
         LOG.info(
-                "Training {} with seed {}: {} generations of {} agents, at most {} frames each",
+                "Training {} with seed {}: {} generations of {} agents, at most {} frames each, {} threads",
                 options.engine(),
                 options.seed(),
                 options.generations(),
                 options.population(),
-                options.maxFrames());
+                options.maxFrames(),
+                options.threads());
 
         long start = System.nanoTime();
         double bestFitness = Double.NEGATIVE_INFINITY;

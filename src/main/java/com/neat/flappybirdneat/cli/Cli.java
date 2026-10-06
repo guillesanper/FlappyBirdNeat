@@ -50,11 +50,12 @@ public final class Cli {
         out.printf(Locale.ROOT, "  Seed:          %d%n", options.seed());
         out.printf(
                 Locale.ROOT,
-                "  Generations:   %d of %d (population %d, max %d frames per generation)%n",
+                "  Generations:   %d of %d (population %d, max %d frames per generation, %d threads)%n",
                 summary.generationsRun(),
                 options.generations(),
                 options.population(),
-                options.maxFrames());
+                options.maxFrames(),
+                options.threads());
         out.printf(
                 Locale.ROOT,
                 "  Best fitness:  %.0f (generation %d)%n",
