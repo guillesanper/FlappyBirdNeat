@@ -3,7 +3,7 @@
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![JavaFX 17](https://img.shields.io/badge/JavaFX-17-blue)
-![Tests](https://img.shields.io/badge/tests-138%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-232%20passing-brightgreen)
 ![Coverage](.github/badges/jacoco.svg)
 ![Branches](.github/badges/branches.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -21,8 +21,9 @@ There are no ML libraries involved. The neural networks, both evolution engines 
 - **Two interchangeable evolution engines:** a classic genetic algorithm that evolves the weights of a fixed-topology network, and a full implementation of **[NEAT](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf)** (Stanley & Miikkulainen, 2002), which evolves the network's *structure* as well, with innovation numbers, speciation and historical-marking crossover.
 - **16 pluggable genetic operators** (7 selection, 3 crossover, 3 mutation and 3 fitness-scaling, on top of NEAT's own) behind the Strategy pattern. You can mix and match them from the UI at runtime.
 - **A live view inside the agent's head:** a network visualizer that shows every activation and the jump decision frame by frame.
-- **Experiment tooling:** a headless fast-training mode, generation history and replay, CSV export, and a benchmark mode that compares operator configurations across repeated seeded runs.
-- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome and the simulation loop (138 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
+- **Experiment tooling:** a headless command line that trains without opening a window and writes one CSV row per generation, generation history and replay in the UI, and a benchmark mode that compares operator configurations across repeated seeded runs.
+- **Parallel and still deterministic:** each agent plays its own copy of the game over the same pipes, so a generation is evaluated across all CPU cores, and the result is bit-for-bit the same with 1 or 8 threads.
+- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (232 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
 
 ## Screenshots
 
@@ -45,11 +46,11 @@ Each bird is an agent with a `Brain`. Every frame, the brain receives four norma
 | `distance` | Horizontal distance to the next pipe |
 | `gapY` | Height of the next pipe's gap |
 
-An output above 0.5 means *jump*. Fitness is the number of frames the bird survives. When every bird has crashed, the population evolves:
+An output above 0.5 means *jump*. Fitness is the number of frames the bird survives. Birds never interact, so every bird of a generation plays its own copy of the game over the same pipe sequence, in parallel. When every bird has crashed (or a bird reaches the frame cap), the population evolves:
 
 ```mermaid
 flowchart LR
-    A[Population of brains] --> B[Play one generation]
+    A[Population of brains] --> B[Play one generation<br/>one game per agent, in parallel]
     B --> C[Fitness = frames survived]
     C --> D{Engine}
     D -->|Fixed-topology GA| E[Scale fitness → select parents →<br/>crossover weights → mutate]
@@ -80,8 +81,10 @@ flowchart TB
         SW[StatisticsWindow]
         BW[BenchmarkWindow]
     end
+    CLI[cli<br/>headless runs · CSV]
     subgraph Core["simulation"]
-        SC[SimulationController<br/>game loop · fast mode · replay]
+        SC[SimulationController<br/>UI adapter: properties · history · replay]
+        TE[TrainingEngine<br/>seed · parallel evaluation · evolution]
     end
     subgraph Game["game"]
         G[FlappyBirdGame<br/>physics · pipes · collisions]
@@ -104,9 +107,11 @@ flowchart TB
     UI --> SC
     UI --> GR
     NV --> BR
-    SC --> G
-    SC --> EP
+    SC --> TE
     SC --> H
+    CLI --> TE
+    TE --> G
+    TE --> EP
     BW --> BM --> EP
     EP -.-> P & NP
     P --> OPS
@@ -120,7 +125,9 @@ A few design decisions behind it:
 
 - **The engine is abstracted away from the game.** `FlappyBirdGame` and `FlappyBirdAgent` only know about the `Brain` interface (`double[] feedForward(double[])`), and the simulation only knows about `EvolvingPopulation`. Switching between the GA and NEAT is a dropdown in the UI, not a code change.
 - **Operators are strategies built by factories** (`SelectionFactory`, `CrossoverFactory`, `MutationFactory`, `ScalingFactory`). Adding a new selection method means writing one class; `Population` doesn't change.
-- **Every run is reproducible from one seed.** `SimulationController` and `BenchmarkRunner` own a global seed, and there is no `new Random()` anywhere else: the game, the populations and the networks receive the generator, and operator strategies get it as a call argument instead of storing it, so one strategy instance can be shared without coupling runs. Replays draw from derived generators, so opening one never perturbs training. The app logs its seed at startup (`-Dseed=N` to reproduce it), and an end-to-end test checks that the same seed with non-default operators gives an identical fitness curve.
+- **The training core knows nothing about JavaFX.** `TrainingEngine` owns the seed, the population and the game; `SimulationController` is a thin adapter that turns it into observable properties, chart series and history snapshots for the UI, and the CLI drives the engine directly. `Main` chooses between the CLI and the UI before any JavaFX class is touched, and a test runs the CLI in an isolated class loader to prove that no `javafx.*` class is ever requested.
+- **Every run is reproducible from one seed.** `TrainingEngine` and `BenchmarkRunner` own a global seed, and there is no `new Random()` anywhere else: the populations and the networks receive the generator, and operator strategies get it as a call argument instead of storing it, so one strategy instance can be shared without coupling runs. The pipes of generation *g* come from a seed derived from the global seed and *g* (a SplitMix64-style mix), not from the evolution generator, so every agent can replay exactly the same pipes, and the GA and NEAT face the same course for the same seed. Replays draw from derived generators, so opening one never perturbs training. The app logs its seed at startup (`-Dseed=N` to reproduce it), and end-to-end tests check identical curves for the same seed, including pinned values for seed 42.
+- **Parallelism without nondeterminism.** A generation's agents are spread over a `ForkJoinPool` (platform threads: the work is CPU-bound, which is not what virtual threads are for). Each agent, its brain (including the activations the visualizer reads) and its game belong to exactly one task; statistics, selection and reproduction then run sequentially in agent order. Tests check that 1, 2, 4 and 8 threads give identical results for both engines, that no two agents ever share a brain, and that stepping every bird through the shared on-screen game frame by frame gives the same generation as the parallel batch.
 
 ## Getting started
 
@@ -141,14 +148,87 @@ java -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar
 java -Dseed=42 -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar
 ```
 
+### Command-line training
+
+With arguments, the same jar trains headless, without loading JavaFX at all:
+
+```bash
+java -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar --headless --engine neat --seed 42 \
+    --generations 200 --population 50 --out results.csv
+```
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--headless` | | Required to train from the command line (no arguments opens the UI) |
+| `--out FILE` | | CSV to write (required) |
+| `--engine neat\|ga` | `neat` | Evolution engine |
+| `--seed N` | random | Global seed; printed in the summary so any run can be repeated |
+| `--generations N` | 100 | Generations to run |
+| `--population N` | 50 | Agents per generation |
+| `--max-frames N` | 20000 | Frame cap per generation; an agent that reaches it *solves* the game |
+| `--threads N` | all cores | Threads that evaluate a generation's agents (results don't depend on it) |
+| `--stop-on-solve` | off | Stop after the first solved generation |
+| `--selection`, `--crossover`, `--mutation`, `--scaling` | roulette, uniform, gaussian, none | GA operators (GA only), e.g. `--selection deterministic_tournament --mutation non_uniform --scaling sigma` |
+
+`--help` lists every operator key. Invalid arguments print a message and exit with status 2; I/O errors exit with 1.
+
+The CSV has one row per generation, written as soon as the generation ends:
+
+```csv
+generation,best,mean,min,species,diversity,frames,wall_ms,nodes,connections,solved
+1,240,43.1000,26,1,0.2430,240,65,6.0000,5.0000,false
+2,485,81.0800,26,1,0.2408,485,54,6.0200,5.0200,false
+3,245,64.3600,26,1,0.5502,245,29,6.0600,5.0600,false
+```
+
+`best`, `mean` and `min` are fitness (frames survived), `frames` is how long the generation lasted, `diversity` is the mean pairwise genetic distance, and `nodes`/`connections` are the mean node genes and enabled connection genes per NEAT genome. `species`, `nodes` and `connections` are empty for the GA. Rerunning with the same seed reproduces the file exactly, except for `wall_ms`. A summary follows on stdout:
+
+```
+Training summary
+  Engine:        NEAT
+  Seed:          42
+  Generations:   200 of 200 (population 50, max 20000 frames per generation, 4 threads)
+  Best fitness:  16199 (generation 196)
+  Solved:        no (no agent reached 20000 frames)
+  Total time:    3.0 s
+  CSV:           results.csv
+```
+
+Progress is logged to stderr every 10 generations.
+
 ### Development
 
 - `./mvnw verify` runs the tests, writes the JaCoCo report to `target/site/jacoco/` and fails if engine line coverage drops below 75%. The JavaFX view layer is excluded from coverage; it is checked by running the app.
 - Code is formatted with [palantir-java-format](https://github.com/palantir/palantir-java-format) through Spotless. Run `./mvnw spotless:apply` before committing; CI runs `spotless:check`. The bulk reformat is listed in `.git-blame-ignore-revs` (`git config blame.ignoreRevsFile .git-blame-ignore-revs`).
 - Logging goes through SLF4J (slf4j-simple). Use `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug` for more detail.
 - Dependabot opens weekly update PRs for Maven dependencies and GitHub Actions.
+- CI also builds the jar and runs two short headless trainings as a smoke test, checking the CSV and that no JavaFX class gets loaded.
 
 Quick tour: on the **Estadísticas y Control** tab, choose an engine (`Fixed MLP` or `NEAT`), press **Iniciar Entrenamiento** to train headless, then **Ver Mejor** to watch the best generation play, and open **Mostrar Red Neuronal** to see inside its head. *(The UI is in Spanish.)*
+
+## Performance
+
+Generations per second of a full training run (play every agent, then speciate, select and breed), measured with JMH (`GenerationThroughputBenchmark`: 30 seeded generations per invocation, at most 5,000 frames per generation, 3 warm-up and 5 measured iterations, mean ± 99.9% error):
+
+| Engine | Population | 1 thread | 2 threads | 4 threads | 8 threads | Speed-up at 4 |
+|---|---|---|---|---|---|---|
+| GA | 50 | 182 ± 62 | 267 ± 45 | 439 ± 90 | 409 ± 77 | 2.4× |
+| GA | 500 | 127 ± 4 | 155 ± 21 | 211 ± 20 | 203 ± 33 | 1.7× |
+| NEAT | 50 | 155 ± 8 | 254 ± 61 | 404 ± 32 | 350 ± 131 | 2.6× |
+| NEAT | 500 | 9.7 ± 1.7 | 18.2 ± 3.9 | 33 ± 2 | 30 ± 2 | 3.4× |
+
+Measured on a cloud VM with only **4 vCPUs** (Intel Xeon @ 2.10 GHz, KVM, one thread per core, 15 GB RAM), OpenJDK 21.0.11 on Linux. With 4 cores, 8 threads can only add overhead, and that is what the last column shows. The numbers come from one run on a shared machine, so the error bars are wide; rerun them on your own hardware with:
+
+```bash
+./mvnw -P jmh test-compile exec:exec                                 # full matrix, about 6 minutes
+./mvnw -P jmh test-compile exec:exec -Djmh.args="-p engine=NEAT -p threads=1,4"
+```
+
+How to read them:
+
+- **NEAT with large populations scales best** (3.4× on 4 cores): evaluating a genome means walking its graph every frame, so playing the agents is most of the work.
+- **The GA scales worst at 500 agents** (1.7×): a fixed MLP is cheap to evaluate, so most agents of an early generation are played in microseconds, and the sequential part (selection and breeding, plus statistics) becomes a large share of each generation. Profiling one run shows about 180 ms of play against 60 ms of breeding over 30 generations on one thread; the play shrinks with threads, the breeding does not (Amdahl's law). Splitting the agents into larger chunks per task did not help, so the limit is the sequential part rather than scheduling overhead.
+- The UI's fast training uses the same engine, so it gets the same speed-up.
 
 ## Project structure
 
@@ -159,12 +239,15 @@ src/main/java/com/neat/flappybirdneat
 ├── neat/         Agents, EvolvingPopulation, fixed-topology GA (Population)
 │   ├── selection/ crossover/ mutation/ scaling/   GA operators (Strategy + Factory)
 │   └── genome/   NEAT: Genome, genes, InnovationTracker, Species, NeatCrossover, NeatPopulation
-├── simulation/   SimulationController: live loop, fast headless training, replay
+├── simulation/   TrainingEngine (JavaFX-free core: seed, parallel evaluation, evolution)
+│                 and SimulationController (its UI adapter: properties, history, replay)
+├── cli/          Headless command line: argument parser, training runner, CSV writer
 ├── benchmark/    Seeded multi-run comparison of operator configurations, CSV export
 ├── history/      Per-generation snapshots for replay and export
 ├── config/       Genetic-operator configuration shared with the UI
 └── view/         JavaFX windows: GameRenderer, network visualizer, statistics, benchmark, operator config
     └── main/     Main window: control panel, charts, simulation panel, history browser, game loop
+src/jmh/java      JMH benchmarks (Maven profile `jmh`, outside the normal build)
 docs/
 ├── media/        Screenshots and demo GIF
 ├── dev-notes/    Development notes (Spanish)
@@ -174,8 +257,8 @@ docs/
 ## Roadmap
 
 - [x] Split the main window class and unify the two renderers into one shared `GameRenderer`
-- [ ] Headless CLI (`--engine neat --seed 42 --generations 200`) for scripted experiments
-- [ ] Parallel fitness evaluation with virtual threads
+- [x] Headless CLI (`--engine neat --seed 42 --generations 200`) for scripted experiments
+- [x] Parallel, deterministic fitness evaluation (one game per agent on a `ForkJoinPool`), with JMH benchmarks
 - [ ] Published NEAT-vs-GA results across many seeds, with confidence intervals and significance tests
 - [ ] Native installers (Windows/macOS/Linux) via `jpackage` on every release
 
