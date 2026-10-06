@@ -21,7 +21,7 @@ public class FlappyBirdGame {
 
     private final int canvasWidth;
     private final int canvasHeight;
-    private final Random random;
+    private Random random;
 
     /**
      * Constructor con generador aleatorio inyectado, para reproducibilidad: la posición de los
@@ -41,6 +41,16 @@ public class FlappyBirdGame {
 
     public void setPipes(List<Pipe> pipes) {
         this.pipes = pipes;
+    }
+
+    /**
+     * Reinicia el juego con otro generador para los huecos de los tubos, p. ej. uno sembrado por
+     * generación para que todos los agentes de la generación vean la misma secuencia de tubos.
+     * @param random Generador a usar a partir de ahora para la posición de los huecos
+     */
+    public void reset(Random random) {
+        this.random = random;
+        reset();
     }
 
     /**

@@ -8,7 +8,7 @@ class SelectionFactoryImpl extends SelectionFactory {
     @Override
     public SelectionStrategy getSelectionStrategy(String type, double... params) {
         String t = type.toLowerCase();
-        if (t.equals("roulette") || t.equals("roulette")) {
+        if (t.equals("ruleta") || t.equals("roulette")) {
             return new RouletteSelection();
         } else if (t.equals("torneo deterministico")
                 || t.equals("torneo_deterministico")

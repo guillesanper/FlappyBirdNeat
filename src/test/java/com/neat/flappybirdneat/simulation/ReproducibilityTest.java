@@ -22,6 +22,40 @@ import org.junit.jupiter.api.Test;
  */
 class ReproducibilityTest {
 
+    /**
+     * Pinned best-fitness curves of the first 12 generations for seed 42 (population 50), so that any
+     * change to what a seed produces is deliberate and shows up here.
+     *
+     * <p>They changed once on purpose, with parallel evaluation: pipes used to be drawn from the main
+     * generator, interleaved with evolution, while every generation now gets its own pipe seed derived
+     * from the global one so each agent can replay the same pipes in its own game. Same seed, other
+     * pipes, so other curves; before that change the GA curve started 175, 87, 240, 244, 240, 359 and
+     * the NEAT one 240, 240, 244, 326, 373, 359 (through SimulationController, whose constructor resets
+     * once more than the engine here).
+     */
+    private static final List<Double> PINNED_GA_SEED_42 =
+            List.of(84.0, 181.0, 112.0, 240.0, 240.0, 240.0, 871.0, 616.0, 614.0, 246.0, 369.0, 481.0);
+
+    private static final List<Double> PINNED_NEAT_SEED_42 =
+            List.of(240.0, 485.0, 245.0, 270.0, 499.0, 359.0, 359.0, 359.0, 359.0, 389.0, 359.0, 384.0);
+
+    @Test
+    void seed42StillGivesThePinnedCurves() {
+        assertEquals(PINNED_GA_SEED_42, pinnedRun(EngineType.GA));
+        assertEquals(PINNED_NEAT_SEED_42, pinnedRun(EngineType.NEAT));
+    }
+
+    private static List<Double> pinnedRun(EngineType type) {
+        try (TrainingEngine engine = new TrainingEngine(50, 800, 600, 42L)) {
+            engine.reset(type, new GeneticOperatorsConfig());
+            List<Double> best = new ArrayList<>();
+            for (int gen = 0; gen < 12; gen++) {
+                best.add(engine.runGeneration(20_000).best());
+            }
+            return best;
+        }
+    }
+
     private static final int POPULATION = 30;
     private static final int GENERATIONS = 8;
     private static final int MAX_FRAMES_PER_GENERATION = 5_000;

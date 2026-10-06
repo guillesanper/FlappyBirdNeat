@@ -60,6 +60,50 @@ jobs:
           name: jacoco-report
           path: target/site/jacoco/
 
+  cli-smoke:
+    name: CLI smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build the fat jar
+        run: ./mvnw -B package -DskipTests -Djacoco.skip=true
+
+      # A short headless run per engine: the CSV must have a header plus one row per generation,
+      # the summary must report the seed, and no JavaFX class may be loaded on the way
+      - name: Run short headless trainings
+        run: |
+          for engine in neat ga; do
+            java -Xlog:class+load=info:file="classes-$engine.log" \
+              -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar --headless --engine "$engine" \
+              --seed 42 --generations 5 --population 20 --threads 2 --out "smoke-$engine.csv" > "smoke-$engine.log"
+            test "$(head -n 1 "smoke-$engine.csv")" = 'generation,best,mean,min,species,diversity,frames,wall_ms,nodes,connections,solved'
+            test "$(wc -l < "smoke-$engine.csv")" -eq 6
+            grep -q 'Seed:          42' "smoke-$engine.log"
+            grep -q 'com.neat.flappybirdneat.simulation.TrainingEngine' "classes-$engine.log"
+            if grep -q 'javafx' "classes-$engine.log"; then echo "JavaFX was loaded in headless mode"; exit 1; fi
+            cat "smoke-$engine.csv"
+          done
+
+      - name: Invalid arguments exit with status 2
+        run: |
+          set +e
+          java -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar --headless --engine bogus --out x.csv
+          test $? -eq 2
+
+      - name: Upload smoke-test CSVs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-smoke-csv
+          path: smoke-*.csv
+
   coverage-badge:
     name: Update coverage badge
     needs: [ format, build ]
