@@ -55,7 +55,7 @@ jobs:
 
       - name: Upload coverage report
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-report
           path: target/site/jacoco/
@@ -99,7 +99,7 @@ jobs:
           test $? -eq 2
 
       - name: Upload smoke-test CSVs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cli-smoke-csv
           path: smoke-*.csv
