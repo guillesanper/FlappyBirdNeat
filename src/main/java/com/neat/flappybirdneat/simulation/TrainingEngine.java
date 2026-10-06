@@ -154,11 +154,16 @@ public class TrainingEngine {
         framesPlayed = 0;
     }
 
-    /** Plays the current generation (see {@link #playGeneration}) and then evolves the population. */
+    /**
+     * Plays the current generation (see {@link #playGeneration}) and then evolves the population.
+     * NEAT speciates a generation while evolving it, so unlike {@link #statistics()} (which can only
+     * report the species of the previous generation) the result counts the species the played
+     * generation was divided into.
+     */
     public GenerationStats runGeneration(int maxFrames) {
         GenerationStats stats = playGeneration(maxFrames);
         evolve();
-        return stats;
+        return stats.withSpecies(getSpeciesCount());
     }
 
     /** @return number of agents of the current generation that are still alive */

@@ -12,7 +12,10 @@ class MutationFactoryImpl extends MutationFactory {
             return params.length >= 1 ? new GaussianMutation(params[0]) : new GaussianMutation();
         } else if (t.equals("uniforme") || t.equals("uniform")) {
             return new UniformMutation();
-        } else if (t.equals("no uniforme") || t.equals("no_uniforme") || t.equals("nonuniform")) {
+        } else if (t.equals("no uniforme")
+                || t.equals("no_uniforme")
+                || t.equals("non_uniform")
+                || t.equals("nonuniform")) {
             if (params.length >= 3) {
                 return new NonUniformMutation(params[0], (int) params[1], params[2]);
             } else if (params.length >= 1) {

@@ -80,6 +80,7 @@
                         <exclude>com/neat/flappybirdneat/view/**</exclude>
                         <exclude>com/neat/flappybirdneat/FlappyBirdNEAT.class</exclude>
                         <exclude>com/neat/flappybirdneat/Main.class</exclude>
+                        <exclude>com/neat/flappybirdneat/UiLauncher.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>

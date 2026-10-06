@@ -63,6 +63,7 @@ class OperatorFactoriesTest {
         "uniforme, UniformMutation",
         "uniform, UniformMutation",
         "no_uniforme, NonUniformMutation",
+        "non_uniform, NonUniformMutation",
         "nonuniform, NonUniformMutation"
     })
     void mutationFactoryAcceptsSpanishAndEnglishKeys(String key, String expectedClass) {

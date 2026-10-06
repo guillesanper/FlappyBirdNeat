@@ -1,14 +1,19 @@
 package com.neat.flappybirdneat;
 
-import javafx.application.Application;
+import com.neat.flappybirdneat.cli.Cli;
 
 /**
- * Entry point for the shaded (fat) jar. It must not extend {@link Application}
- * so the JavaFX runtime can be loaded from the classpath, which is why the
- * application class is passed explicitly instead of relying on caller detection.
+ * Entry point for the shaded (fat) jar. With no arguments it opens the JavaFX UI; with arguments
+ * it runs the command line (headless training, --help). The choice is made before any JavaFX class
+ * is loaded, which is also why this class must not extend {@code Application}: that lets the JavaFX
+ * runtime be loaded from the classpath in the fat jar.
  */
 public class Main {
     public static void main(String[] args) {
-        Application.launch(FlappyBirdNEAT.class, args);
+        if (args.length == 0) {
+            UiLauncher.launch(args);
+        } else {
+            System.exit(Cli.run(args, System.out, System.err));
+        }
     }
 }
