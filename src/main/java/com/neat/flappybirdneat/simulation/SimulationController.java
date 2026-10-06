@@ -14,6 +14,7 @@ import com.neat.flappybirdneat.neat.genome.NeatPopulation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Executor;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.concurrent.Task;
@@ -64,6 +65,8 @@ public class SimulationController {
 
     // Parámetros de simulación
     private boolean fastMode = false;
+    // Escrito desde el hilo de la UI y leído desde el del entrenamiento rápido
+    private volatile boolean stopRequested = false;
     private int targetGenerations = 0;
     private boolean replayMode = false; // Indica si estamos reproduciendo el mejor agente
     private Mode mode = Mode.FIXED_MLP;
@@ -198,152 +201,15 @@ public class SimulationController {
      * @param generations Número de generaciones a ejecutar
      */
     public void runFastSimulation(int generations) {
-        if (running.get()) return;
+        // fastMode sigue activo mientras una ejecución detenida termina su generación en curso
+        if (running.get() || fastMode) return;
 
-        running.set(true);
-        fastMode = true;
-        targetGenerations = generations;
-
-        // Iniciar un nuevo historial de ejecución
-        historyManager.startNewRun();
+        beginFastSimulation(generations);
 
         Task<Void> simulationTask = new Task<>() {
             @Override
             protected Void call() {
-                double globalBestFitness = bestFitness.get();
-                int bestGeneration = 0;
-
-                int initialGeneration = currentGeneration.get();
-
-                // Variables para acumular datos antes de actualizar UI
-                final int UI_UPDATE_INTERVAL = 10; // Actualizar UI cada 10 generaciones
-
-                for (int i = 0; i < generations && !isCancelled(); i++) {
-                    // Ejecutar la generación hasta que todos mueran. El fitness de un agente es el nº
-                    // de frames que sobrevive, así que cortar la generación al llegar al umbral óptimo
-                    // evita que un agente que ya no muere la deje corriendo indefinidamente (la
-                    // detección de óptimo de abajo nunca llegaría).
-                    GenerationStats stats = engine.playGeneration((int) OPTIMAL_FITNESS_THRESHOLD);
-
-                    if (isCancelled()) break;
-
-                    final int alive = stats.alive();
-                    final double avgFitness = stats.mean();
-                    final double currentBestFitness = stats.best(); // Mejor de esta generación
-                    final double currentMinFitness = stats.min();
-                    final int currentSpeciesCount = stats.species();
-                    final double currentDiversity = stats.diversity();
-
-                    // Guardar esta generación en el historial
-                    historyManager.addGenerationData(
-                            currentBestFitness,
-                            avgFitness,
-                            currentMinFitness,
-                            alive,
-                            currentSpeciesCount,
-                            currentDiversity,
-                            engine.getPopulation(),
-                            engine.getGame().getPipes());
-
-                    if (currentBestFitness > globalBestFitness) {
-                        globalBestFitness = currentBestFitness;
-                        bestGeneration = initialGeneration + i;
-                    }
-
-                    // DETECCIÓN DE FITNESS ÓPTIMO: Si alcanzamos un fitness muy alto, detener entrenamiento
-                    if (currentBestFitness >= OPTIMAL_FITNESS_THRESHOLD) {
-                        final int currentGen = initialGeneration + i + 1;
-                        final double bestFit = currentBestFitness;
-                        final double avgFit = avgFitness;
-
-                        // Guardar datos para gráficos
-                        bestFitnessHistory.add(currentBestFitness);
-                        avgFitnessHistory.add(avgFitness);
-                        minFitnessHistory.add(currentMinFitness);
-                        speciesCountHistory.add(currentSpeciesCount);
-                        diversityHistory.add(currentDiversity);
-
-                        // Mantener el mejor absoluto
-                        double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty()
-                                ? 0.0
-                                : bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
-                        bestAbsoluteFitnessHistory.add(Math.max(currentBestFitness, previousAbsolute));
-
-                        Platform.runLater(() -> {
-                            bestFitness.set(bestFit);
-                            averageFitness.set(avgFit);
-                            currentGeneration.set(currentGen);
-                            aliveCount.set(0);
-                            updateProgress(1, 1); // Completar barra de progreso
-                        });
-
-                        LOG.info(
-                                "Optimal fitness reached at generation {} (fitness {}); stopping training",
-                                currentGen,
-                                String.format("%.2f", bestFit));
-
-                        // Salir del bucle - hemos encontrado el óptimo
-                        break;
-                    }
-
-                    // Guardar datos para gráficos (siempre)
-                    bestFitnessHistory.add(currentBestFitness);
-                    avgFitnessHistory.add(avgFitness);
-                    minFitnessHistory.add(currentMinFitness);
-                    speciesCountHistory.add(currentSpeciesCount);
-                    diversityHistory.add(currentDiversity);
-
-                    // Mantener el mejor absoluto
-                    double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty()
-                            ? 0.0
-                            : bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
-                    bestAbsoluteFitnessHistory.add(Math.max(currentBestFitness, previousAbsolute));
-
-                    // Actualizar UI solo cada N generaciones o en la última
-                    if (i % UI_UPDATE_INTERVAL == 0 || i == generations - 1) {
-                        final int currentGen = initialGeneration + i + 1;
-                        final double bestFit = currentBestFitness;
-                        final double avgFit = avgFitness;
-                        final int finalI = i;
-                        final int finalAlive = alive;
-
-                        Platform.runLater(() -> {
-                            bestFitness.set(bestFit);
-                            averageFitness.set(avgFit);
-                            currentGeneration.set(currentGen);
-                            aliveCount.set(finalAlive);
-                            updateProgress(finalI + 1, generations);
-                        });
-
-                        LOG.info(
-                                "Generation {} - best fitness {} - average fitness {}",
-                                currentGen,
-                                String.format("%.2f", bestFit),
-                                String.format("%.2f", avgFit));
-                    }
-
-                    // Evolucionar población y reiniciar juego y agentes
-                    engine.evolve();
-                }
-
-                // Al final de la simulación
-                final int finalBestGeneration = bestGeneration;
-                final double finalGlobalBestFitness = globalBestFitness;
-                final boolean reachedOptimal = finalGlobalBestFitness >= OPTIMAL_FITNESS_THRESHOLD;
-
-                Platform.runLater(() -> {
-                    running.set(false);
-                    fastMode = false;
-                    updateProgress(1, 1); // Completar la barra de progreso
-
-                    if (!reachedOptimal) {
-                        LOG.info(
-                                "Training finished. Best generation: {} with fitness {}",
-                                finalBestGeneration,
-                                String.format("%.2f", finalGlobalBestFitness));
-                    }
-                });
-
+                trainFast(generations, this::updateProgress, Platform::runLater);
                 return null;
             }
         };
@@ -352,6 +218,163 @@ public class SimulationController {
         Thread simulationThread = new Thread(simulationTask);
         simulationThread.setDaemon(true);
         simulationThread.start();
+    }
+
+    /** Barra de progreso del entrenamiento rápido (la de la {@link Task}, en la app). */
+    @FunctionalInterface
+    interface ProgressSink {
+        void update(long workDone, long max);
+    }
+
+    /** Prepara el estado de un entrenamiento rápido antes de lanzar {@link #trainFast}. */
+    void beginFastSimulation(int generations) {
+        running.set(true);
+        fastMode = true;
+        stopRequested = false;
+        targetGenerations = generations;
+
+        // Iniciar un nuevo historial de ejecución
+        historyManager.startNewRun();
+    }
+
+    /**
+     * Cuerpo del entrenamiento rápido, en el hilo de la tarea. Termina tras {@code generations}
+     * generaciones, al alcanzar el fitness óptimo o, entre generaciones, cuando se llama a
+     * {@link #stopSimulation()}.
+     * @param ui ejecuta las actualizaciones de propiedades y progreso (Platform::runLater en la app)
+     */
+    void trainFast(int generations, ProgressSink progress, Executor ui) {
+        double globalBestFitness = bestFitness.get();
+        int bestGeneration = 0;
+
+        int initialGeneration = currentGeneration.get();
+
+        // Variables para acumular datos antes de actualizar UI
+        final int UI_UPDATE_INTERVAL = 10; // Actualizar UI cada 10 generaciones
+
+        for (int i = 0; i < generations && !stopRequested; i++) {
+            // Ejecutar la generación hasta que todos mueran. El fitness de un agente es el nº
+            // de frames que sobrevive, así que cortar la generación al llegar al umbral óptimo
+            // evita que un agente que ya no muere la deje corriendo indefinidamente (la
+            // detección de óptimo de abajo nunca llegaría).
+            GenerationStats stats = engine.playGeneration((int) OPTIMAL_FITNESS_THRESHOLD);
+
+            final int alive = stats.alive();
+            final double avgFitness = stats.mean();
+            final double currentBestFitness = stats.best(); // Mejor de esta generación
+            final double currentMinFitness = stats.min();
+            final int currentSpeciesCount = stats.species();
+            final double currentDiversity = stats.diversity();
+
+            // Guardar esta generación en el historial
+            historyManager.addGenerationData(
+                    currentBestFitness,
+                    avgFitness,
+                    currentMinFitness,
+                    alive,
+                    currentSpeciesCount,
+                    currentDiversity,
+                    engine.getPopulation(),
+                    engine.getGame().getPipes());
+
+            if (currentBestFitness > globalBestFitness) {
+                globalBestFitness = currentBestFitness;
+                bestGeneration = initialGeneration + i;
+            }
+
+            // DETECCIÓN DE FITNESS ÓPTIMO: Si alcanzamos un fitness muy alto, detener entrenamiento
+            if (currentBestFitness >= OPTIMAL_FITNESS_THRESHOLD) {
+                final int currentGen = initialGeneration + i + 1;
+                final double bestFit = currentBestFitness;
+                final double avgFit = avgFitness;
+
+                // Guardar datos para gráficos
+                bestFitnessHistory.add(currentBestFitness);
+                avgFitnessHistory.add(avgFitness);
+                minFitnessHistory.add(currentMinFitness);
+                speciesCountHistory.add(currentSpeciesCount);
+                diversityHistory.add(currentDiversity);
+
+                // Mantener el mejor absoluto
+                double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty()
+                        ? 0.0
+                        : bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
+                bestAbsoluteFitnessHistory.add(Math.max(currentBestFitness, previousAbsolute));
+
+                ui.execute(() -> {
+                    bestFitness.set(bestFit);
+                    averageFitness.set(avgFit);
+                    currentGeneration.set(currentGen);
+                    aliveCount.set(0);
+                    progress.update(1, 1); // Completar barra de progreso
+                });
+
+                LOG.info(
+                        "Optimal fitness reached at generation {} (fitness {}); stopping training",
+                        currentGen,
+                        String.format("%.2f", bestFit));
+
+                // Salir del bucle - hemos encontrado el óptimo
+                break;
+            }
+
+            // Guardar datos para gráficos (siempre)
+            bestFitnessHistory.add(currentBestFitness);
+            avgFitnessHistory.add(avgFitness);
+            minFitnessHistory.add(currentMinFitness);
+            speciesCountHistory.add(currentSpeciesCount);
+            diversityHistory.add(currentDiversity);
+
+            // Mantener el mejor absoluto
+            double previousAbsolute = bestAbsoluteFitnessHistory.isEmpty()
+                    ? 0.0
+                    : bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
+            bestAbsoluteFitnessHistory.add(Math.max(currentBestFitness, previousAbsolute));
+
+            // Actualizar UI solo cada N generaciones o en la última
+            if (i % UI_UPDATE_INTERVAL == 0 || i == generations - 1) {
+                final int currentGen = initialGeneration + i + 1;
+                final double bestFit = currentBestFitness;
+                final double avgFit = avgFitness;
+                final int finalI = i;
+                final int finalAlive = alive;
+
+                ui.execute(() -> {
+                    bestFitness.set(bestFit);
+                    averageFitness.set(avgFit);
+                    currentGeneration.set(currentGen);
+                    aliveCount.set(finalAlive);
+                    progress.update(finalI + 1, generations);
+                });
+
+                LOG.info(
+                        "Generation {} - best fitness {} - average fitness {}",
+                        currentGen,
+                        String.format("%.2f", bestFit),
+                        String.format("%.2f", avgFit));
+            }
+
+            // Evolucionar población y reiniciar juego y agentes
+            engine.evolve();
+        }
+
+        // Al final de la simulación
+        final int finalBestGeneration = bestGeneration;
+        final double finalGlobalBestFitness = globalBestFitness;
+        final boolean reachedOptimal = finalGlobalBestFitness >= OPTIMAL_FITNESS_THRESHOLD;
+
+        ui.execute(() -> {
+            running.set(false);
+            fastMode = false;
+            progress.update(1, 1); // Completar la barra de progreso
+
+            if (!reachedOptimal) {
+                LOG.info(
+                        "Training finished. Best generation: {} with fitness {}",
+                        finalBestGeneration,
+                        String.format("%.2f", finalGlobalBestFitness));
+            }
+        });
     }
 
     /**
@@ -427,6 +450,7 @@ public class SimulationController {
      * Detiene la simulación rápida
      */
     public void stopSimulation() {
+        stopRequested = true;
         running.set(false);
     }
 
