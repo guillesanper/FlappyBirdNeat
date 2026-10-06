@@ -1,5 +1,8 @@
 package com.neat.flappybirdneat.simulation;
 
+import static com.neat.flappybirdneat.simulation.TrainingEngine.AGENT_INPUTS;
+import static com.neat.flappybirdneat.simulation.TrainingEngine.AGENT_OUTPUTS;
+
 import com.neat.flappybirdneat.config.GeneticOperatorsConfig;
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.history.GenerationData;
@@ -7,7 +10,6 @@ import com.neat.flappybirdneat.history.HistoryManager;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
-import com.neat.flappybirdneat.neat.genome.NeatConfig;
 import com.neat.flappybirdneat.neat.genome.NeatPopulation;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,18 +21,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Controlador que gestiona la ejecución de simulaciones de FlappyBird NEAT,
- * permitiendo ejecutar generaciones rápidamente en modo headless.
+ * UI adapter over {@link TrainingEngine}: exposes the training state as JavaFX observable
+ * properties, keeps the per-generation chart series and history snapshots, runs fast training on
+ * a background task and handles the best-agent replay. The training itself (seeded generator,
+ * population, game) lives in the engine, which has no JavaFX dependencies.
  */
 public class SimulationController {
     private static final Logger LOG = LoggerFactory.getLogger(SimulationController.class);
 
     // Fitness considerado óptimo - si se alcanza, se detiene el entrenamiento automáticamente
     private static final double OPTIMAL_FITNESS_THRESHOLD = 80000.0;
-
-    // Entradas/salidas de los agentes, compartidas por ambos modos (Fixed MLP y NEAT)
-    private static final int AGENT_INPUTS = 4;
-    private static final int AGENT_OUTPUTS = 1;
 
     // Sal para el generador derivado de las réplicas del mejor agente (ver derivedRandom)
     private static final long REPLAY_SALT = -1;
@@ -56,15 +56,11 @@ public class SimulationController {
     private final List<Integer> speciesCountHistory = new ArrayList<>();
     private final List<Double> diversityHistory = new ArrayList<>();
 
-    // Referencias al juego y población
-    private EvolvingPopulation population;
-    private FlappyBirdGame game;
-    private int populationSize;
-    private int canvasWidth;
-    private int canvasHeight;
+    // Núcleo de entrenamiento (semilla, población y juego)
+    private final TrainingEngine engine;
+    private final int populationSize;
     private HistoryManager historyManager;
     private GeneticOperatorsConfig operatorsConfig;
-    private final NeatConfig neatConfig = new NeatConfig();
 
     // Parámetros de simulación
     private boolean fastMode = false;
@@ -72,7 +68,6 @@ public class SimulationController {
     private boolean replayMode = false; // Indica si estamos reproduciendo el mejor agente
     private Mode mode = Mode.FIXED_MLP;
     private final long seed;
-    private final Random random;
 
     /**
      * Constructor con semilla global. Toda la aleatoriedad de la simulación sale de esta semilla:
@@ -82,10 +77,8 @@ public class SimulationController {
      */
     public SimulationController(int populationSize, int canvasWidth, int canvasHeight, long seed) {
         this.populationSize = populationSize;
-        this.canvasWidth = canvasWidth;
-        this.canvasHeight = canvasHeight;
         this.seed = seed;
-        this.random = new Random(seed);
+        this.engine = new TrainingEngine(populationSize, canvasWidth, canvasHeight, seed);
         this.historyManager = new HistoryManager();
         this.operatorsConfig = new GeneticOperatorsConfig();
 
@@ -108,14 +101,7 @@ public class SimulationController {
      * Reinicia completamente la simulación
      */
     public void resetSimulation() {
-        if (mode == Mode.NEAT) {
-            population = new NeatPopulation(populationSize, AGENT_INPUTS, AGENT_OUTPUTS, random, neatConfig);
-        } else {
-            Population fixedPopulation = new Population(populationSize, random);
-            operatorsConfig.applyTo(fixedPopulation); // Aplicar operadores configurados
-            population = fixedPopulation;
-        }
-        game = new FlappyBirdGame(canvasWidth, canvasHeight, random);
+        engine.reset(mode == Mode.NEAT ? EngineType.NEAT : EngineType.GA, operatorsConfig);
 
         currentGeneration.set(1);
         bestFitness.set(0);
@@ -135,7 +121,7 @@ public class SimulationController {
         bestAbsoluteFitnessHistory.add(0.0);
         minFitnessHistory.add(0.0);
         speciesCountHistory.add(getSpeciesCount());
-        diversityHistory.add(population.diversity());
+        diversityHistory.add(engine.getPopulation().diversity());
 
         // Iniciar un nuevo historial de ejecución
         historyManager.startNewRun();
@@ -147,24 +133,10 @@ public class SimulationController {
      */
     public boolean updateFrame() {
         if (running.get()) {
-            game.update(population.getAgents());
-
-            // Actualizar contador de agentes vivos
-            int alive = 0;
-            for (FlappyBirdAgent agent : population.getAgents()) {
-                if (!agent.isDead()) alive++;
-            }
-            aliveCount.set(alive);
-
-            // Calcular fitness promedio
-            double totalFitness = 0;
-            for (FlappyBirdAgent agent : population.getAgents()) {
-                totalFitness += agent.getFitness();
-            }
-            averageFitness.set(totalFitness / populationSize);
-
-            // Comprobar si todos los agentes están muertos
-            return alive == 0;
+            boolean allDead = engine.step();
+            aliveCount.set(engine.aliveCount());
+            averageFitness.set(engine.meanFitness());
+            return allDead;
         }
         return false;
     }
@@ -173,23 +145,13 @@ public class SimulationController {
      * Evoluciona a la siguiente generación
      */
     public void nextGeneration() {
-        // Calcular fitness mínimo, promedio y mejor de esta generación antes de evolucionar
-        double totalFitness = 0;
-        double bestFitnessThisGen = Double.NEGATIVE_INFINITY;
-        double minFitnessThisGen = Double.POSITIVE_INFINITY;
-        for (FlappyBirdAgent agent : population.getAgents()) {
-            double fitness = agent.getFitness();
-            totalFitness += fitness;
-            if (fitness > bestFitnessThisGen) {
-                bestFitnessThisGen = fitness;
-            }
-            if (fitness < minFitnessThisGen) {
-                minFitnessThisGen = fitness;
-            }
-        }
-        double avgFitness = totalFitness / populationSize;
-        int speciesCountThisGen = getSpeciesCount();
-        double diversityThisGen = population.diversity();
+        // Estadísticas de esta generación antes de evolucionar
+        GenerationStats stats = engine.statistics();
+        double bestFitnessThisGen = stats.best();
+        double avgFitness = stats.mean();
+        double minFitnessThisGen = stats.min();
+        int speciesCountThisGen = stats.species();
+        double diversityThisGen = stats.diversity();
 
         // Guardar esta generación en el historial
         historyManager.addGenerationData(
@@ -199,8 +161,8 @@ public class SimulationController {
                 aliveCount.get(),
                 speciesCountThisGen,
                 diversityThisGen,
-                population,
-                game.getPipes());
+                engine.getPopulation(),
+                engine.getGame().getPipes());
 
         // Guardar historial para gráficos
         bestFitnessHistory.add(bestFitnessThisGen);
@@ -215,14 +177,8 @@ public class SimulationController {
                 : bestAbsoluteFitnessHistory.get(bestAbsoluteFitnessHistory.size() - 1);
         bestAbsoluteFitnessHistory.add(Math.max(bestFitnessThisGen, previousAbsolute));
 
-        // Evolucionar población
-        population.naturalSelection();
-
-        // Reiniciar juego y agentes
-        game.reset();
-        for (FlappyBirdAgent agent : population.getAgents()) {
-            agent.reset();
-        }
+        // Evolucionar población y reiniciar juego y agentes
+        engine.evolve();
 
         // Actualizar propiedades
         currentGeneration.set(currentGeneration.get() + 1);
@@ -263,49 +219,20 @@ public class SimulationController {
                 final int UI_UPDATE_INTERVAL = 10; // Actualizar UI cada 10 generaciones
 
                 for (int i = 0; i < generations && !isCancelled(); i++) {
-                    // Ejecutar generación actual hasta que todos mueran
-                    boolean allDead = false;
-                    int alive = populationSize;
-                    int frames = 0;
-
-                    // El fitness de un agente es el nº de frames que sobrevive, así que cortar la
-                    // generación al llegar al umbral óptimo evita que un agente que ya no muere
-                    // la deje corriendo indefinidamente (la detección de óptimo de abajo nunca llegaría).
-                    while (!allDead && !isCancelled() && frames++ < OPTIMAL_FITNESS_THRESHOLD) {
-                        // Actualizar juego sin renderizar (modo headless)
-                        game.update(population.getAgents());
-
-                        // Solo contar vivos, no calcular todo en cada frame
-                        alive = 0;
-                        for (FlappyBirdAgent agent : population.getAgents()) {
-                            if (!agent.isDead()) alive++;
-                        }
-
-                        // Verificar si todos están muertos
-                        allDead = alive == 0;
-                    }
+                    // Ejecutar la generación hasta que todos mueran. El fitness de un agente es el nº
+                    // de frames que sobrevive, así que cortar la generación al llegar al umbral óptimo
+                    // evita que un agente que ya no muere la deje corriendo indefinidamente (la
+                    // detección de óptimo de abajo nunca llegaría).
+                    GenerationStats stats = engine.playGeneration((int) OPTIMAL_FITNESS_THRESHOLD);
 
                     if (isCancelled()) break;
 
-                    // Calcular estadísticas solo al final de la generación
-                    double totalFitness = 0;
-                    double bestFitnessThisGen = Double.NEGATIVE_INFINITY;
-                    double minFitnessThisGen = Double.POSITIVE_INFINITY;
-                    for (FlappyBirdAgent agent : population.getAgents()) {
-                        double fitness = agent.getFitness();
-                        totalFitness += fitness;
-                        if (fitness > bestFitnessThisGen) {
-                            bestFitnessThisGen = fitness;
-                        }
-                        if (fitness < minFitnessThisGen) {
-                            minFitnessThisGen = fitness;
-                        }
-                    }
-                    final double avgFitness = totalFitness / populationSize;
-                    final double currentBestFitness = bestFitnessThisGen; // Mejor de esta generación
-                    final double currentMinFitness = minFitnessThisGen;
-                    final int currentSpeciesCount = getSpeciesCount();
-                    final double currentDiversity = population.diversity();
+                    final int alive = stats.alive();
+                    final double avgFitness = stats.mean();
+                    final double currentBestFitness = stats.best(); // Mejor de esta generación
+                    final double currentMinFitness = stats.min();
+                    final int currentSpeciesCount = stats.species();
+                    final double currentDiversity = stats.diversity();
 
                     // Guardar esta generación en el historial
                     historyManager.addGenerationData(
@@ -315,8 +242,8 @@ public class SimulationController {
                             alive,
                             currentSpeciesCount,
                             currentDiversity,
-                            population,
-                            game.getPipes());
+                            engine.getPopulation(),
+                            engine.getGame().getPipes());
 
                     if (currentBestFitness > globalBestFitness) {
                         globalBestFitness = currentBestFitness;
@@ -395,14 +322,8 @@ public class SimulationController {
                                 String.format("%.2f", avgFit));
                     }
 
-                    // Evolucionar población
-                    population.naturalSelection();
-
-                    // Reiniciar juego y agentes
-                    game.reset();
-                    for (FlappyBirdAgent agent : population.getAgents()) {
-                        agent.reset();
-                    }
+                    // Evolucionar población y reiniciar juego y agentes
+                    engine.evolve();
                 }
 
                 // Al final de la simulación
@@ -457,7 +378,7 @@ public class SimulationController {
         }
 
         return NeatPopulation.singleAgent(
-                clonedBestAgent, AGENT_INPUTS, AGENT_OUTPUTS, derivedRandom(REPLAY_SALT), neatConfig);
+                clonedBestAgent, AGENT_INPUTS, AGENT_OUTPUTS, derivedRandom(REPLAY_SALT), engine.getNeatConfig());
     }
 
     /**
@@ -470,16 +391,13 @@ public class SimulationController {
             return;
         }
 
-        // Resetear el juego
-        game.reset();
-
-        // Crear población con solo el mejor agente
+        // Crear población con solo el mejor agente (resetea también el juego)
         EvolvingPopulation bestAgentPop = createBestAgentOnlyPopulation();
         if (bestAgentPop != null) {
-            this.population = bestAgentPop;
+            engine.replacePopulation(bestAgentPop);
 
             // Reiniciar el agente pero preservar su cerebro
-            for (FlappyBirdAgent agent : this.population.getAgents()) {
+            for (FlappyBirdAgent agent : bestAgentPop.getAgents()) {
                 agent.reset();
             }
 
@@ -542,7 +460,7 @@ public class SimulationController {
      * Actualiza la configuración guardada con los operadores actuales (solo aplicable en modo Fixed MLP).
      */
     public void updateOperatorsConfig() {
-        if (population instanceof Population fixedPopulation) {
+        if (engine.getPopulation() instanceof Population fixedPopulation) {
             operatorsConfig.updateFrom(fixedPopulation);
         }
     }
@@ -601,16 +519,16 @@ public class SimulationController {
     }
 
     public EvolvingPopulation getPopulation() {
-        return population;
+        return engine.getPopulation();
     }
 
     /** @return nº de especies actuales en modo NEAT, o -1 si el modo activo es Fixed MLP. */
     public int getSpeciesCount() {
-        return population instanceof NeatPopulation neatPopulation ? neatPopulation.getSpeciesCount() : -1;
+        return engine.getSpeciesCount();
     }
 
     public FlappyBirdGame getGame() {
-        return game;
+        return engine.getGame();
     }
 
     public boolean isFastMode() {
