@@ -32,12 +32,17 @@ class ReproducibilityTest {
      * pipes, so other curves; before that change the GA curve started 175, 87, 240, 244, 240, 359 and
      * the NEAT one 240, 240, 244, 326, 373, 359 (through SimulationController, whose constructor resets
      * once more than the engine here).
+     *
+     * <p>The NEAT curve changed a second time with the dynamic compatibility threshold and species
+     * stagnation (the fix for species collapse): it is identical up to generation 7 and diverges
+     * once the adapted threshold starts splitting the population; it used to continue 359, 359, 389,
+     * 359, 384.
      */
     private static final List<Double> PINNED_GA_SEED_42 =
             List.of(84.0, 181.0, 112.0, 240.0, 240.0, 240.0, 871.0, 616.0, 614.0, 246.0, 369.0, 481.0);
 
     private static final List<Double> PINNED_NEAT_SEED_42 =
-            List.of(240.0, 485.0, 245.0, 270.0, 499.0, 359.0, 359.0, 359.0, 359.0, 389.0, 359.0, 384.0);
+            List.of(240.0, 485.0, 245.0, 270.0, 499.0, 359.0, 359.0, 379.0, 265.0, 479.0, 275.0, 359.0);
 
     @Test
     void seed42StillGivesThePinnedCurves() {

@@ -28,6 +28,26 @@ public class NeatConfig {
     /** Tamaño mínimo de especie para que su campeón pase sin cambios (elitismo por especie). */
     private int championCloneMinSpeciesSize = 5;
 
+    /**
+     * Nº de especies objetivo. El umbral δ efectivo de cada población se ajusta generación a
+     * generación hacia este objetivo (umbral dinámico del NEAT original de Stanley): sin él, un δ
+     * fijo no separa la población inicial (todos los genomas comparten topología) y, tras un
+     * colapso, nunca vuelve a separarla. {@code compatibilityThreshold} es el valor inicial.
+     */
+    private int targetSpeciesCount = 5;
+    /** Cuánto se sube o baja δ en cada generación cuando el nº de especies no es el objetivo. */
+    private double compatibilityThresholdStep = 0.3;
+    /** Valor mínimo de δ al ajustarlo. */
+    private double minCompatibilityThreshold = 1.0;
+
+    /**
+     * Generaciones sin mejorar su mejor fitness tras las que una especie deja de reproducirse
+     * (estancamiento, "dropoff age" del NEAT original). Libera la descendencia que acaparaba.
+     */
+    private int stagnationLimit = 15;
+    /** Nº de mejores especies (por mejor fitness) protegidas del estancamiento. */
+    private int speciesElitism = 2;
+
     public double getExcessCoefficient() {
         return excessCoefficient;
     }
@@ -90,6 +110,46 @@ public class NeatConfig {
 
     public void setSurvivalThreshold(double survivalThreshold) {
         this.survivalThreshold = survivalThreshold;
+    }
+
+    public int getTargetSpeciesCount() {
+        return targetSpeciesCount;
+    }
+
+    public void setTargetSpeciesCount(int targetSpeciesCount) {
+        this.targetSpeciesCount = targetSpeciesCount;
+    }
+
+    public double getCompatibilityThresholdStep() {
+        return compatibilityThresholdStep;
+    }
+
+    public void setCompatibilityThresholdStep(double compatibilityThresholdStep) {
+        this.compatibilityThresholdStep = compatibilityThresholdStep;
+    }
+
+    public double getMinCompatibilityThreshold() {
+        return minCompatibilityThreshold;
+    }
+
+    public void setMinCompatibilityThreshold(double minCompatibilityThreshold) {
+        this.minCompatibilityThreshold = minCompatibilityThreshold;
+    }
+
+    public int getStagnationLimit() {
+        return stagnationLimit;
+    }
+
+    public void setStagnationLimit(int stagnationLimit) {
+        this.stagnationLimit = stagnationLimit;
+    }
+
+    public int getSpeciesElitism() {
+        return speciesElitism;
+    }
+
+    public void setSpeciesElitism(int speciesElitism) {
+        this.speciesElitism = speciesElitism;
     }
 
     public int getChampionCloneMinSpeciesSize() {

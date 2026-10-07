@@ -47,6 +47,56 @@ class NeatPopulationTest {
     }
 
     @Test
+    void compatibilityThresholdDropsTowardsTheTargetButNotBelowTheFloor() {
+        // Initial genomes share their topology, so a fixed threshold of 3.0 keeps them in one species.
+        NeatConfig config = new NeatConfig();
+        NeatPopulation population = new NeatPopulation(POPULATION_SIZE, 4, 1, new Random(1), config);
+        Random fitness = new Random(2);
+
+        assignFitness(population, fitness);
+        population.naturalSelection();
+        assertEquals(1, population.getSpeciesCount());
+        assertEquals(
+                config.getCompatibilityThreshold() - config.getCompatibilityThresholdStep(),
+                population.getCompatibilityThreshold(),
+                1e-9);
+
+        for (int i = 0; i < 20; i++) {
+            assignFitness(population, fitness);
+            population.naturalSelection();
+            assertTrue(population.getCompatibilityThreshold() >= config.getMinCompatibilityThreshold() - 1e-9);
+        }
+    }
+
+    @Test
+    void compatibilityThresholdRisesWhenThereAreTooManySpecies() {
+        NeatConfig config = new NeatConfig();
+        config.setTargetSpeciesCount(1);
+        config.setCompatibilityThreshold(0.01); // random initial weights put every genome on its own
+        config.setMinCompatibilityThreshold(0.01);
+        NeatPopulation population = new NeatPopulation(POPULATION_SIZE, 4, 1, new Random(1), config);
+
+        assignFitness(population, new Random(2));
+        population.naturalSelection();
+
+        assertTrue(population.getSpeciesCount() > 1);
+        assertEquals(0.01 + config.getCompatibilityThresholdStep(), population.getCompatibilityThreshold(), 1e-9);
+    }
+
+    @Test
+    void theDynamicThresholdIsPopulationStateNotSharedConfiguration() {
+        NeatConfig config = new NeatConfig();
+        NeatPopulation population = new NeatPopulation(POPULATION_SIZE, 4, 1, new Random(1), config);
+        assignFitness(population, new Random(2));
+        population.naturalSelection();
+
+        assertEquals(3.0, config.getCompatibilityThreshold(), "the shared config must not move");
+        assertEquals(
+                population.getCompatibilityThreshold(),
+                population.deepCopy(new Random(3)).getCompatibilityThreshold());
+    }
+
+    @Test
     void naturalSelectionKeepsPopulationSizeConstant() {
         NeatPopulation population = new NeatPopulation(POPULATION_SIZE, 4, 1, new Random(1), new NeatConfig());
         assignFitness(population, new Random(2));

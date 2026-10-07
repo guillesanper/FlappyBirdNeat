@@ -14,9 +14,47 @@ import java.util.List;
 public class Species {
     private Genome representative;
     private final List<FlappyBirdAgent> members = new ArrayList<>();
+    /** Mejor fitness alcanzado por algún miembro en cualquier generación (para el estancamiento). */
+    private double bestFitnessEver = Double.NEGATIVE_INFINITY;
+    /** Generaciones seguidas sin superar {@link #bestFitnessEver}. */
+    private int generationsWithoutImprovement = 0;
 
     public Species(Genome representative) {
         this.representative = representative;
+    }
+
+    /**
+     * La misma especie en la generación siguiente: conserva su representante y su historial de
+     * estancamiento, sin miembros (se reasignan al especiar).
+     */
+    public Species nextGeneration() {
+        Species next = new Species(representative);
+        next.bestFitnessEver = bestFitnessEver;
+        next.generationsWithoutImprovement = generationsWithoutImprovement;
+        return next;
+    }
+
+    /**
+     * Actualiza el historial de estancamiento con el fitness de los miembros actuales: si el
+     * campeón supera el mejor fitness previo, el contador vuelve a 0; si no, aumenta en 1.
+     */
+    public void updateStagnation() {
+        FlappyBirdAgent champion = champion();
+        if (champion == null) return;
+        if (champion.getFitness() > bestFitnessEver) {
+            bestFitnessEver = champion.getFitness();
+            generationsWithoutImprovement = 0;
+        } else {
+            generationsWithoutImprovement++;
+        }
+    }
+
+    public double getBestFitnessEver() {
+        return bestFitnessEver;
+    }
+
+    public int getGenerationsWithoutImprovement() {
+        return generationsWithoutImprovement;
     }
 
     public Genome getRepresentative() {
