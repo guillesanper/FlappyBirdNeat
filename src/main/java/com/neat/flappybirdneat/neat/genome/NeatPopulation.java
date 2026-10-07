@@ -25,6 +25,15 @@ public class NeatPopulation implements EvolvingPopulation {
     private int generation;
     private double bestFitness;
     private FlappyBirdAgent bestAgent;
+    /**
+     * Umbral δ efectivo de esta población. Empieza en {@link NeatConfig#getCompatibilityThreshold()}
+     * y se ajusta cada generación hacia {@link NeatConfig#getTargetSpeciesCount()}. Es estado de la
+     * población, no de la configuración: la configuración se comparte entre poblaciones (copias,
+     * repeticiones) y ajustarla allí las acoplaría.
+     */
+    private double compatibilityThreshold;
+    /** Nº de especies encontradas en la última especiación (incluidas las estancadas que no se reproducen). */
+    private int speciesCount;
 
     public NeatPopulation(int populationSize, int numInputs, int numOutputs, Random random, NeatConfig config) {
         this.populationSize = populationSize;
@@ -40,6 +49,7 @@ public class NeatPopulation implements EvolvingPopulation {
         }
         generation = 1;
         bestFitness = 0;
+        compatibilityThreshold = config.getCompatibilityThreshold();
     }
 
     /** Constructor usado por {@link #deepCopy()} y por réplicas de un único agente para el historial. */
@@ -53,7 +63,9 @@ public class NeatPopulation implements EvolvingPopulation {
             FlappyBirdAgent[] agents,
             int generation,
             double bestFitness,
-            FlappyBirdAgent bestAgent) {
+            FlappyBirdAgent bestAgent,
+            double compatibilityThreshold,
+            int speciesCount) {
         this.populationSize = populationSize;
         this.numInputs = numInputs;
         this.numOutputs = numOutputs;
@@ -64,6 +76,8 @@ public class NeatPopulation implements EvolvingPopulation {
         this.generation = generation;
         this.bestFitness = bestFitness;
         this.bestAgent = bestAgent;
+        this.compatibilityThreshold = compatibilityThreshold;
+        this.speciesCount = speciesCount;
     }
 
     /** Crea una población de un único agente (usada para reproducir el mejor agente histórico). */
@@ -79,7 +93,9 @@ public class NeatPopulation implements EvolvingPopulation {
                 new FlappyBirdAgent[] {agent},
                 1,
                 agent.getFitness(),
-                agent);
+                agent,
+                config.getCompatibilityThreshold(),
+                0);
         return single;
     }
 
@@ -88,11 +104,12 @@ public class NeatPopulation implements EvolvingPopulation {
         updateBestAgent();
 
         speciate();
-        List<Species> survivingSpecies = new ArrayList<>();
         for (Species s : species) {
-            if (!s.getMembers().isEmpty()) survivingSpecies.add(s);
+            s.updateStagnation();
         }
-        species = survivingSpecies;
+        speciesCount = species.size();
+        adjustCompatibilityThreshold(speciesCount);
+        species = reproducingSpecies(species, config);
 
         if (species.isEmpty()) {
             // No debería ocurrir (siempre hay al menos un agente), pero por seguridad no hacemos nada.
@@ -138,6 +155,41 @@ public class NeatPopulation implements EvolvingPopulation {
         generation++;
     }
 
+    /**
+     * Umbral dinámico: si hay menos especies que el objetivo, baja δ (más fácil fundar especies); si
+     * hay más, lo sube. Se aplica a la especiación de la generación siguiente.
+     */
+    private void adjustCompatibilityThreshold(int speciesCount) {
+        if (speciesCount < config.getTargetSpeciesCount()) {
+            compatibilityThreshold = Math.max(
+                    config.getMinCompatibilityThreshold(),
+                    compatibilityThreshold - config.getCompatibilityThresholdStep());
+        } else if (speciesCount > config.getTargetSpeciesCount()) {
+            compatibilityThreshold += config.getCompatibilityThresholdStep();
+        }
+    }
+
+    /**
+     * Especies que se reproducen esta generación: todas salvo las estancadas (sin mejorar en
+     * {@link NeatConfig#getStagnationLimit()} generaciones), excepto las
+     * {@link NeatConfig#getSpeciesElitism()} de mayor fitness histórico, que siempre se conservan.
+     * Mantiene el orden original de la lista.
+     */
+    static List<Species> reproducingSpecies(List<Species> candidates, NeatConfig config) {
+        List<Species> byBest = new ArrayList<>(candidates);
+        byBest.sort((a, b) -> Double.compare(b.getBestFitnessEver(), a.getBestFitnessEver()));
+        List<Species> protectedSpecies = byBest.subList(0, Math.min(config.getSpeciesElitism(), byBest.size()));
+
+        List<Species> result = new ArrayList<>();
+        for (Species s : candidates) {
+            boolean stagnant = s.getGenerationsWithoutImprovement() >= config.getStagnationLimit();
+            if (!stagnant || protectedSpecies.contains(s)) {
+                result.add(s);
+            }
+        }
+        return result;
+    }
+
     private int[] allocateOffspring(double totalAdjustedFitness) {
         int[] counts = new int[species.size()];
         if (totalAdjustedFitness <= 0) {
@@ -179,15 +231,14 @@ public class NeatPopulation implements EvolvingPopulation {
     private void speciate() {
         List<Species> newSpecies = new ArrayList<>();
         for (Species previous : species) {
-            newSpecies.add(new Species(previous.getRepresentative()));
+            newSpecies.add(previous.nextGeneration());
         }
 
         for (FlappyBirdAgent agent : agents) {
             Genome genome = genomeOf(agent);
             Species match = null;
             for (Species s : newSpecies) {
-                if (CompatibilityDistance.distance(genome, s.getRepresentative(), config)
-                        < config.getCompatibilityThreshold()) {
+                if (CompatibilityDistance.distance(genome, s.getRepresentative(), config) < compatibilityThreshold) {
                     match = s;
                     break;
                 }
@@ -240,8 +291,14 @@ public class NeatPopulation implements EvolvingPopulation {
         return bestFitness;
     }
 
+    /** Nº de especies encontradas en la última especiación (0 antes de la primera generación). */
     public int getSpeciesCount() {
-        return species.size();
+        return speciesCount;
+    }
+
+    /** Umbral δ efectivo actual (ajustado dinámicamente; ver {@link NeatConfig#getTargetSpeciesCount()}). */
+    public double getCompatibilityThreshold() {
+        return compatibilityThreshold;
     }
 
     /**
@@ -293,6 +350,8 @@ public class NeatPopulation implements EvolvingPopulation {
                 copiedAgents,
                 generation,
                 bestFitness,
-                copiedBest);
+                copiedBest,
+                compatibilityThreshold,
+                speciesCount);
     }
 }

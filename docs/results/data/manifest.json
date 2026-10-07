@@ -1,0 +1,29 @@
+{
+  "commit": "2e236bac643058cb228210230db4ca8761bdae95",
+  "working_tree_dirty": false,
+  "jdk": "openjdk version \"21.0.11\" 2026-04-21",
+  "jdk_runtime": "OpenJDK Runtime Environment (build 21.0.11+10-1-24.04.2-Ubuntu)",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+  "cores": 4,
+  "os": "Linux 6.18.44-fc-v77 x86_64",
+  "started_utc": "2026-10-07T12:43:37Z",
+  "finished_utc": "2026-10-07T12:53:56Z",
+  "total_run_seconds": 616.8,
+  "parameters": {
+    "seeds": 30,
+    "seed_list": "1..30",
+    "generations": 200,
+    "population": 50,
+    "max_frames": 20000,
+    "threads": 4,
+    "stop_on_solve": false
+  },
+  "command": "java -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar --headless <config args> --seed <seed> --generations 200 --population 50 --max-frames 20000 --threads 4 --out <csv>",
+  "configs": {
+    "neat": "--engine neat",
+    "ga-default": "--engine ga --selection roulette --crossover uniform --mutation gaussian --scaling none",
+    "ga-tournament": "--engine ga --selection deterministic_tournament --crossover uniform --mutation gaussian --scaling none",
+    "ga-ranking-nonuniform": "--engine ga --selection ranking --crossover uniform --mutation non_uniform --scaling none",
+    "ga-roulette-sigma": "--engine ga --selection roulette --crossover uniform --mutation gaussian --scaling sigma"
+  }
+}
