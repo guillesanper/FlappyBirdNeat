@@ -444,7 +444,7 @@ def plot_success(summaries, per_run, configs, generations, n_seeds, output, mode
     ax.set_xlabel("Generation")
     ax.set_ylabel("Seeds solved so far (%)")
     ax.set_title("Cumulative share of seeds solved", loc="left", fontsize=10.5)
-    legend(ax, theme, loc="upper left")
+    legend(ax, theme, loc="upper center", bbox_to_anchor=(0.5, -0.25), ncol=2)  # below the axes: never over a curve
 
     ax = axes[1]
     positions = np.arange(len(configs))[::-1]
