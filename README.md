@@ -258,7 +258,7 @@ docs/
 - [x] Split the main window class and unify the two renderers into one shared `GameRenderer`
 - [x] Headless CLI (`--engine neat --seed 42 --generations 200`) for scripted experiments
 - [x] Parallel, deterministic fitness evaluation (one game per agent on a `ForkJoinPool`), with JMH benchmarks
-- [ ] Published NEAT-vs-GA results across many seeds, with confidence intervals and significance tests
+- [x] Published NEAT-vs-GA results across many seeds, with confidence intervals and significance tests
 - [ ] Native installers (Windows/macOS/Linux) via `jpackage` on every release
 
 ## License
