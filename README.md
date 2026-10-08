@@ -3,7 +3,7 @@
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![JavaFX 17](https://img.shields.io/badge/JavaFX-17-blue)
-![Tests](https://img.shields.io/badge/tests-232%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-243%20passing-brightgreen)
 ![Coverage](.github/badges/jacoco.svg)
 ![Branches](.github/badges/branches.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -23,7 +23,7 @@ There are no ML libraries involved. The neural networks, both evolution engines 
 - **A live view inside the agent's head:** a network visualizer that shows every activation and the jump decision frame by frame.
 - **Experiment tooling:** a headless command line that trains without opening a window and writes one CSV row per generation, generation history and replay in the UI, and a benchmark mode that compares operator configurations across repeated seeded runs.
 - **Parallel and still deterministic:** each agent plays its own copy of the game over the same pipes, so a generation is evaluated across all CPU cores, and the result is bit-for-bit the same with 1 or 8 threads.
-- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (232 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
+- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (243 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
 
 ## Screenshots
 
@@ -69,6 +69,21 @@ flowchart LR
 | Fitness scaling | Linear, sigma, Boltzmann |
 
 **NEAT.** Every brain is a `Genome` of node and connection genes. It starts minimal (inputs wired straight to the output) and grows hidden nodes and connections through structural mutation. A shared `InnovationTracker` gives the same structural change the same innovation number in every genome. Crossover uses those numbers to line up matching, disjoint and excess genes, and speciation uses them to compute compatibility distance, which protects new topologies while they optimize. Evaluating a genome means walking its graph in topological order, so arbitrary (acyclic) topologies just work.
+
+## Results
+
+Does evolving the structure pay off? A paired study ran NEAT and four GA configurations on the same 30 seeds (200 generations, population 50, 20,000-frame cap), with every run reproducible from its seed:
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results/success_rate-dark.png">
+  <img src="docs/results/success_rate.png" alt="Cumulative share of seeds solved per generation, and success rate with 95% Wilson intervals, for NEAT and four GA configurations">
+</picture>
+
+- **NEAT solved 26/30 seeds** (87%, 95% CI 70-95%), against 20/30 (67%, 49-81%) for the GA with tournament selection and 10/30 (33%, 19-51%) for the GA defaults.
+- **NEAT solves sooner**: a median of 44 generations against 160 for the tournament GA (Mann-Whitney, Holm-adjusted p <0.001, Cliff's δ -0.63). In success rate, though, the tournament GA is not significantly worse than NEAT (McNemar, adjusted p 0.109).
+- **The study found a bug in NEAT**: species collapsed into one and stopped protecting new topologies. With a dynamic compatibility threshold and stagnation culling, NEAT went from 19/30 to 26/30 seeds solved. (It also found that two GA selection operators never picked the worst agents as parents; that is fixed too.)
+
+The full report, with the methodology, every test, a frame-cap sensitivity study and the threats to validity, is in [docs/results/REPORT.md](docs/results/REPORT.md).
 
 ## Architecture
 
@@ -247,7 +262,9 @@ src/main/java/com/neat/flappybirdneat
 └── view/         JavaFX windows: GameRenderer, network visualizer, statistics, benchmark, operator config
     └── main/     Main window: control panel, charts, simulation panel, history browser, game loop
 src/jmh/java      JMH benchmarks (Maven profile `jmh`, outside the normal build)
+experiments/      NEAT vs GA study: run_study.sh (runner), analyze.py (statistics and figures)
 docs/
+├── results/      Study report, raw data, figures and key numbers (REPORT.md)
 ├── media/        Screenshots and demo GIF
 ├── dev-notes/    Development notes (Spanish)
 └── memoria-programacion-evolutiva.pdf   Original project report (Spanish)
@@ -258,7 +275,7 @@ docs/
 - [x] Split the main window class and unify the two renderers into one shared `GameRenderer`
 - [x] Headless CLI (`--engine neat --seed 42 --generations 200`) for scripted experiments
 - [x] Parallel, deterministic fitness evaluation (one game per agent on a `ForkJoinPool`), with JMH benchmarks
-- [x] Published NEAT-vs-GA results across many seeds, with confidence intervals and significance tests
+- [x] Published NEAT-vs-GA results across many seeds, with confidence intervals and significance tests ([report](docs/results/REPORT.md))
 - [ ] Native installers (Windows/macOS/Linux) via `jpackage` on every release
 
 ## License
