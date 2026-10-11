@@ -92,6 +92,21 @@ jobs:
             cat "smoke-$engine.csv"
           done
 
+      # The saved champion is versioned JSON that --watch accepts (validated before any UI opens)
+      - name: Save a champion and reject a bad one
+        run: |
+          java -jar target/FlappyBirdNEAT.jar --headless --engine neat --seed 3 --generations 3 \
+            --population 20 --out champ.csv --save-champion champ.json
+          grep -q '"format": "flappy-neat-brain"' champ.json
+          sed 's/"version": 1/"version": 99/' champ.json > future.json
+          set +e
+          java -jar target/FlappyBirdNEAT.jar --watch future.json 2> watch.err
+          status=$?
+          set -e
+          cat watch.err
+          test "$status" -eq 1
+          grep -q 'Unsupported champion file version 99' watch.err
+
       - name: Invalid arguments exit with status 2
         run: |
           set +e
