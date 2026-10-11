@@ -3,6 +3,10 @@ package com.neat.flappybirdneat.simulation;
 import static com.neat.flappybirdneat.simulation.TrainingEngine.AGENT_INPUTS;
 import static com.neat.flappybirdneat.simulation.TrainingEngine.AGENT_OUTPUTS;
 
+import com.neat.flappybirdneat.BuildInfo;
+import com.neat.flappybirdneat.champion.Champion;
+import com.neat.flappybirdneat.champion.ChampionMetadata;
+import com.neat.flappybirdneat.champion.TrainingSettings;
 import com.neat.flappybirdneat.config.GeneticOperatorsConfig;
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.history.GenerationData;
@@ -10,9 +14,11 @@ import com.neat.flappybirdneat.history.HistoryManager;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
+import com.neat.flappybirdneat.neat.genome.Genome;
 import com.neat.flappybirdneat.neat.genome.NeatPopulation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.Executor;
 import javafx.application.Platform;
@@ -35,6 +41,10 @@ public class SimulationController {
 
     // Sal para el generador derivado de las réplicas del mejor agente (ver derivedRandom)
     private static final long REPLAY_SALT = -1;
+    // Sal para el generador derivado de la población de un campeón cargado
+    private static final long CHAMPION_SALT = -2;
+
+    private static final String BEST_AGENT_BANNER = "★ REPRODUCIENDO MEJOR AGENTE ★";
 
     /** Modo de evolución: MLP de topología fija (operadores configurables) o NEAT real. */
     public enum Mode {
@@ -69,6 +79,7 @@ public class SimulationController {
     private volatile boolean stopRequested = false;
     private int targetGenerations = 0;
     private boolean replayMode = false; // Indica si estamos reproduciendo el mejor agente
+    private String replayBanner = BEST_AGENT_BANNER;
     private Mode mode = Mode.FIXED_MLP;
     private final long seed;
 
@@ -105,6 +116,7 @@ public class SimulationController {
      */
     public void resetSimulation() {
         engine.reset(mode == Mode.NEAT ? EngineType.NEAT : EngineType.GA, operatorsConfig);
+        replayMode = false;
 
         currentGeneration.set(1);
         bestFitness.set(0);
@@ -158,6 +170,7 @@ public class SimulationController {
 
         // Guardar esta generación en el historial
         historyManager.addGenerationData(
+                engine.getGeneration(),
                 bestFitnessThisGen,
                 avgFitness,
                 minFitnessThisGen,
@@ -228,6 +241,7 @@ public class SimulationController {
 
     /** Prepara el estado de un entrenamiento rápido antes de lanzar {@link #trainFast}. */
     void beginFastSimulation(int generations) {
+        replayMode = false;
         running.set(true);
         fastMode = true;
         stopRequested = false;
@@ -268,6 +282,7 @@ public class SimulationController {
 
             // Guardar esta generación en el historial
             historyManager.addGenerationData(
+                    engine.getGeneration(),
                     currentBestFitness,
                     avgFitness,
                     currentMinFitness,
@@ -387,17 +402,16 @@ public class SimulationController {
             return null;
         }
 
+        // The snapshot is taken before the generation evolves: its fittest agent is the one that
+        // set the record, while getBestAgent() would still be the best of earlier generations
         EvolvingPopulation bestPopulation = bestGenData.getSavedPopulation();
-        FlappyBirdAgent bestAgent = bestPopulation.getBestAgent();
+        FlappyBirdAgent bestAgent = bestPopulation.fittestAgent();
         FlappyBirdAgent clonedBestAgent = new FlappyBirdAgent(bestAgent);
         clonedBestAgent.setFitness(bestAgent.getFitness());
 
         if (bestPopulation instanceof Population) {
-            // Crear una nueva población con solo el mejor agente
             // Población de réplica: no evoluciona (modo replay), así que no necesita operadores
-            Population singleAgentPop = new Population(1, derivedRandom(REPLAY_SALT));
-            singleAgentPop.getAgents()[0] = clonedBestAgent;
-            return singleAgentPop;
+            return Population.singleAgent(clonedBestAgent, derivedRandom(REPLAY_SALT));
         }
 
         return NeatPopulation.singleAgent(
@@ -426,10 +440,74 @@ public class SimulationController {
 
             fastMode = false;
             replayMode = true; // IMPORTANTE: Activar modo replay para que no evolucione
+            replayBanner = BEST_AGENT_BANNER;
             running.set(true);
 
             LOG.info("Replaying best agent (fitness {})", String.format("%.2f", historyManager.getBestFitnessEver()));
         }
+    }
+
+    /**
+     * Replays a champion (e.g. loaded from a file) alone, in a loop, like the best-agent replay. It
+     * replaces the current population until the simulation is reset; must not be called during a
+     * fast training.
+     */
+    public void watchChampion(Champion champion) {
+        if (fastMode) throw new IllegalStateException("Stop the training before watching a champion");
+        FlappyBirdAgent agent = champion.newAgent();
+        Random random = derivedRandom(CHAMPION_SALT);
+        EvolvingPopulation single = champion.engine() == EngineType.NEAT
+                ? NeatPopulation.singleAgent(agent, AGENT_INPUTS, AGENT_OUTPUTS, random, engine.getNeatConfig())
+                : Population.singleAgent(agent, random);
+        engine.replacePopulation(single);
+
+        replayMode = true;
+        // Short enough not to cover the score, drawn at the top centre
+        replayBanner = String.format(
+                Locale.ROOT,
+                "★ CAMPEÓN %s · gen %d ★",
+                champion.engine() == EngineType.NEAT ? "NEAT" : "MLP",
+                champion.metadata().generation());
+        aliveCount.set(1);
+        running.set(true);
+        LOG.info(
+                "Watching a {} champion (seed {}, generation {}, fitness {})",
+                champion.engine(),
+                champion.metadata().seed(),
+                champion.metadata().generation(),
+                String.format("%.0f", champion.metadata().fitness()));
+    }
+
+    /**
+     * The agent of the best generation recorded so far, as a champion that can be saved.
+     *
+     * @return null if no generation has been played yet
+     */
+    public Champion bestChampion() {
+        GenerationData best = historyManager.getBestGeneration();
+        if (best == null) return null;
+
+        FlappyBirdAgent agent = best.getSavedPopulation().fittestAgent();
+        EngineType type = agent.getBrain() instanceof Genome ? EngineType.NEAT : EngineType.GA;
+        BuildInfo build = BuildInfo.current();
+        ChampionMetadata metadata = new ChampionMetadata(
+                seed,
+                best.getGenerationNumber(),
+                agent.getFitness(),
+                build.commit(),
+                build.version(),
+                TrainingSettings.of(
+                        type,
+                        populationSize,
+                        (int) OPTIMAL_FITNESS_THRESHOLD,
+                        operatorsConfig,
+                        engine.getNeatConfig()));
+        return Champion.of(agent, metadata);
+    }
+
+    /** @return the banner of the current replay (best agent or loaded champion) */
+    public String getReplayBanner() {
+        return replayBanner;
     }
 
     /**

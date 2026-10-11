@@ -1,6 +1,9 @@
 package com.neat.flappybirdneat.view.main;
 
+import com.neat.flappybirdneat.champion.Champion;
+import com.neat.flappybirdneat.champion.ChampionFile;
 import com.neat.flappybirdneat.neat.Population;
+import com.neat.flappybirdneat.simulation.EngineType;
 import com.neat.flappybirdneat.simulation.FitnessCsvExporter;
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.BenchmarkWindow;
@@ -8,6 +11,7 @@ import com.neat.flappybirdneat.view.Dialogs;
 import com.neat.flappybirdneat.view.GeneticOperatorsConfigWindow;
 import com.neat.flappybirdneat.view.StatisticsWindow;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import javafx.animation.AnimationTimer;
 import javafx.beans.binding.Bindings;
@@ -31,7 +35,7 @@ import javafx.stage.FileChooser;
 
 /**
  * Top of the statistics tab: live statistics, the headless training controls (engine, number of
- * generations, start/stop, progress) and the row of actions (reset, CSV export, best-agent
+ * generations, start/stop, progress), the champion controls (watch, load, export) and the row of actions (reset, CSV export, best-agent
  * replay, operator configuration, advanced statistics, benchmark).
  */
 final class ControlPanel {
@@ -68,7 +72,7 @@ final class ControlPanel {
         this.actions = actions;
 
         HBox topControls = new HBox(20, new VBox(8, createInfoPanel()), new VBox(10, createTrainingPanel()));
-        view = new VBox(10, topControls, createActionsRow());
+        view = new VBox(10, topControls, createChampionRow(), createActionsRow());
         refreshChartsWhileRunning();
     }
 
@@ -214,6 +218,128 @@ final class ControlPanel {
         fastSimPanel.setStyle(
                 "-fx-background-color: #e8f4f8; -fx-background-radius: 5; -fx-border-color: #4CAF50; -fx-border-radius: 5; -fx-border-width: 2;");
         return fastSimPanel;
+    }
+
+    /** Watch the bundled champion, load one from a file, or export the best agent of the training. */
+    private HBox createChampionRow() {
+        Label title = new Label("🏆 Campeón:");
+        title.setFont(Font.font("System", FontWeight.BOLD, 14));
+        title.setTextFill(Color.DARKGOLDENROD);
+
+        Button watchButton = new Button("▶ Ver campeón");
+        watchButton.setStyle("-fx-background-color: #DAA520; -fx-text-fill: white; -fx-font-weight: bold;");
+        watchButton.setOnAction(e -> watchBundledChampion());
+
+        Button loadButton = new Button("📂 Cargar campeón…");
+        loadButton.setOnAction(e -> loadChampion());
+
+        Button exportButton = new Button("💾 Exportar campeón…");
+        exportButton.setOnAction(e -> exportChampion());
+
+        Label description = new Label("agentes ya entrenados, guardados en JSON");
+        description.setFont(Font.font("System", 12));
+        description.setTextFill(Color.GRAY);
+
+        HBox row = new HBox(10, title, watchButton, loadButton, exportButton, description);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(6, 10, 6, 10));
+        row.setStyle("-fx-background-color: #fdf6e3; -fx-background-radius: 5; -fx-border-color: #DAA520; "
+                + "-fx-border-radius: 5; -fx-border-width: 1;");
+        return row;
+    }
+
+    private boolean trainingInProgress() {
+        if (!controller.isFastMode()) {
+            return false;
+        }
+        Dialogs.show(
+                Alert.AlertType.WARNING,
+                "Entrenamiento en curso",
+                null,
+                "Detén el entrenamiento antes de ver, cargar o exportar un campeón.");
+        return true;
+    }
+
+    private void watchBundledChampion() {
+        if (trainingInProgress()) {
+            return;
+        }
+        Champion champion;
+        try {
+            champion = ChampionFile.loadBundled(ChampionFile.BUNDLED_NEAT);
+        } catch (RuntimeException e) {
+            Dialogs.show(Alert.AlertType.ERROR, "Error", "No se pudo cargar el campeón incluido", e.getMessage());
+            return;
+        }
+        actions.watchChampion(champion);
+    }
+
+    private void loadChampion() {
+        if (trainingInProgress()) {
+            return;
+        }
+        FileChooser fileChooser = championFileChooser("Cargar campeón");
+        File file = fileChooser.showOpenDialog(view.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        Champion champion;
+        try {
+            champion = ChampionFile.load(file.toPath());
+        } catch (IOException e) {
+            Dialogs.show(
+                    Alert.AlertType.ERROR,
+                    "Error",
+                    "No se pudo cargar el campeón",
+                    file.getName() + ": " + e.getMessage());
+            return;
+        }
+        actions.watchChampion(champion);
+    }
+
+    private void exportChampion() {
+        if (trainingInProgress()) {
+            return;
+        }
+        Champion champion = controller.bestChampion();
+        if (champion == null) {
+            Dialogs.show(
+                    Alert.AlertType.WARNING,
+                    "Sin datos",
+                    "No hay ningún campeón todavía",
+                    "Ejecuta primero un entrenamiento: se exportará el mejor agente encontrado.");
+            return;
+        }
+        FileChooser fileChooser = championFileChooser("Exportar campeón");
+        fileChooser.setInitialFileName((champion.engine() == EngineType.NEAT ? "neat" : "mlp") + "-champion.json");
+        File file = fileChooser.showSaveDialog(view.getScene().getWindow());
+        if (file == null) {
+            return;
+        }
+        try {
+            ChampionFile.save(champion, file.toPath());
+        } catch (IOException e) {
+            Dialogs.show(Alert.AlertType.ERROR, "Error", "No se pudo exportar el campeón", e.getMessage());
+            return;
+        }
+        Dialogs.show(
+                Alert.AlertType.INFORMATION,
+                "Exportación completa",
+                null,
+                String.format(
+                        "Campeón de la generación %d (fitness %.0f) guardado en %s.\n\n"
+                                + "Ábrelo con «Cargar campeón» o con: java -jar FlappyBirdNEAT.jar --watch %s",
+                        champion.metadata().generation(),
+                        champion.metadata().fitness(),
+                        file.getName(),
+                        file.getName()));
+    }
+
+    private static FileChooser championFileChooser(String title) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle(title);
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Campeón (*.json)", "*.json"));
+        return fileChooser;
     }
 
     private void startTraining(String generationsText, ProgressBar progressBar) {

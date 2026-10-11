@@ -279,6 +279,18 @@ public class Population implements EvolvingPopulation {
         return crossoverStrategy;
     }
 
+    /**
+     * Single-agent population for replaying an agent (it is never evolved). The agent is also the
+     * population's best agent, which the renderer highlights and the network window shows.
+     */
+    public static Population singleAgent(FlappyBirdAgent agent, Random random) {
+        Population single = new Population(1, random);
+        single.agents[0] = agent;
+        single.bestAgent = agent;
+        single.bestFitness = agent.getFitness();
+        return single;
+    }
+
     /** Constructor de copia: no consume aleatoriedad del original. */
     private Population(Population other, Random random) {
         this.random = random;

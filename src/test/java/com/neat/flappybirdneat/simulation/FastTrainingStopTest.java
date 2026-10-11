@@ -60,4 +60,18 @@ class FastTrainingStopTest {
 
         assertEquals(3, controller.getHistoryManager().getCurrentRun().getGenerations());
     }
+
+    @Test
+    void historyRecordsTheNumberOfEveryGeneration() {
+        SimulationController controller = new SimulationController(10, 800, 600, 4L);
+
+        controller.beginFastSimulation(4);
+        controller.trainFast(4, (done, max) -> {}, Runnable::run);
+
+        assertEquals(
+                List.of(1, 2, 3, 4),
+                controller.getHistoryManager().getCurrentRun().getGenerationDataList().stream()
+                        .map(data -> data.getGenerationNumber())
+                        .toList());
+    }
 }

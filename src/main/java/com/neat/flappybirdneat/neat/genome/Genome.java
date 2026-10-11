@@ -84,6 +84,74 @@ public class Genome implements Brain {
         return new Genome(numInputs, numOutputs, biasNodeId, nodes, connections);
     }
 
+    /**
+     * Rebuilds a genome from saved genes (e.g. a champion file), checking that they describe a
+     * network {@link #feedForward} can evaluate. Node order matters: the i-th INPUT node receives
+     * the i-th input and the i-th OUTPUT node produces the i-th output. The genes are copied.
+     *
+     * @throws IllegalArgumentException if the genes are inconsistent (unknown or repeated ids,
+     *     wrong number of inputs or outputs, a connection into an input, a cycle...)
+     */
+    public static Genome restore(
+            int numInputs, int numOutputs, int biasNodeId, List<NodeGene> nodes, List<ConnectionGene> connections) {
+        Map<Integer, NodeType> types = new HashMap<>();
+        int inputs = 0;
+        int outputs = 0;
+        int biases = 0;
+        for (NodeGene node : nodes) {
+            if (types.put(node.getId(), node.getType()) != null) {
+                throw new IllegalArgumentException("Repeated node id " + node.getId());
+            }
+            switch (node.getType()) {
+                case INPUT -> inputs++;
+                case OUTPUT -> outputs++;
+                case BIAS -> biases++;
+                case HIDDEN -> {}
+            }
+        }
+        if (inputs != numInputs) {
+            throw new IllegalArgumentException("Expected " + numInputs + " input nodes, found " + inputs);
+        }
+        if (outputs != numOutputs) {
+            throw new IllegalArgumentException("Expected " + numOutputs + " output nodes, found " + outputs);
+        }
+        if (biases != 1 || types.get(biasNodeId) != NodeType.BIAS) {
+            throw new IllegalArgumentException("Node " + biasNodeId + " must be the only bias node");
+        }
+
+        Set<Integer> innovations = new HashSet<>();
+        Set<Long> links = new HashSet<>();
+        for (ConnectionGene connection : connections) {
+            NodeType from = types.get(connection.getInNode());
+            NodeType to = types.get(connection.getOutNode());
+            if (from == null || to == null) {
+                throw new IllegalArgumentException(
+                        "Connection " + connection.getInnovationNumber() + " refers to an unknown node");
+            }
+            if (from == NodeType.OUTPUT || to == NodeType.INPUT || to == NodeType.BIAS) {
+                throw new IllegalArgumentException(
+                        "Connection " + connection.getInnovationNumber() + " goes from " + from + " to " + to);
+            }
+            if (!innovations.add(connection.getInnovationNumber())) {
+                throw new IllegalArgumentException("Repeated innovation number " + connection.getInnovationNumber());
+            }
+            if (!links.add(((long) connection.getInNode() << 32) | (connection.getOutNode() & 0xFFFFFFFFL))) {
+                throw new IllegalArgumentException(
+                        "Repeated connection " + connection.getInNode() + " -> " + connection.getOutNode());
+            }
+            if (!Double.isFinite(connection.getWeight())) {
+                throw new IllegalArgumentException(
+                        "Connection " + connection.getInnovationNumber() + " has a non-finite weight");
+            }
+        }
+
+        Genome genome = new Genome(numInputs, numOutputs, biasNodeId, nodes, connections).copy();
+        if (genome.topologicalOrderOfAllConnections().size() != nodes.size()) {
+            throw new IllegalArgumentException("The connections form a cycle");
+        }
+        return genome;
+    }
+
     /** Copia profunda: nodos y conexiones son objetos nuevos, no compartidos con el original. */
     public Genome copy() {
         List<NodeGene> nodeCopies = new ArrayList<>();
@@ -309,6 +377,15 @@ public class Genome implements Brain {
      * evitar crear ciclos al añadir conexiones.
      */
     private List<Integer> topologicalOrder() {
+        return topologicalOrder(false);
+    }
+
+    /** Kahn over every connection, enabled or not: shorter than the node list if they form a cycle. */
+    private List<Integer> topologicalOrderOfAllConnections() {
+        return topologicalOrder(true);
+    }
+
+    private List<Integer> topologicalOrder(boolean includeDisabled) {
         Map<Integer, Integer> inDegree = new HashMap<>();
         Map<Integer, List<Integer>> adjacency = new HashMap<>();
         for (NodeGene node : nodes) {
@@ -316,7 +393,7 @@ public class Genome implements Brain {
             adjacency.put(node.getId(), new ArrayList<>());
         }
         for (ConnectionGene connection : connections) {
-            if (!connection.isEnabled()) continue;
+            if (!connection.isEnabled() && !includeDisabled) continue;
             adjacency.get(connection.getInNode()).add(connection.getOutNode());
             inDegree.merge(connection.getOutNode(), 1, Integer::sum);
         }

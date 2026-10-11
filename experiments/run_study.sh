@@ -12,7 +12,7 @@
 #   POPULATION   50     agents per generation
 #   MAX_FRAMES   20000  frame cap per generation; an agent that reaches it "solves" the game
 #   THREADS      all cores (evaluation threads; results do not depend on it)
-#   JAR          target/FlappyBirdNEAT-1.0-SNAPSHOT.jar (build it with ./mvnw package)
+#   JAR          target/FlappyBirdNEAT.jar (build it with ./mvnw package)
 #   OUT_DIR      experiments/out
 #
 # Configurations (name: CLI arguments):
@@ -52,7 +52,7 @@ GENERATIONS="${GENERATIONS:-200}"
 POPULATION="${POPULATION:-50}"
 MAX_FRAMES="${MAX_FRAMES:-20000}"
 THREADS="${THREADS:-$(cores)}"
-JAR="${JAR:-target/FlappyBirdNEAT-1.0-SNAPSHOT.jar}"
+JAR="${JAR:-target/FlappyBirdNEAT.jar}"
 OUT_DIR="${OUT_DIR:-experiments/out}"
 
 CONFIGS=(

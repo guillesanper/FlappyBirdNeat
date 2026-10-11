@@ -23,7 +23,7 @@ public final class CliParser {
     static final int DEFAULT_POPULATION = 50;
     static final int DEFAULT_MAX_FRAMES = 20_000;
 
-    private static final Set<String> FLAGS = Set.of("--headless", "--stop-on-solve", "--help", "-h");
+    private static final Set<String> FLAGS = Set.of("--headless", "--stop-on-solve", "--demo", "--help", "-h");
     private static final Set<String> OPTIONS = Set.of(
             "--engine",
             "--seed",
@@ -35,12 +35,16 @@ public final class CliParser {
             "--crossover",
             "--mutation",
             "--scaling",
-            "--out");
+            "--out",
+            "--save-champion",
+            "--watch");
     private static final Set<String> GA_OPTIONS = Set.of("--selection", "--crossover", "--mutation", "--scaling");
 
     static final String USAGE =
             """
             Usage: java -jar FlappyBirdNEAT.jar --headless --out FILE [options]
+                   java -jar FlappyBirdNEAT.jar --watch CHAMPION.json
+                   java -jar FlappyBirdNEAT.jar --demo
                    java -jar FlappyBirdNEAT.jar            (no arguments: open the JavaFX UI)
 
             Trains without a UI, writes one CSV row per generation to FILE and prints a summary.
@@ -48,6 +52,7 @@ public final class CliParser {
             Options:
               --headless            Run without the UI (required to train from the command line)
               --out FILE            CSV file to write (required)
+              --save-champion FILE  Also save the best agent of the run as a champion JSON file
               --engine neat|ga      Evolution engine (default: neat)
               --seed N              Global seed (default: random; printed in the summary)
               --generations N       Generations to run (default: %d)
@@ -59,6 +64,11 @@ public final class CliParser {
               --stop-on-solve       Stop after the first solved generation
               -h, --help            Show this help and exit
 
+            Watching a champion (opens the UI, takes no other options):
+              --watch FILE          Replay the champion saved in FILE in a loop, with its network
+              --demo                Replay the NEAT champion bundled with the application
+
+
             GA operators (only with --engine ga):
               --selection KEY       roulette (default), deterministic_tournament,
                                     probabilistic_tournament, ranking, truncation,
@@ -67,17 +77,21 @@ public final class CliParser {
               --mutation KEY        gaussian (default), uniform, non_uniform
               --scaling KEY         none (default), linear, sigma, boltzmann
 
-            Exit codes: 0 success, 1 runtime error (e.g. FILE cannot be written), 2 invalid arguments.
+            Exit codes: 0 success, 1 runtime error (e.g. FILE cannot be written or a champion
+            cannot be read), 2 invalid arguments.
             """.formatted(DEFAULT_GENERATIONS, DEFAULT_POPULATION, DEFAULT_MAX_FRAMES, defaultThreads());
 
     private CliParser() {}
 
-    /** Result of parsing: either a request for help or a run with validated options. */
-    public sealed interface Command permits Help, Run {}
+    /** Result of parsing: a request for help, a headless run with validated options or a champion to watch. */
+    public sealed interface Command permits Help, Run, Watch {}
 
     public record Help() implements Command {}
 
     public record Run(CliOptions options) implements Command {}
+
+    /** @param champion the champion file to watch, or null for the bundled NEAT champion ({@code --demo}) */
+    public record Watch(Path champion) implements Command {}
 
     public static Command parse(String[] args) throws UsageException {
         Map<String, String> values = new HashMap<>();
@@ -112,8 +126,10 @@ public final class CliParser {
         }
 
         if (values.containsKey("--help")) return new Help();
+        if (values.containsKey("--watch") || values.containsKey("--demo")) return watch(values);
         if (!values.containsKey("--headless")) {
-            throw new UsageException("Command-line arguments require --headless (run with no arguments for the UI)");
+            throw new UsageException(
+                    "Command-line arguments require --headless, --watch or --demo (run with no arguments for the UI)");
         }
         if (!values.containsKey("--out")) throw new UsageException("Missing required option --out FILE");
 
@@ -148,6 +164,10 @@ public final class CliParser {
 
         String out = values.get("--out");
         if (out.isBlank()) throw new UsageException("--out needs a file name");
+        String saveChampion = values.get("--save-champion");
+        if (saveChampion != null && saveChampion.isBlank()) {
+            throw new UsageException("--save-champion needs a file name");
+        }
 
         return new Run(new CliOptions(
                 engine,
@@ -161,7 +181,19 @@ public final class CliParser {
                 crossover,
                 mutation,
                 scaling,
-                Path.of(out)));
+                Path.of(out),
+                saveChampion == null ? null : Path.of(saveChampion)));
+    }
+
+    private static Watch watch(Map<String, String> values) throws UsageException {
+        String mode = values.containsKey("--watch") ? "--watch" : "--demo";
+        for (String name : values.keySet()) {
+            if (!name.equals(mode)) throw new UsageException(mode + " cannot be combined with " + name);
+        }
+        if (mode.equals("--demo")) return new Watch(null);
+        String file = values.get("--watch");
+        if (file.isBlank()) throw new UsageException("--watch needs a champion file");
+        return new Watch(Path.of(file));
     }
 
     static int defaultThreads() {

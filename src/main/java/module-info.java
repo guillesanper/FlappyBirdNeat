@@ -1,6 +1,7 @@
 module com.neat.flappybirdneat {
     requires javafx.controls;
     requires org.slf4j;
+    requires com.google.gson;
 
     opens com.neat.flappybirdneat.history to
             javafx.base;

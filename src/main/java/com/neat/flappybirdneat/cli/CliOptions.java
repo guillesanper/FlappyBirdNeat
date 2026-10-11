@@ -6,7 +6,8 @@ import java.nio.file.Path;
 /**
  * Validated options of a headless training run.
  *
- * @param selection GA selection key, or null for the default (likewise crossover, mutation, scaling)
+ * @param selection    GA selection key, or null for the default (likewise crossover, mutation, scaling)
+ * @param saveChampion where to save the run's best agent as a champion file, or null not to save it
  */
 public record CliOptions(
         EngineType engine,
@@ -20,4 +21,5 @@ public record CliOptions(
         String crossover,
         String mutation,
         String scaling,
-        Path out) {}
+        Path out,
+        Path saveChampion) {}

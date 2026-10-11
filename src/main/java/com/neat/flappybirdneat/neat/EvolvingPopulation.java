@@ -11,7 +11,20 @@ import java.util.Random;
 public interface EvolvingPopulation {
     FlappyBirdAgent[] getAgents();
 
+    /**
+     * Best agent of the generations already evolved: it is updated by {@link #naturalSelection},
+     * so it does not include the generation being played. For that, see {@link #fittestAgent()}.
+     */
     FlappyBirdAgent getBestAgent();
+
+    /** @return the agent with the highest fitness in the current generation (the first one on ties) */
+    default FlappyBirdAgent fittestAgent() {
+        FlappyBirdAgent fittest = null;
+        for (FlappyBirdAgent agent : getAgents()) {
+            if (fittest == null || agent.getFitness() > fittest.getFitness()) fittest = agent;
+        }
+        return fittest;
+    }
 
     int getGeneration();
 
