@@ -58,6 +58,8 @@ public class SimulationController {
     private final DoubleProperty averageFitness = new SimpleDoubleProperty(0);
     private final IntegerProperty aliveCount = new SimpleIntegerProperty(0);
     private final BooleanProperty running = new SimpleBooleanProperty(false);
+    // Campeón que se está viendo (--demo, --watch, "Ver campeón"); null durante el entrenamiento
+    private final ObjectProperty<Champion> watchedChampion = new SimpleObjectProperty<>();
 
     // Datos para gráficos
     private final List<Double> bestFitnessHistory = new ArrayList<>();
@@ -117,6 +119,7 @@ public class SimulationController {
     public void resetSimulation() {
         engine.reset(mode == Mode.NEAT ? EngineType.NEAT : EngineType.GA, operatorsConfig);
         replayMode = false;
+        watchedChampion.set(null);
 
         currentGeneration.set(1);
         bestFitness.set(0);
@@ -242,6 +245,7 @@ public class SimulationController {
     /** Prepara el estado de un entrenamiento rápido antes de lanzar {@link #trainFast}. */
     void beginFastSimulation(int generations) {
         replayMode = false;
+        watchedChampion.set(null);
         running.set(true);
         fastMode = true;
         stopRequested = false;
@@ -440,6 +444,7 @@ public class SimulationController {
 
             fastMode = false;
             replayMode = true; // IMPORTANTE: Activar modo replay para que no evolucione
+            watchedChampion.set(null);
             replayBanner = BEST_AGENT_BANNER;
             running.set(true);
 
@@ -462,6 +467,7 @@ public class SimulationController {
         engine.replacePopulation(single);
 
         replayMode = true;
+        watchedChampion.set(champion);
         // Short enough not to cover the score, drawn at the top centre
         replayBanner = String.format(
                 Locale.ROOT,
@@ -522,6 +528,7 @@ public class SimulationController {
      */
     public void exitReplayMode() {
         replayMode = false;
+        watchedChampion.set(null);
     }
 
     /**
@@ -589,6 +596,11 @@ public class SimulationController {
 
     public IntegerProperty aliveCountProperty() {
         return aliveCount;
+    }
+
+    /** @return el campeón que se está viendo, o null si se muestra el entrenamiento */
+    public ReadOnlyObjectProperty<Champion> watchedChampionProperty() {
+        return watchedChampion;
     }
 
     public BooleanProperty runningProperty() {
