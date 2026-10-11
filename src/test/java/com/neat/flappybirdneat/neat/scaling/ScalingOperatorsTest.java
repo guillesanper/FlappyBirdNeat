@@ -60,22 +60,64 @@ class ScalingOperatorsTest {
         }
     }
 
-    @Test
-    void linearScalingAppliesExpectedTransform() {
-        LinearScaling strategy = new LinearScaling(2.0, 1.0);
-        FlappyBirdAgent[] agents = agentsWithFitness(0, 3, 10);
-
-        strategy.scaleFitness(agents);
-
-        assertEquals(1.0, agents[0].getFitness(), 1e-9);
-        assertEquals(7.0, agents[1].getFitness(), 1e-9);
-        assertEquals(21.0, agents[2].getFitness(), 1e-9);
+    private static double mean(FlappyBirdAgent[] agents) {
+        double sum = 0;
+        for (FlappyBirdAgent agent : agents) sum += agent.getFitness();
+        return sum / agents.length;
     }
 
-    /**
-     * Regresión: exp(f / T) se desbordaba a Infinity con fitness altos (el juego llega a 80000)
-     * y el cociente daba NaN, dejando la ruleta sin probabilidades válidas.
-     */
+    @Test
+    void linearScalingKeepsTheMeanAndGivesTheBestCTimesIt() {
+        FlappyBirdAgent[] agents = agentsWithFitness(100, 120, 140, 160, 180);
+        double meanBefore = mean(agents);
+
+        new LinearScaling(2.0).scaleFitness(agents);
+
+        assertEquals(meanBefore, mean(agents), 1e-9);
+        assertEquals(2.0 * meanBefore, agents[4].getFitness(), 1e-9);
+    }
+
+    @Test
+    void linearScalingPinsTheWorstToZeroWhenFullPressureWouldMakeItNegative() {
+        // Media 88: llevar el mejor a 2 * 88 dejaría al peor (40) negativo, así que se usa la
+        // recta que lleva el mínimo a 0 conservando la media
+        FlappyBirdAgent[] agents = agentsWithFitness(40, 100, 100, 100, 100);
+        double meanBefore = mean(agents);
+
+        new LinearScaling(2.0).scaleFitness(agents);
+
+        assertEquals(meanBefore, mean(agents), 1e-9);
+        assertEquals(0.0, agents[0].getFitness(), 1e-9);
+        assertTrue(agents[4].getFitness() < 2.0 * meanBefore, "la presión queda por debajo de C");
+    }
+
+    @Test
+    void linearScalingCompressesADominantBestToCTimesTheMean() {
+        // Un superindividuo: sin escalado acapararía casi toda la ruleta
+        FlappyBirdAgent[] agents = agentsWithFitness(0, 10, 10, 10, 1000);
+        double meanBefore = mean(agents);
+
+        new LinearScaling(2.0).scaleFitness(agents);
+
+        assertEquals(meanBefore, mean(agents), 1e-9);
+        assertEquals(2.0 * meanBefore, agents[4].getFitness(), 1e-9);
+        for (FlappyBirdAgent agent : agents) assertTrue(agent.getFitness() >= 0);
+    }
+
+    @Test
+    void linearScalingLeavesEqualFitnessUnchanged() {
+        FlappyBirdAgent[] agents = agentsWithFitness(50, 50, 50);
+
+        new LinearScaling(2.0).scaleFitness(agents);
+
+        for (FlappyBirdAgent agent : agents) assertEquals(50.0, agent.getFitness(), 1e-9);
+    }
+
+    @Test
+    void linearScalingRejectsPressureBelowOne() {
+        assertThrows(IllegalArgumentException.class, () -> new LinearScaling(0.5));
+    }
+
     @Test
     void boltzmannScalingStaysFiniteForHighFitness() {
         FlappyBirdAgent[] agents = agentsWithFitness(80000, 20000, 500);

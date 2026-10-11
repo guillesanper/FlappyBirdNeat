@@ -3,44 +3,68 @@ package com.neat.flappybirdneat.neat.scaling;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 
 /**
- * Escalado lineal de fitness.
- * Aplica una transformación lineal: f' = a*f + b
- * Evita fitness negativos que podrían causar problemas en la selección.
+ * Escalado lineal de Goldberg: f' = a*f + b, con a y b recalculados en cada generación para que la
+ * media del fitness se conserve y el mejor individuo reciba {@code C} veces la media (presión
+ * selectiva). Así la selección proporcional no se estanca cuando las diferencias de fitness son
+ * pequeñas respecto a su valor, ni deja que un superindividuo acapare a los padres al principio.
+ * Si con esa recta algún fitness quedara negativo, se usa la recta que lleva el mínimo a 0 y
+ * conserva la media (la presión es entonces la mayor posible sin valores negativos).
  */
 public class LinearScaling implements ScalingStrategy {
 
-    private final double a;
-    private final double b;
+    public static final double DEFAULT_SELECTION_PRESSURE = 2.0;
+
+    private final double selectionPressure;
 
     public LinearScaling() {
-        this.a = 1.5;
-        this.b = 0.5;
+        this(DEFAULT_SELECTION_PRESSURE);
     }
 
-    public LinearScaling(double a, double b) {
-        this.a = a;
-        this.b = b;
+    /** @param selectionPressure C: cuántas veces la media recibe el mejor individuo (C >= 1) */
+    public LinearScaling(double selectionPressure) {
+        if (!(selectionPressure >= 1.0)) {
+            throw new IllegalArgumentException("Selection pressure must be at least 1: " + selectionPressure);
+        }
+        this.selectionPressure = selectionPressure;
+    }
+
+    public double getSelectionPressure() {
+        return selectionPressure;
     }
 
     @Override
     public void scaleFitness(FlappyBirdAgent[] agents) {
-        double maxFitness = Double.MIN_VALUE;
-        double minFitness = Double.MAX_VALUE;
+        if (agents.length == 0) return;
 
-        // Encontrar máximo y mínimo
+        double sum = 0;
+        double max = Double.NEGATIVE_INFINITY;
+        double min = Double.POSITIVE_INFINITY;
         for (FlappyBirdAgent agent : agents) {
-            double fit = agent.getFitness();
-            if (fit > maxFitness) maxFitness = fit;
-            if (fit < minFitness) minFitness = fit;
+            double fitness = agent.getFitness();
+            sum += fitness;
+            max = Math.max(max, fitness);
+            min = Math.min(min, fitness);
+        }
+        double avg = sum / agents.length;
+        // Todos iguales: no hay nada que escalar
+        if (max == avg) return;
+
+        double a;
+        double b;
+        double c = selectionPressure;
+        if (min > (c * avg - max) / (c - 1)) {
+            // La recta que lleva el máximo a C * media no deja ningún valor negativo
+            a = (c - 1) * avg / (max - avg);
+            b = avg * (max - c * avg) / (max - avg);
+        } else {
+            // Recta que lleva el mínimo a 0 y conserva la media
+            a = avg / (avg - min);
+            b = -min * avg / (avg - min);
         }
 
-        double gmin = 0; // Valor mínimo permitido para evitar fitness negativos
-
-        // Aplicar escalado lineal
         for (FlappyBirdAgent agent : agents) {
-            double fit = agent.getFitness();
-            double scaledFitness = Math.max(gmin, a * fit + b);
-            agent.setFitness(scaledFitness);
+            // max(0, ...) solo por redondeo: por construcción ningún valor es negativo
+            agent.setFitness(Math.max(0, a * agent.getFitness() + b));
         }
     }
 }

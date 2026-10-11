@@ -9,7 +9,7 @@ class ScalingFactoryImpl extends ScalingFactory {
     public ScalingStrategy getScalingStrategy(String type, double... params) {
         String t = type.toLowerCase();
         if (t.equals("lineal") || t.equals("linear")) {
-            return params.length >= 2 ? new LinearScaling(params[0], params[1]) : new LinearScaling();
+            return params.length >= 1 ? new LinearScaling(params[0]) : new LinearScaling();
         } else if (t.equals("sigma")) {
             return new SigmaScaling();
         } else if (t.equals("boltzmann")) {
