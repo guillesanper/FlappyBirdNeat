@@ -1,10 +1,13 @@
 package com.neat.flappybirdneat.view.main;
 
+import com.neat.flappybirdneat.champion.Champion;
 import com.neat.flappybirdneat.simulation.SimulationController;
+import com.neat.flappybirdneat.view.Dialogs;
 import com.neat.flappybirdneat.view.NeuralNetworkWindow;
 import com.neat.flappybirdneat.view.StatisticsWindow;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.VBox;
@@ -26,6 +29,8 @@ public final class MainWindow implements MainWindowActions {
     private final FitnessCharts charts;
     private final HistoryBrowser historyBrowser;
     private final GameLoop gameLoop;
+    private final LiveViewSettings settings = new LiveViewSettings();
+    private Stage stage;
     private final int canvasWidth;
     private final int canvasHeight;
 
@@ -33,7 +38,6 @@ public final class MainWindow implements MainWindowActions {
         this.controller = controller;
         this.canvasWidth = canvasWidth;
         this.canvasHeight = canvasHeight;
-        LiveViewSettings settings = new LiveViewSettings();
 
         controlPanel = new ControlPanel(
                 controller, populationSize, canvasWidth, canvasHeight, settings, statisticsWindow, this);
@@ -59,6 +63,7 @@ public final class MainWindow implements MainWindowActions {
     }
 
     public void show(Stage stage) {
+        this.stage = stage;
         stage.setTitle("Flappy Bird NEAT - Evolución Gráfica");
         stage.setScene(new Scene(tabPane, canvasWidth + SIDEBAR_WIDTH, canvasHeight));
         stage.show();
@@ -93,6 +98,24 @@ public final class MainWindow implements MainWindowActions {
     @Override
     public void offerBestGenerationReplay() {
         historyBrowser.offerBestGenerationReplay(this::showSimulationTab);
+    }
+
+    @Override
+    public void watchChampion(Champion champion) {
+        if (controller.isFastMode()) {
+            Dialogs.show(
+                    Alert.AlertType.WARNING,
+                    "Entrenamiento en curso",
+                    null,
+                    "Detén el entrenamiento antes de ver un campeón.");
+            return;
+        }
+        controller.watchChampion(champion);
+        settings.setShowAllAgents(false);
+        showSimulationTab();
+        if (!networkWindow.isShowing()) {
+            networkWindow.showNextTo(stage);
+        }
     }
 
     private void pauseGameLoop() {

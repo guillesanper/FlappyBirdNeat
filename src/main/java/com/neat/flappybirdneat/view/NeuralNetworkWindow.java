@@ -4,6 +4,8 @@ import com.neat.flappybirdneat.game.Pipe;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.genome.Genome;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -11,7 +13,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 /**
  * Ventana que muestra la visualización de la red neuronal del mejor agente.
@@ -46,6 +50,33 @@ public class NeuralNetworkWindow {
 
         Scene scene = new Scene(root, width, height);
         stage.setScene(scene);
+    }
+
+    /**
+     * Shows the window beside {@code owner}, on its right if the screen has room, otherwise in the
+     * screen's bottom-right corner, so it does not cover the game.
+     */
+    public void showNextTo(Window owner) {
+        if (owner == null) {
+            show();
+            return;
+        }
+        Rectangle2D screen =
+                Screen.getScreensForRectangle(owner.getX(), owner.getY(), owner.getWidth(), owner.getHeight()).stream()
+                        .findFirst()
+                        .orElse(Screen.getPrimary())
+                        .getVisualBounds();
+        double width = stage.getScene().getWidth();
+        double height = stage.getScene().getHeight();
+        double x = owner.getX() + owner.getWidth();
+        double y = owner.getY();
+        if (x + width > screen.getMaxX()) {
+            x = screen.getMaxX() - width;
+            y = screen.getMaxY() - height;
+        }
+        stage.setX(Math.max(screen.getMinX(), x));
+        stage.setY(Math.max(screen.getMinY(), y));
+        stage.show();
     }
 
     /**
@@ -144,6 +175,11 @@ public class NeuralNetworkWindow {
      */
     public void close() {
         stage.close();
+    }
+
+    /** @return whether the window is showing, as an observable value */
+    public ReadOnlyBooleanProperty showingProperty() {
+        return stage.showingProperty();
     }
 
     /**
