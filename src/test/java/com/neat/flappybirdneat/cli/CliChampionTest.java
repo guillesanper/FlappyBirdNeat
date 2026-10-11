@@ -152,4 +152,15 @@ class CliChampionTest {
         assertEquals(Cli.EXIT_RUNTIME_ERROR, exit);
         assertTrue(err.toString(StandardCharsets.UTF_8).contains("no user interface"));
     }
+
+    @Test
+    void demoShowsTheBundledNeatChampion() {
+        assertEquals(Cli.EXIT_OK, run("--demo"));
+
+        assertEquals(1, shown.size());
+        assertEquals(EngineType.NEAT, shown.get(0).engine());
+        assertEquals(
+                ChampionFile.loadBundled(ChampionFile.BUNDLED_NEAT).metadata(),
+                shown.get(0).metadata());
+    }
 }
