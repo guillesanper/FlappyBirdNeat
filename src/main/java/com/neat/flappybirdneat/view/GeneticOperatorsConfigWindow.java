@@ -322,14 +322,10 @@ public class GeneticOperatorsConfigWindow {
         escaladoParam2Field.setVisible(false);
 
         if ("Lineal".equals(selected)) {
-            escaladoParam1Label.setText("a:");
-            escaladoParam1Field.setText("2.0");
-            escaladoParam2Label.setText("b:");
-            escaladoParam2Field.setText("1.0");
+            escaladoParam1Label.setText("Presión selectiva (C):");
+            escaladoParam1Field.setText(String.valueOf(LinearScaling.DEFAULT_SELECTION_PRESSURE));
             escaladoParam1Label.setVisible(true);
             escaladoParam1Field.setVisible(true);
-            escaladoParam2Label.setVisible(true);
-            escaladoParam2Field.setVisible(true);
         } else if ("Boltzmann".equals(selected)) {
             escaladoParam1Label.setText("T0:");
             escaladoParam1Field.setText("100.0");
@@ -399,9 +395,8 @@ public class GeneticOperatorsConfigWindow {
                 population.setScalingStrategy((ScalingStrategy) null);
             } else if ("Lineal".equals(escaladoType)) {
                 if (escaladoParam1Field.isVisible()) {
-                    double a = Double.parseDouble(escaladoParam1Field.getText());
-                    double b = Double.parseDouble(escaladoParam2Field.getText());
-                    population.setScalingStrategy(new LinearScaling(a, b));
+                    double c = Double.parseDouble(escaladoParam1Field.getText());
+                    population.setScalingStrategy(new LinearScaling(c));
                 } else {
                     population.setScalingStrategy(new LinearScaling());
                 }
@@ -557,20 +552,7 @@ public class GeneticOperatorsConfigWindow {
             String escaladoClassName = escalado.getClass().getSimpleName();
             if (escaladoClassName.equals("LinearScaling")) {
                 escaladoComboBox.setValue("Lineal");
-                try {
-                    java.lang.reflect.Field aField = escalado.getClass().getDeclaredField("a");
-                    aField.setAccessible(true);
-                    double a = aField.getDouble(escalado);
-                    escaladoParam1Field.setText(String.valueOf(a));
-
-                    java.lang.reflect.Field bField = escalado.getClass().getDeclaredField("b");
-                    bField.setAccessible(true);
-                    double b = bField.getDouble(escalado);
-                    escaladoParam2Field.setText(String.valueOf(b));
-                } catch (Exception e) {
-                    escaladoParam1Field.setText("2.0");
-                    escaladoParam2Field.setText("1.0");
-                }
+                escaladoParam1Field.setText(String.valueOf(((LinearScaling) escalado).getSelectionPressure()));
             } else if (escaladoClassName.equals("SigmaScaling")) {
                 escaladoComboBox.setValue("Sigma");
             } else if (escaladoClassName.equals("BoltzmannScaling")) {

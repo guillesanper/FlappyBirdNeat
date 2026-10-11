@@ -85,7 +85,7 @@ flowchart LR
 | Selection | Roulette wheel, ranking, deterministic tournament, probabilistic tournament, truncation, remainder stochastic, stochastic universal sampling |
 | Crossover | Uniform, single-point, arithmetic |
 | Mutation | Gaussian, uniform, non-uniform (the magnitude decays over generations) |
-| Fitness scaling | Linear, sigma, Boltzmann |
+| Fitness scaling | Linear (Goldberg, selection pressure C), sigma, Boltzmann |
 
 **NEAT.** Every brain is a `Genome` of node and connection genes. It starts minimal (inputs wired straight to the output) and grows hidden nodes and connections through structural mutation. A shared `InnovationTracker` gives the same structural change the same innovation number in every genome. Crossover uses those numbers to line up matching, disjoint and excess genes, and speciation uses them to compute compatibility distance, which protects new topologies while they optimize. Evaluating a genome means walking its graph in topological order, so arbitrary (acyclic) topologies just work.
 
