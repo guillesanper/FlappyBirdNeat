@@ -119,7 +119,9 @@ class SelectionOperatorsTest {
                 new DeterministicTournamentSelection(),
                 new ProbabilisticTournamentSelection(),
                 new RankingSelection(),
-                new RouletteSelection());
+                new RouletteSelection(),
+                new StochasticUniversalSelection(),
+                new RemainderSelection());
     }
 
     /**
@@ -151,6 +153,47 @@ class SelectionOperatorsTest {
         }
 
         assertTrue(fromTail > 0, "Los " + (size - count) + " peores individuos nunca fueron elegidos como padres");
+    }
+
+    private Selectable[] withProbabilities(double... probs) {
+        Selectable[] list = new Selectable[probs.length];
+        double accProb = 0;
+        for (int i = 0; i < probs.length; i++) {
+            list[i] = new Selectable(i, probs[i] * 100);
+            list[i].setProb(probs[i]);
+            list[i].setAccProb(accProb);
+            accProb += probs[i];
+        }
+        return list;
+    }
+
+    /**
+     * Regresión: SUS comparaba cada puntero con el inicio del intervalo (accProb) en vez de con su
+     * final, así que elegía al individuo siguiente al que contiene el puntero. Con dos individuos
+     * al 50 % y dos punteros separados 0.5, cada uno debe salir exactamente una vez.
+     */
+    @Test
+    void stochasticUniversalPicksTheIndividualWhoseIntervalContainsEachPointer() {
+        StochasticUniversalSelection strategy = new StochasticUniversalSelection();
+        for (long seed = 0; seed < 50; seed++) {
+            int[] selection = strategy.select(withProbabilities(0.5, 0.5), 2, new Random(seed));
+            java.util.Arrays.sort(selection);
+            assertArrayEquals(new int[] {0, 1}, selection, "seed " + seed);
+        }
+    }
+
+    /**
+     * Regresión: la selección por restos redondeaba (en vez de truncar) el número esperado de
+     * copias y descartaba por completo a un individuo si sus copias no cabían, rellenando con un
+     * torneo. Con probabilidades 0.7/0.3 y 10 plazas, las copias esperadas son exactamente 7 y 3.
+     */
+    @Test
+    void remainderGivesEachIndividualTheIntegerPartOfItsExpectedCopies() {
+        int[] selection = new RemainderSelection().select(withProbabilities(0.7, 0.3), 10, new Random(3));
+
+        long zeros = java.util.Arrays.stream(selection).filter(i -> i == 0).count();
+        assertEquals(7, zeros);
+        assertEquals(3, selection.length - zeros);
     }
 
     @Test
