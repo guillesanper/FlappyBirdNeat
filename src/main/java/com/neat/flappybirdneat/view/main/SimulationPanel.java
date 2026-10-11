@@ -77,15 +77,22 @@ final class SimulationPanel {
         Button playSelectedGenButton = new Button("Reproducir generación seleccionada");
         playSelectedGenButton.setOnAction(e -> historyBrowser.playSelectedGeneration());
 
+        // Mientras se ve un campeón, sus datos; si no, la generación y el mejor fitness del
+        // entrenamiento en vivo (antes se mostraban también con un campeón, sin relación con él)
         Label infoLabel = new Label();
         infoLabel
                 .textProperty()
-                .bind(Bindings.concat(
-                        "Generación: ",
-                        controller.currentGenerationProperty().asString(),
-                        "\n",
-                        "Mejor Fitness: ",
-                        Bindings.format("%.2f", controller.bestFitnessProperty())));
+                .bind(Bindings.createStringBinding(
+                        () -> controller.watchedChampionProperty().get() != null
+                                ? ChampionSummary.describe(
+                                        controller.watchedChampionProperty().get())
+                                : String.format(
+                                        "Generación: %d%nMejor Fitness: %.2f",
+                                        controller.currentGenerationProperty().get(),
+                                        controller.bestFitnessProperty().get()),
+                        controller.watchedChampionProperty(),
+                        controller.currentGenerationProperty(),
+                        controller.bestFitnessProperty()));
 
         Button toggleAgentsButton = new Button("Alternar vista (todos/mejor)");
         toggleAgentsButton.setOnAction(e -> {

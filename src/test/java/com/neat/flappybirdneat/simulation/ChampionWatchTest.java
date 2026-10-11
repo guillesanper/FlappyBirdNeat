@@ -95,4 +95,24 @@ class ChampionWatchTest {
 
         assertThrows(IllegalStateException.class, () -> controller.watchChampion(champion));
     }
+
+    /**
+     * La barra lateral muestra los datos del campeón mientras se ve uno: el controlador lo expone
+     * mientras dura y lo olvida al volver al entrenamiento.
+     */
+    @Test
+    void watchedChampionIsExposedUntilTheSimulationIsResetOrTheReplayEnds() {
+        Champion champion = trained(SimulationController.Mode.NEAT, 4L).bestChampion();
+        SimulationController viewer = new SimulationController(15, 800, 600, 9L);
+        assertNull(viewer.watchedChampionProperty().get());
+
+        viewer.watchChampion(champion);
+        assertSame(champion, viewer.watchedChampionProperty().get());
+        viewer.resetSimulation();
+        assertNull(viewer.watchedChampionProperty().get());
+
+        viewer.watchChampion(champion);
+        viewer.exitReplayMode();
+        assertNull(viewer.watchedChampionProperty().get());
+    }
 }
