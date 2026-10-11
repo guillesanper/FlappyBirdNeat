@@ -13,16 +13,16 @@ import java.util.Random;
  */
 public class NonUniformMutation implements MutationStrategy {
 
+    public static final double DEFAULT_INITIAL_MAGNITUDE = 0.2;
+    public static final double DEFAULT_BETA = 2.0;
+
     private final double initialMagnitude;
     private final int maxGenerations;
     private final double beta;
     private int currentGeneration;
 
     public NonUniformMutation(int maxGenerations) {
-        this.initialMagnitude = 0.2;
-        this.maxGenerations = maxGenerations;
-        this.beta = 2.0;
-        this.currentGeneration = 0;
+        this(DEFAULT_INITIAL_MAGNITUDE, maxGenerations, DEFAULT_BETA);
     }
 
     public NonUniformMutation(double initialMagnitude, int maxGenerations, double beta) {
@@ -51,5 +51,18 @@ public class NonUniformMutation implements MutationStrategy {
         // daría NaN (beta no entero). La magnitud se queda en 0 desde maxGenerations.
         double t = Math.min(1.0, (double) currentGeneration / maxGenerations);
         return initialMagnitude * Math.pow(1 - t, beta);
+    }
+
+    public double getInitialMagnitude() {
+        return initialMagnitude;
+    }
+
+    public int getMaxGenerations() {
+        return maxGenerations;
+    }
+
+    /** Exponente de decaimiento: la magnitud es initialMagnitude * (1 - t)^beta. */
+    public double getBeta() {
+        return beta;
     }
 }
