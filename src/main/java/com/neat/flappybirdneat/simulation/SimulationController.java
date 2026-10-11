@@ -393,11 +393,8 @@ public class SimulationController {
         clonedBestAgent.setFitness(bestAgent.getFitness());
 
         if (bestPopulation instanceof Population) {
-            // Crear una nueva población con solo el mejor agente
             // Población de réplica: no evoluciona (modo replay), así que no necesita operadores
-            Population singleAgentPop = new Population(1, derivedRandom(REPLAY_SALT));
-            singleAgentPop.getAgents()[0] = clonedBestAgent;
-            return singleAgentPop;
+            return Population.singleAgent(clonedBestAgent, derivedRandom(REPLAY_SALT));
         }
 
         return NeatPopulation.singleAgent(
