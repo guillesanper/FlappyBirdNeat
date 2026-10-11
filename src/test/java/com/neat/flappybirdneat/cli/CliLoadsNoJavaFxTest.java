@@ -50,6 +50,7 @@ class CliLoadsNoJavaFxTest {
         List<URL> urls = new ArrayList<>();
         urls.add(location(Cli.class));
         urls.add(location(LoggerFactory.class));
+        urls.add(location(com.google.gson.Gson.class));
         try {
             urls.add(location(Class.forName("org.slf4j.simple.SimpleServiceProvider")));
         } catch (ClassNotFoundException e) {
@@ -75,7 +76,9 @@ class CliLoadsNoJavaFxTest {
                 "--population",
                 "10",
                 "--out",
-                tempDir.resolve("isolated.csv").toString()
+                tempDir.resolve("isolated.csv").toString(),
+                "--save-champion",
+                tempDir.resolve("isolated.json").toString()
             };
             Object exit = run.invoke(
                     null,
@@ -84,6 +87,9 @@ class CliLoadsNoJavaFxTest {
                     new PrintStream(err, true, StandardCharsets.UTF_8));
 
             assertEquals(Cli.EXIT_OK, exit, err.toString(StandardCharsets.UTF_8));
+            assertTrue(
+                    loader.requested.contains("com.neat.flappybirdneat.champion.ChampionFile"),
+                    "the champion should have been saved through the isolated loader");
             assertTrue(
                     loader.requested.contains("com.neat.flappybirdneat.simulation.TrainingEngine"),
                     "the training core should have been loaded through the isolated loader");

@@ -1,6 +1,11 @@
 package com.neat.flappybirdneat.cli;
 
+import com.neat.flappybirdneat.BuildInfo;
+import com.neat.flappybirdneat.champion.Champion;
+import com.neat.flappybirdneat.champion.ChampionMetadata;
+import com.neat.flappybirdneat.champion.TrainingSettings;
 import com.neat.flappybirdneat.config.GeneticOperatorsConfig;
+import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.crossover.CrossoverFactory;
 import com.neat.flappybirdneat.neat.mutation.MutationFactory;
 import com.neat.flappybirdneat.neat.mutation.MutationStrategy;
@@ -12,6 +17,7 @@ import com.neat.flappybirdneat.simulation.GenerationStats;
 import com.neat.flappybirdneat.simulation.TrainingEngine;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +37,7 @@ public final class HeadlessTraining {
 
     /**
      * @param solvedGeneration first generation in which an agent reached the frame cap, or -1
+     * @param champion         the agent that reached {@code bestFitness} first, in generation {@code bestGeneration}
      */
     public record Summary(
             CliOptions options,
@@ -38,7 +45,8 @@ public final class HeadlessTraining {
             double bestFitness,
             int bestGeneration,
             int solvedGeneration,
-            long totalMillis) {}
+            long totalMillis,
+            Champion champion) {}
 
     public static Summary run(CliOptions options) throws IOException {
         try (TrainingEngine engine =
@@ -64,12 +72,19 @@ public final class HeadlessTraining {
         int bestGeneration = 0;
         int solvedGeneration = -1;
         int generationsRun = 0;
+        FlappyBirdAgent champion = null;
 
         try (TrainingCsvWriter csv =
                 new TrainingCsvWriter(Files.newBufferedWriter(options.out()), options.maxFrames())) {
             for (int i = 0; i < options.generations(); i++) {
                 long generationStart = System.nanoTime();
-                GenerationStats stats = engine.runGeneration(options.maxFrames());
+                // engine.runGeneration, with a look at the played generation before it evolves
+                GenerationStats played = engine.playGeneration(options.maxFrames());
+                if (played.best() > bestFitness) {
+                    champion = new FlappyBirdAgent(engine.getPopulation().fittestAgent());
+                }
+                engine.evolve();
+                GenerationStats stats = played.withSpecies(engine.getSpeciesCount());
                 long wallMillis = (System.nanoTime() - generationStart) / 1_000_000;
                 csv.writeRow(stats, wallMillis);
                 generationsRun++;
@@ -94,7 +109,24 @@ public final class HeadlessTraining {
             }
         }
         long totalMillis = (System.nanoTime() - start) / 1_000_000;
-        return new Summary(options, generationsRun, bestFitness, bestGeneration, solvedGeneration, totalMillis);
+        Map<String, Object> settings = TrainingSettings.of(
+                options.engine(),
+                options.population(),
+                options.maxFrames(),
+                operators(options),
+                engine.getNeatConfig());
+        settings.put("generations", options.generations());
+        BuildInfo build = BuildInfo.current();
+        ChampionMetadata metadata = new ChampionMetadata(
+                options.seed(), bestGeneration, bestFitness, build.commit(), build.version(), settings);
+        return new Summary(
+                options,
+                generationsRun,
+                bestFitness,
+                bestGeneration,
+                solvedGeneration,
+                totalMillis,
+                Champion.of(champion, metadata));
     }
 
     /** GA operators from the options; NEAT has its own reproduction and ignores them. */
