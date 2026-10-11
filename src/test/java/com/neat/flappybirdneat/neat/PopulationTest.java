@@ -2,6 +2,7 @@ package com.neat.flappybirdneat.neat;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.neat.flappybirdneat.neat.scaling.SigmaScaling;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 import java.util.Random;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,47 @@ class PopulationTest {
         assertEquals(generationBefore + 1, population.getGeneration());
         assertEquals(bestBefore, population.getBestFitness(), 1e-9);
         assertNotNull(population.getBestAgent());
+    }
+
+    /**
+     * Regresión: el mejor agente se elegía después de escalar el fitness, así que con escalado
+     * se guardaba (y se mostraba en la UI) un valor escalado, no comparable entre generaciones.
+     */
+    @Test
+    void bestFitnessIsTheRawFitnessWhenScalingIsOn() {
+        Population population = new Population(POPULATION_SIZE, new Random(1));
+        population.setScalingStrategy(new SigmaScaling());
+        assignFitness(population, new Random(2));
+        double rawBest = 0;
+        for (FlappyBirdAgent agent : population.getAgents()) {
+            rawBest = Math.max(rawBest, agent.getFitness());
+        }
+
+        population.naturalSelection();
+
+        assertEquals(rawBest, population.getBestFitness(), 1e-9);
+    }
+
+    /**
+     * Regresión: el fitness original se guardaba por posición antes de ordenar los agentes y se
+     * restauraba por posición después, así que cada agente recibía el fitness de otro.
+     */
+    @Test
+    void previousGenerationKeepsItsOwnFitnessAfterSelection() {
+        Population population = new Population(POPULATION_SIZE, new Random(1));
+        population.setScalingStrategy(new SigmaScaling());
+        assignFitness(population, new Random(2));
+        FlappyBirdAgent[] previous = population.getAgents().clone();
+        double[] fitness = new double[previous.length];
+        for (int i = 0; i < previous.length; i++) {
+            fitness[i] = previous[i].getFitness();
+        }
+
+        population.naturalSelection();
+
+        for (int i = 0; i < previous.length; i++) {
+            assertEquals(fitness[i], previous[i].getFitness(), 1e-9, "agent " + i);
+        }
     }
 
     @Test

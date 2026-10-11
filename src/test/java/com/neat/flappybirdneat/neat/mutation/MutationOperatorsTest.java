@@ -156,4 +156,19 @@ class MutationOperatorsTest {
         }
         return copy;
     }
+
+    /**
+     * Regresión: pasado maxGenerations, (1 - t)^beta volvía a crecer con beta par y daba NaN con
+     * beta no entero, así que la mutación se reactivaba (o se rompía) en ejecuciones largas.
+     */
+    @Test
+    void nonUniformMagnitudeStaysAtZeroAfterMaxGenerations() {
+        NonUniformMutation even = new NonUniformMutation(0.5, 100, 2.0);
+        NonUniformMutation fractional = new NonUniformMutation(0.5, 100, 1.5);
+        even.update(150);
+        fractional.update(150);
+
+        assertEquals(0.0, even.getCurrentMagnitude(), 1e-12);
+        assertEquals(0.0, fractional.getCurrentMagnitude(), 1e-12);
+    }
 }

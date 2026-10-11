@@ -11,27 +11,34 @@ public class StochasticUniversalSelection extends SelectionStrategy {
     @Override
     public int[] select(Selectable[] list, int count, Random random) {
         int[] selected = new int[count];
+        if (count == 0 || list.length == 0) return selected;
 
-        // Generar un valor aleatorio entre 0 y 1/tamPoblacion
-        double r = random.nextDouble() / count;
-
-        // Para cada punto de selección
-        for (int i = 0; i < count; i++) {
-            // Calcular el punto de selección actual
-            double punto = r + ((double) i / count);
-
-            // Encontrar el individuo correspondiente
-            int j = 0;
-            while (j < count && punto > list[j].getAccProb()) {
-                j++;
+        // Suma de las probabilidades de TODA la lista: con elitismo, count < list.length, así que
+        // los punteros se reparten sobre la población entera y no solo sobre los count primeros.
+        Selectable last = list[list.length - 1];
+        double total = last.getAccProb() + last.getProb();
+        if (total <= 0) {
+            // Sin señal de fitness: elegir uniformemente para no bloquear la selección.
+            for (int i = 0; i < count; i++) {
+                selected[i] = list[random.nextInt(list.length)].getIndex();
             }
-
-            // Evitar índice fuera de rango
-            if (j >= count) j = count - 1;
-
-            selected[i] = list[j].getIndex();
+            return selected;
         }
 
+        // count punteros equidistantes, el primero en [0, step)
+        double step = total / count;
+        double start = random.nextDouble() * step;
+
+        // El individuo j ocupa [accProb, accProb + prob): se elige aquel cuyo intervalo contiene el
+        // puntero. Los punteros son crecientes, así que basta con un único recorrido de la lista.
+        int j = 0;
+        for (int i = 0; i < count; i++) {
+            double pointer = start + i * step;
+            while (j < list.length - 1 && pointer >= list[j].getAccProb() + list[j].getProb()) {
+                j++;
+            }
+            selected[i] = list[j].getIndex();
+        }
         return selected;
     }
 }

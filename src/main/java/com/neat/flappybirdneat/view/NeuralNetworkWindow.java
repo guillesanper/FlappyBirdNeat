@@ -147,13 +147,14 @@ public class NeuralNetworkWindow {
         double heightOfNextPipe = nextPipe != null ? nextPipe.getGapY() : 300;
         double gapSize = nextPipe != null ? nextPipe.getGapSize() : 150;
 
-        // Dibujar la red: MLP fija o grafo NEAT de topología variable
+        // Dibujar la red: MLP fija o grafo NEAT de topología variable. La red acaba 80 px por encima
+        // del borde para no pisar el bloque "Estado actual" (antes el nodo Bias quedaba encima de él).
         if (agent.getBrain() instanceof NeuralNetwork network) {
             NeuralNetworkVisualizer.drawNetwork(
-                    gc, network, 120, 70, canvasWidth - 240, canvasHeight - 100, inputs, outputs);
+                    gc, network, 120, 70, canvasWidth - 240, canvasHeight - 150, inputs, outputs);
         } else if (agent.getBrain() instanceof Genome genome) {
             NeuralNetworkVisualizer.drawGenome(
-                    gc, genome, 120, 70, canvasWidth - 240, canvasHeight - 100, inputs, outputs);
+                    gc, genome, 120, 70, canvasWidth - 240, canvasHeight - 150, inputs, outputs);
         }
 
         // Información adicional

@@ -6,6 +6,7 @@ import com.neat.flappybirdneat.view.Dialogs;
 import com.neat.flappybirdneat.view.NeuralNetworkWindow;
 import com.neat.flappybirdneat.view.StatisticsWindow;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Tab;
@@ -19,8 +20,7 @@ import javafx.stage.Stage;
  */
 public final class MainWindow implements MainWindowActions {
 
-    private static final int SIDEBAR_WIDTH = 200;
-
+    private final Node simulationView;
     private final SimulationController controller;
     private final NeuralNetworkWindow networkWindow = new NeuralNetworkWindow(600, 400);
     private final StatisticsWindow statisticsWindow = new StatisticsWindow(800, 600);
@@ -31,13 +31,9 @@ public final class MainWindow implements MainWindowActions {
     private final GameLoop gameLoop;
     private final LiveViewSettings settings = new LiveViewSettings();
     private Stage stage;
-    private final int canvasWidth;
-    private final int canvasHeight;
 
     public MainWindow(SimulationController controller, int populationSize, int canvasWidth, int canvasHeight) {
         this.controller = controller;
-        this.canvasWidth = canvasWidth;
-        this.canvasHeight = canvasHeight;
 
         controlPanel = new ControlPanel(
                 controller, populationSize, canvasWidth, canvasHeight, settings, statisticsWindow, this);
@@ -57,7 +53,8 @@ public final class MainWindow implements MainWindowActions {
 
         Tab statsTab = new Tab("Estadísticas y Control", statsPanel);
         statsTab.setClosable(false);
-        Tab simulationTab = new Tab("Simulación Visual", simulationPanel.getView());
+        simulationView = simulationPanel.getView();
+        Tab simulationTab = new Tab("Simulación Visual", simulationView);
         simulationTab.setClosable(false);
         tabPane.getTabs().addAll(statsTab, simulationTab);
     }
@@ -65,7 +62,17 @@ public final class MainWindow implements MainWindowActions {
     public void show(Stage stage) {
         this.stage = stage;
         stage.setTitle("Flappy Bird NEAT - Evolución Gráfica");
-        stage.setScene(new Scene(tabPane, canvasWidth + SIDEBAR_WIDTH, canvasHeight));
+        // La ventana se ajusta al panel de simulación más la cabecera de pestañas. Fijarla al tamaño
+        // del canvas recortaba el juego (la cabecera y el padding del panel también ocupan sitio: se
+        // perdían el suelo y la barra lateral), y el tamaño preferido de las pestañas lo marca la de
+        // estadísticas, mucho mayor.
+        Scene scene = new Scene(tabPane);
+        tabPane.applyCss();
+        tabPane.layout();
+        Node header = tabPane.lookup(".tab-header-area");
+        double headerHeight = header == null ? 0 : header.prefHeight(-1);
+        tabPane.setPrefSize(simulationView.prefWidth(-1), simulationView.prefHeight(-1) + headerHeight);
+        stage.setScene(scene);
         stage.show();
         gameLoop.start();
 
