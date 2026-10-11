@@ -11,9 +11,9 @@
 **A neuroevolution lab built from scratch in Java: 50 birds, each controlled by its own neural network, learn to play Flappy Bird with no training data. All they get is natural selection.**
 
 <p align="center">
-  <img src="docs/media/demo.gif" alt="Trained population playing Flappy Bird" width="720">
+  <img src="docs/media/demo.gif" alt="The bundled NEAT champion playing Flappy Bird next to a live view of its evolved network" width="960">
   <br>
-  <em>Generation 18 of a real training run: most of the 50 agents still crash early, but the fittest ones have learned to thread the pipes.</em>
+  <em>The bundled NEAT champion (seed 3, solved at generation 39) playing, next to its evolved network: 4 inputs and a bias, 5 hidden nodes grown by structural mutation, and the jump decision, updated every frame. Run it with <code>java -jar FlappyBirdNEAT.jar --demo</code>.</em>
 </p>
 
 There are no ML libraries involved. The neural networks, both evolution engines and every genetic operator are written by hand:
