@@ -11,9 +11,10 @@ line replay `neat-champion.json`.
 | [`mlp-champion.json`](mlp-champion.json) | GA (fixed 4-8-1 MLP, deterministic tournament) | 2 | generation 13 | 4-8-1, 49 weights and biases | 1000 / 1000 |
 
 Both reached the 20,000-frame cap in training. The last column replays each champion alone on
-pipe seeds 0-999 (`ChampionRun.play`), not only on the pipes it was trained on: GA champions often
-overfit to their generation's pipes (of the first five GA tournament champions tried, only this one
-survived every sequence; the others managed 0-51 of 100), while the NEAT champions tried generalized.
+pipe seeds 0-999 (`ChampionRun.play`), not only on the pipes it was trained on. That is why these
+two were picked: GA champions tend to overfit to the pipes of their generation. Of the champions of
+GA tournament seeds 1 to 5, only seed 2's survived all of 100 new sequences (the others 0, 19, 20
+and 51), while those of NEAT seeds 2 and 3 survived 94 and 100. A small sample, not a study.
 
 ## Regenerating them
 

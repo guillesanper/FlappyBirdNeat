@@ -3,7 +3,7 @@
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![JavaFX 17](https://img.shields.io/badge/JavaFX-17-blue)
-![Tests](https://img.shields.io/badge/tests-243%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-309%20passing-brightgreen)
 ![Coverage](.github/badges/jacoco.svg)
 ![Branches](.github/badges/branches.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -21,9 +21,28 @@ There are no ML libraries involved. The neural networks, both evolution engines 
 - **Two interchangeable evolution engines:** a classic genetic algorithm that evolves the weights of a fixed-topology network, and a full implementation of **[NEAT](https://nn.cs.utexas.edu/downloads/papers/stanley.ec02.pdf)** (Stanley & Miikkulainen, 2002), which evolves the network's *structure* as well, with innovation numbers, speciation and historical-marking crossover.
 - **16 pluggable genetic operators** (7 selection, 3 crossover, 3 mutation and 3 fitness-scaling, on top of NEAT's own) behind the Strategy pattern. You can mix and match them from the UI at runtime.
 - **A live view inside the agent's head:** a network visualizer that shows every activation and the jump decision frame by frame.
+- **Portable champions:** trained agents are saved as versioned JSON (a NEAT genome or the MLP's weights, plus the seed, generation and commit that produced them), replayed from the command line or the UI, and shipped with the app: double-click the installer's app and a trained NEAT agent is already playing.
 - **Experiment tooling:** a headless command line that trains without opening a window and writes one CSV row per generation, generation history and replay in the UI, and a benchmark mode that compares operator configurations across repeated seeded runs.
 - **Parallel and still deterministic:** each agent plays its own copy of the game over the same pipes, so a generation is evaluated across all CPU cores, and the result is bit-for-bit the same with 1 or 8 threads.
-- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (243 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
+- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (309 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
+
+## Download
+
+Get the installer for your system from the **[latest release](https://github.com/guillesanper/FlappyBirdNeat/releases/latest)**. It bundles its own Java runtime, so nothing else needs to be installed, and it opens straight on the bundled NEAT champion playing, with its network visualizer; from there you can train your own population.
+
+| System | File | Requirements |
+|---|---|---|
+| Windows | `FlappyBirdNEAT-<version>.msi` | Windows 10 or 11, x64 |
+| macOS | `FlappyBirdNEAT-<version>-macos-arm64.dmg` | macOS on Apple silicon (M1 or later); on Intel Macs use the jar |
+| Linux (Debian/Ubuntu) | `flappybirdneat_<version>_amd64.deb` | x86-64, Ubuntu 24.04+ or Debian 13+ (`sudo apt install ./flappybirdneat_*.deb`); installs to `/opt/flappybirdneat` |
+| Any (with Java) | `FlappyBirdNEAT-<version>-<platform>.jar` | JDK 21+; pick the jar of your OS (it carries that platform's JavaFX) and run `java -jar` on it |
+
+> [!NOTE]
+> The installers are **not code-signed**, so the first launch shows a warning:
+> - **Windows SmartScreen** ("Windows protected your PC"): click **More info**, then **Run anyway**.
+> - **macOS Gatekeeper** ("cannot be opened because the developer cannot be verified" or "is damaged"): open **System Settings → Privacy & Security** and click **Open Anyway** after the first attempt, or run `xattr -dr com.apple.quarantine /Applications/FlappyBirdNEAT.app`.
+
+The installed launcher also takes the command-line options below (for example `/opt/flappybirdneat/bin/FlappyBirdNEAT --headless ...` on Linux); without options it opens on the champion.
 
 ## Screenshots
 
@@ -96,7 +115,8 @@ flowchart TB
         SW[StatisticsWindow]
         BW[BenchmarkWindow]
     end
-    CLI[cli<br/>headless runs · CSV]
+    CLI[cli<br/>headless runs · CSV · --watch]
+    CH[champion<br/>versioned JSON · replay]
     subgraph Core["simulation"]
         SC[SimulationController<br/>UI adapter: properties · history · replay]
         TE[TrainingEngine<br/>seed · parallel evaluation · evolution]
@@ -125,6 +145,9 @@ flowchart TB
     SC --> TE
     SC --> H
     CLI --> TE
+    CLI --> CH
+    SC --> CH
+    CH --> BR
     TE --> G
     TE --> EP
     BW --> BM --> EP
@@ -184,8 +207,9 @@ java -jar target/FlappyBirdNEAT.jar --headless --engine neat --seed 42 \
 | `--threads N` | all cores | Threads that evaluate a generation's agents (results don't depend on it) |
 | `--stop-on-solve` | off | Stop after the first solved generation |
 | `--selection`, `--crossover`, `--mutation`, `--scaling` | roulette, uniform, gaussian, none | GA operators (GA only), e.g. `--selection deterministic_tournament --mutation non_uniform --scaling sigma` |
+| `--save-champion FILE` | off | Also save the run's best agent as a champion file (see [Champions](#champions)) |
 
-`--help` lists every operator key. Invalid arguments print a message and exit with status 2; I/O errors exit with 1.
+`--help` lists every operator key. Invalid arguments print a message and exit with status 2; I/O errors and unreadable champion files exit with 1.
 
 The CSV has one row per generation, written as soon as the generation ends:
 
@@ -211,14 +235,49 @@ Training summary
 
 Progress is logged to stderr every 10 generations.
 
+### Champions
+
+A champion is a trained agent saved as versioned JSON: the NEAT genome (nodes, and connections with their innovation numbers, weights and enabled flags) or the MLP's weights and biases, plus where it came from. Weights keep every digit, so a champion read back makes exactly the same decisions.
+
+```bash
+# Train and keep the best agent (the first one to reach the run's best fitness)
+java -jar target/FlappyBirdNEAT.jar --headless --engine neat --seed 3 --generations 200 \
+    --stop-on-solve --out run.csv --save-champion champ.json
+
+# Watch it play alone, in a loop, with its network visualizer open
+java -jar target/FlappyBirdNEAT.jar --watch champ.json
+
+# Watch the NEAT champion bundled with the app
+java -jar target/FlappyBirdNEAT.jar --demo
+```
+
+```json
+{
+  "format": "flappy-neat-brain",
+  "version": 1,
+  "engine": "neat",
+  "metadata": { "seed": 3, "generation": 39, "fitness": 20000.0, "commit": "40b9c9c", "appVersion": "2.0.0",
+                "training": { "population": 50, "maxFrames": 20000, "...": "..." } },
+  "network": { "inputs": 4, "outputs": 1, "biasNode": 4, "nodes": [ ... ], "connections": [ ... ] }
+}
+```
+
+`--watch` checks the file before opening any window: another format, an unknown `version` or `engine` (`neat` or `mlp`) or an inconsistent network (a cycle, a connection to a missing node, the wrong number of inputs) is reported with a clear message and exit status 1. In the UI, the **Campeón** row does the same with **Ver campeón** (the bundled one), **Cargar campeón** (any file) and **Exportar campeón** (the best agent of your training).
+
+[`champions/`](champions/README.md) holds a NEAT and a GA champion trained with documented seeds; both reach the 20,000-frame cap. Replaying champions on pipe sequences they never trained on hints at a difference between the engines. In a small check (the champions of NEAT seeds 2 and 3 and of GA tournament seeds 1 to 5, each on 100 new sequences), the NEAT champions survived 94 and 100 of them, the GA ones 0, 19, 20, 51 and 100: GA champions tend to overfit to the pipes of the generation that produced them. Seven champions are an anecdote, not a study, but it is why the bundled ones were picked among those that survived every sequence.
+
 ### Development
 
 - `./mvnw verify` runs the tests, writes the JaCoCo report to `target/site/jacoco/` and fails if engine line coverage drops below 75%. The JavaFX view layer is excluded from coverage; it is checked by running the app.
 - Code is formatted with [palantir-java-format](https://github.com/palantir/palantir-java-format) through Spotless. Run `./mvnw spotless:apply` before committing; CI runs `spotless:check`. The bulk reformat is listed in `.git-blame-ignore-revs` (`git config blame.ignoreRevsFile .git-blame-ignore-revs`).
 - Logging goes through SLF4J (slf4j-simple). Use `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug` for more detail.
-- CI also builds the jar and runs two short headless trainings as a smoke test, checking the CSV and that no JavaFX class gets loaded.
+- CI also builds the jar and runs two short headless trainings as a smoke test, checking the CSV and that no JavaFX class gets loaded, and saves a champion and checks that `--watch` rejects a file with an unknown version.
 
-Quick tour: on the **Estadísticas y Control** tab, choose an engine (`Fixed MLP` or `NEAT`), press **Iniciar Entrenamiento** to train headless, then **Ver Mejor** to watch the best generation play, and open **Mostrar Red Neuronal** to see inside its head. *(The UI is in Spanish.)*
+### Releases
+
+[`packaging/jpackage.sh`](packaging/jpackage.sh) builds a native installer with `jpackage`: it links a Java runtime with only the modules the app needs and packages it with the app (`packaging/jpackage.sh deb` after `./mvnw package`; `msi` needs WiX Toolset 3, `dmg` a Mac). The [release workflow](.github/workflows/release.yml) runs it on Ubuntu, Windows and macOS: pushing a tag `vX.Y.Z` that matches the pom version publishes the deb, msi, dmg and per-platform jars as a GitHub Release with generated notes, and running the workflow by hand builds them as artifacts without publishing anything.
+
+Quick tour: press **Ver campeón** to watch a trained NEAT agent right away. Then, on the **Estadísticas y Control** tab, choose an engine (`Fixed MLP` or `NEAT`), press **Iniciar Entrenamiento** to train headless, then **Ver Mejor** to watch the best generation play, and open **Mostrar Red Neuronal** to see inside its head. *(The UI is in Spanish.)*
 
 ## Performance
 
@@ -255,13 +314,16 @@ src/main/java/com/neat/flappybirdneat
 │   └── genome/   NEAT: Genome, genes, InnovationTracker, Species, NeatCrossover, NeatPopulation
 ├── simulation/   TrainingEngine (JavaFX-free core: seed, parallel evaluation, evolution)
 │                 and SimulationController (its UI adapter: properties, history, replay)
-├── cli/          Headless command line: argument parser, training runner, CSV writer
+├── cli/          Command line: argument parser, headless training runner, CSV writer, --watch
+├── champion/     Portable champions: versioned JSON format, metadata, headless replay
 ├── benchmark/    Seeded multi-run comparison of operator configurations, CSV export
 ├── history/      Per-generation snapshots for replay and export
 ├── config/       Genetic-operator configuration shared with the UI
 └── view/         JavaFX windows: GameRenderer, network visualizer, statistics, benchmark, operator config
     └── main/     Main window: control panel, charts, simulation panel, history browser, game loop
 src/jmh/java      JMH benchmarks (Maven profile `jmh`, outside the normal build)
+champions/        Bundled champions (NEAT and GA) and the commands that trained them
+packaging/        jpackage script for the native installers
 experiments/      NEAT vs GA study: run_study.sh (runner), analyze.py (statistics and figures)
 docs/
 ├── results/      Study report, raw data, figures and key numbers (REPORT.md)
@@ -276,7 +338,10 @@ docs/
 - [x] Headless CLI (`--engine neat --seed 42 --generations 200`) for scripted experiments
 - [x] Parallel, deterministic fitness evaluation (one game per agent on a `ForkJoinPool`), with JMH benchmarks
 - [x] Published NEAT-vs-GA results across many seeds, with confidence intervals and significance tests ([report](docs/results/REPORT.md))
-- [ ] Native installers (Windows/macOS/Linux) via `jpackage` on every release
+- [x] Portable champions: versioned JSON, `--save-champion` / `--watch` / `--demo`, export and load from the UI, bundled NEAT and GA champions
+- [x] Native installers (Windows/macOS/Linux) via `jpackage`, published from `v*` tags, opening on the bundled champion
+- [ ] Code-signed installers (Windows Authenticode, Apple notarization) and an Intel macOS build
+- [ ] Evaluate champions on several pipe sequences during training, so the GA's overfitting shows up in fitness
 
 ## License
 
