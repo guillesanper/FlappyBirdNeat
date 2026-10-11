@@ -4,7 +4,7 @@
 
     <groupId>com.NEAT</groupId>
     <artifactId>FlappyBirdNEAT</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>2.0.0</version>
     <name>FlappyBirdNEAT</name>
 
     <properties>
@@ -15,6 +15,7 @@
         <palantir-java-format.version>2.102.0</palantir-java-format.version>
         <jacoco.version>0.8.15</jacoco.version>
         <jmh.version>1.37</jmh.version>
+        <gson.version>2.13.1</gson.version>
     </properties>
 
     <dependencies>
@@ -22,6 +23,11 @@
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
             <version>17.0.6</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -55,7 +61,55 @@
     </dependencies>
 
     <build>
+        <!-- Stable jar name for scripts and docs: target/FlappyBirdNEAT.jar -->
+        <finalName>FlappyBirdNEAT</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>**/build-info.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <!-- Version and commit, filled in from the git-commit-id properties -->
+                <filtering>true</filtering>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/build-info.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <!-- The bundled champions, played by the "Ver campeón" button and the demo option -->
+                <targetPath>com/neat/flappybirdneat/champion</targetPath>
+                <directory>champions</directory>
+                <includes>
+                    <include>*.json</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
+            <plugin>
+                <!-- Exposes git.commit.id.abbrev and git.dirty to the build-info.properties filter -->
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <version>9.0.1</version>
+                <configuration>
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                    <includeOnlyProperties>
+                        <includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
+                        <includeOnlyProperty>^git.dirty$</includeOnlyProperty>
+                    </includeOnlyProperties>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>get-commit</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -159,6 +213,16 @@
                         </goals>
                         <phase>package</phase>
                         <configuration>
+                            <filters>
+                                <filter>
+                                    <!-- The fat jar runs on the classpath: dependency module descriptors do not apply -->
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <transformers>
                                 <!-- Merges META-INF/services so SLF4J finds its provider in the fat jar -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>

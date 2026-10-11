@@ -7,6 +7,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 
 /**
  * Draws a game frame (sky, pipes, birds, ground and score) on a canvas. Shared by the main
@@ -28,24 +29,29 @@ public final class GameRenderer {
      * @param showAllAgents   draw the non-best agents (semi-transparent), not just the best one
      * @param highlightAll    draw every live agent as "the best" (replay of a single agent)
      * @param bestHalo        surround the highlighted bird with a golden halo
-     * @param replayBanner    show the "replaying best agent" banner
+     * @param replayBanner    text of the replay banner shown at the top, or null for none
      * @param bestOnlyNotice  show the "showing the best agent" notice when other agents are hidden
      */
     public record Options(
             boolean showAllAgents,
             boolean highlightAll,
             boolean bestHalo,
-            boolean replayBanner,
+            String replayBanner,
             boolean bestOnlyNotice) {
 
-        /** Main window: live training, or the replay of the best agent ever found. */
-        public static Options liveSimulation(boolean showAllAgents, boolean replayMode, boolean singleAgent) {
-            return new Options(showAllAgents, replayMode || singleAgent, true, replayMode, true);
+        /**
+         * Main window: live training, or the replay of the best agent ever found or of a champion.
+         *
+         * @param replayBanner banner shown while replaying (ignored outside replay mode)
+         */
+        public static Options liveSimulation(
+                boolean showAllAgents, boolean replayMode, boolean singleAgent, String replayBanner) {
+            return new Options(showAllAgents, replayMode || singleAgent, true, replayMode ? replayBanner : null, true);
         }
 
         /** Replay window of a saved generation. */
         public static Options generationReplay(boolean showAllAgents) {
-            return new Options(showAllAgents, false, false, false, false);
+            return new Options(showAllAgents, false, false, null, false);
         }
     }
 
@@ -77,12 +83,15 @@ public final class GameRenderer {
                 gc.fillOval(BIRD_X, agent.getY(), BIRD_SIZE, BIRD_SIZE);
             }
         }
-        if (options.replayBanner()) {
+        if (options.replayBanner() != null) {
+            Font font = Font.font("System", FontWeight.BOLD, 20);
+            Text measure = new Text(options.replayBanner());
+            measure.setFont(font);
             gc.setFill(OVERLAY);
-            gc.fillRect(10, 10, 350, 40);
+            gc.fillRect(10, 10, measure.getLayoutBounds().getWidth() + 20, 40);
             gc.setFill(Color.GOLD);
-            gc.setFont(Font.font("System", FontWeight.BOLD, 20));
-            gc.fillText("★ REPRODUCIENDO MEJOR AGENTE ★", 20, 35);
+            gc.setFont(font);
+            gc.fillText(options.replayBanner(), 20, 35);
         }
         drawGround(gc);
         drawScore(gc, game.getScore());

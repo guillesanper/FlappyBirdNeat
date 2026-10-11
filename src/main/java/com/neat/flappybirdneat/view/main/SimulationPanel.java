@@ -55,14 +55,18 @@ final class SimulationPanel {
         showAllCheckbox.setSelected(settings.isShowAllAgents());
         showAllCheckbox.selectedProperty().addListener((obs, oldVal, newVal) -> settings.setShowAllAgents(newVal));
 
-        Button showNetworkButton = new Button("Mostrar Red Neuronal");
+        // The window can also be opened by the champion viewer: the label follows its state
+        Button showNetworkButton = new Button();
+        showNetworkButton
+                .textProperty()
+                .bind(Bindings.when(networkWindow.showingProperty())
+                        .then("Ocultar Red Neuronal")
+                        .otherwise("Mostrar Red Neuronal"));
         showNetworkButton.setOnAction(e -> {
             if (networkWindow.isShowing()) {
                 networkWindow.close();
-                showNetworkButton.setText("Mostrar Red Neuronal");
             } else {
                 networkWindow.show();
-                showNetworkButton.setText("Ocultar Red Neuronal");
             }
         });
 
@@ -122,6 +126,9 @@ final class SimulationPanel {
                 population.getAgents(),
                 population.getBestAgent(),
                 GameRenderer.Options.liveSimulation(
-                        settings.isShowAllAgents(), controller.isReplayMode(), population.getAgents().length == 1));
+                        settings.isShowAllAgents(),
+                        controller.isReplayMode(),
+                        population.getAgents().length == 1,
+                        controller.getReplayBanner()));
     }
 }

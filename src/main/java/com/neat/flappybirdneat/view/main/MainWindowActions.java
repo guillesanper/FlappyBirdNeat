@@ -1,5 +1,7 @@
 package com.neat.flappybirdneat.view.main;
 
+import com.neat.flappybirdneat.champion.Champion;
+
 /** Cross-panel actions that the main window coordinates on behalf of its panels. */
 interface MainWindowActions {
 
@@ -11,4 +13,7 @@ interface MainWindowActions {
 
     /** After a training run: finds the best generation and offers to replay it. */
     void offerBestGenerationReplay();
+
+    /** Replays {@code champion} alone and in a loop, with its network window open. */
+    void watchChampion(Champion champion);
 }

@@ -45,7 +45,9 @@ class CliParserTest {
                 "--scaling",
                 "sigma",
                 "--out",
-                "results.csv");
+                "results.csv",
+                "--save-champion",
+                "champ.json");
 
         assertEquals(
                 new CliOptions(
@@ -60,7 +62,8 @@ class CliParserTest {
                         "single_point",
                         "non_uniform",
                         "sigma",
-                        Path.of("results.csv")),
+                        Path.of("results.csv"),
+                        Path.of("champ.json")),
                 options);
     }
 
@@ -121,10 +124,25 @@ class CliParserTest {
                 "--headless --out a.csv --engine ga --mutation wild | Unknown value for --mutation: 'wild'",
                 "--headless --out a.csv --seed 1 --seed 2 | --seed given more than once",
                 "--headless=yes --out a.csv | --headless does not take a value",
+                "--headless --out a.csv --save-champion= | --save-champion needs a file name",
+                "--watch champ.json --headless | --watch cannot be combined with --headless",
+                "--demo --seed 3 | --demo cannot be combined with --seed",
+                "--demo --watch champ.json | --watch cannot be combined with --demo",
+                "--watch= | --watch needs a champion file",
+                "--watch | Missing value for --watch",
+                "--demo=yes | --demo does not take a value",
             })
     void rejectsInvalidArguments(String args, String expectedMessage) {
         String message = parseError(args.split(" "));
         assertTrue(
                 message.contains(expectedMessage), () -> "'" + message + "' should mention '" + expectedMessage + "'");
+    }
+
+    @Test
+    void parsesWatchAndDemo() throws UsageException {
+        assertEquals(
+                new CliParser.Watch(Path.of("champ.json")), CliParser.parse(new String[] {"--watch", "champ.json"}));
+        assertEquals(new CliParser.Watch(null), CliParser.parse(new String[] {"--demo"}));
+        assertNull(parseRun("--headless", "--out", "a.csv").saveChampion());
     }
 }
