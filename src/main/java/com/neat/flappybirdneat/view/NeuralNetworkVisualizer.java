@@ -63,9 +63,12 @@ public class NeuralNetworkVisualizer {
         // === PHASE 1: Draw layer labels ===
         gc.setFill(Color.BLACK);
         gc.setFont(Font.font("System", FontWeight.BOLD, 14));
-        gc.fillText("Entradas", x + 10, y - 10);
-        gc.fillText("Capa Oculta", x + layerSpacing - 30, y - 10);
-        gc.fillText("Salidas", x + 2 * layerSpacing - 20, y - 10);
+        // Centradas sobre su columna, como en drawGenome (con desplazamientos fijos se tocaban)
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText("Entradas", x, y - 10);
+        gc.fillText("Capa Oculta", x + layerSpacing, y - 10);
+        gc.fillText("Salidas", x + 2 * layerSpacing, y - 10);
+        gc.setTextAlign(TextAlignment.LEFT);
 
         // === PHASE 2: Draw all connections (so they appear behind neurons) ===
 
@@ -129,7 +132,7 @@ public class NeuralNetworkVisualizer {
 
             gc.setFill(Color.WHITE);
             gc.setFont(Font.font("System", FontWeight.BOLD, 10));
-            gc.fillText(String.format("%.2f", inputVal), x - 10, nodeY + 3);
+            drawNodeValue(gc, String.format("%.2f", inputVal), x, nodeY);
 
             // Labels for inputs
             gc.setFill(Color.BLACK);
@@ -170,7 +173,7 @@ public class NeuralNetworkVisualizer {
             // Display activation value
             gc.setFill(Color.WHITE);
             gc.setFont(Font.font("System", FontWeight.BOLD, 10));
-            gc.fillText(String.format("%.2f", activation), x + layerSpacing - 10, nodeY + 3);
+            drawNodeValue(gc, String.format("%.2f", activation), x + layerSpacing, nodeY);
         }
 
         // Draw output neurons
@@ -186,7 +189,7 @@ public class NeuralNetworkVisualizer {
 
             gc.setFill(Color.WHITE);
             gc.setFont(Font.font("System", FontWeight.BOLD, 10));
-            gc.fillText(String.format("%.2f", outputVal), x + 2 * layerSpacing - 10, nodeY + 3);
+            drawNodeValue(gc, String.format("%.2f", outputVal), x + 2 * layerSpacing, nodeY);
 
             // Label for output
             gc.setFill(Color.BLACK);
@@ -323,7 +326,7 @@ public class NeuralNetworkVisualizer {
 
             gc.setFill(Color.WHITE);
             gc.setFont(Font.font("System", FontWeight.BOLD, 10));
-            gc.fillText(valueLabel, nodeX - 10, nodeY + 3);
+            drawNodeValue(gc, valueLabel, nodeX, nodeY);
 
             if (node.getType() == NodeType.INPUT) {
                 gc.setFill(Color.BLACK);
@@ -404,5 +407,15 @@ public class NeuralNetworkVisualizer {
         } else {
             return 3.5; // Strong
         }
+    }
+
+    /**
+     * Valor de un nodo centrado sobre él: alineado a la izquierda en una posición fija, los valores
+     * negativos (un carácter más) se salían del círculo.
+     */
+    private static void drawNodeValue(GraphicsContext gc, String value, double centerX, double nodeY) {
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText(value, centerX, nodeY + 3);
+        gc.setTextAlign(TextAlignment.LEFT);
     }
 }
