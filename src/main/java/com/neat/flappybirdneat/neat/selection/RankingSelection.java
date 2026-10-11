@@ -19,13 +19,18 @@ public class RankingSelection extends SelectionStrategy {
         this.beta = beta;
     }
 
-    private void calculateProbs(Selectable[] list, int count) {
+    /**
+     * Probabilidad por rango de toda la población (la lista va de mejor a peor), no solo de los
+     * count padres a elegir: con elitismo, {@code count < list.length}.
+     */
+    private void calculateProbs(Selectable[] list) {
+        int n = list.length;
         double accProb = 0.0;
-        for (int i = 0; i < count; ++i) {
-            double probOfIth = (double) i / count;
+        for (int i = 0; i < n; ++i) {
+            double probOfIth = (double) i / n;
             probOfIth *= 2 * (beta - 1);
             probOfIth = beta - probOfIth;
-            probOfIth = probOfIth * ((double) 1 / count);
+            probOfIth = probOfIth * ((double) 1 / n);
 
             list[i].setAccProb(accProb);
             list[i].setProb(probOfIth);
@@ -35,7 +40,7 @@ public class RankingSelection extends SelectionStrategy {
 
     @Override
     public int[] select(Selectable[] list, int count, Random random) {
-        this.calculateProbs(list, count);
+        this.calculateProbs(list);
 
         // Usar roulette después de calcular probabilidades por ranking, compartiendo el generador
         // aleatorio para que el resultado siga siendo reproducible con una semilla fija.

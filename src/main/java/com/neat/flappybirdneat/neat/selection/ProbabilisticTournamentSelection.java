@@ -36,16 +36,17 @@ public class ProbabilisticTournamentSelection extends SelectionStrategy {
         int[] selected = new int[count];
 
         for (int i = 0; i < count; i++) {
-            selected[i] = runTournament(list, count, random);
+            selected[i] = runTournament(list, random);
         }
 
         return selected;
     }
 
-    private int runTournament(Selectable[] list, int count, Random random) {
-        int ind1 = random.nextInt(count);
-        int ind2 = random.nextInt(count);
-        int ind3 = random.nextInt(count);
+    private int runTournament(Selectable[] list, Random random) {
+        // Participantes de toda la población (con elitismo, count < list.length)
+        int ind1 = random.nextInt(list.length);
+        int ind2 = random.nextInt(list.length);
+        int ind3 = random.nextInt(list.length);
 
         Selectable a = list[ind1];
         Selectable b = list[ind2];

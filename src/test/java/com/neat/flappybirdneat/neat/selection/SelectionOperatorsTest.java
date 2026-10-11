@@ -114,6 +114,45 @@ class SelectionOperatorsTest {
                         + totalSelections);
     }
 
+    static Stream<SelectionStrategy> wholePopulationStrategies() {
+        return Stream.of(
+                new DeterministicTournamentSelection(),
+                new ProbabilisticTournamentSelection(),
+                new RankingSelection(),
+                new RouletteSelection());
+    }
+
+    /**
+     * Regresión: con elitismo, Population pide menos padres (count) que individuos tiene la
+     * lista, ordenada de mejor a peor. Los torneos sorteaban en [0, count) y el ranking solo
+     * repartía probabilidad entre los count primeros, así que los peores nunca podían ser padres.
+     */
+    @ParameterizedTest
+    @MethodSource("wholePopulationStrategies")
+    void selectsFromTheWholePopulationWhenFewerParentsThanIndividualsAreRequested(SelectionStrategy strategy) {
+        int size = 50;
+        int count = 45; // población 50 con un 10 % de élite
+        random = new Random(11);
+        int fromTail = 0;
+        for (int t = 0; t < 200; t++) {
+            Selectable[] list = new Selectable[size];
+            double total = size * (size + 1) / 2.0;
+            double accProb = 0;
+            for (int i = 0; i < size; i++) {
+                double fitness = size - i;
+                list[i] = new Selectable(i, fitness);
+                list[i].setProb(fitness / total);
+                list[i].setAccProb(accProb);
+                accProb += fitness / total;
+            }
+            for (int index : strategy.select(list, count, random)) {
+                if (index >= count) fromTail++;
+            }
+        }
+
+        assertTrue(fromTail > 0, "Los " + (size - count) + " peores individuos nunca fueron elegidos como padres");
+    }
+
     @Test
     void truncamientoOnlySelectsFromTopFraction() {
         Selectable[] list = new Selectable[10];

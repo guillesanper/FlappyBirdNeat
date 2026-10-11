@@ -19,10 +19,11 @@ public class DeterministicTournamentSelection extends SelectionStrategy {
         int[] selected = new int[count];
 
         for (int i = 0; i < count; i++) {
-            // 3 individuos aleatorios
-            int ind1 = random.nextInt(count);
-            int ind2 = random.nextInt(count);
-            int ind3 = random.nextInt(count);
+            // 3 individuos aleatorios de toda la población: count es el nº de padres a elegir y,
+            // con elitismo, es menor que list.length (sortear en [0, count) excluiría a los peores)
+            int ind1 = random.nextInt(list.length);
+            int ind2 = random.nextInt(list.length);
+            int ind3 = random.nextInt(list.length);
 
             Selectable a = list[ind1];
             Selectable b = list[ind2];
