@@ -3,7 +3,7 @@
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![JavaFX 17](https://img.shields.io/badge/JavaFX-17-blue)
-![Tests](https://img.shields.io/badge/tests-309%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-317%20passing-brightgreen)
 ![Coverage](.github/badges/jacoco.svg)
 ![Branches](.github/badges/branches.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -100,7 +100,7 @@ Does evolving the structure pay off? A paired study ran NEAT and four GA configu
 
 - **NEAT solved 26/30 seeds** (87%, 95% CI 70-95%), against 20/30 (67%, 49-81%) for the GA with tournament selection and 10/30 (33%, 19-51%) for the GA defaults.
 - **NEAT solves sooner**: a median of 44 generations against 160 for the tournament GA (Mann-Whitney, Holm-adjusted p <0.001, Cliff's δ -0.63). In success rate, though, the tournament GA is not significantly worse than NEAT (McNemar, adjusted p 0.109).
-- **The study found a bug in NEAT**: species collapsed into one and stopped protecting new topologies. With a dynamic compatibility threshold and stagnation culling, NEAT went from 19/30 to 26/30 seeds solved. (It also found that two GA selection operators never picked the worst agents as parents; that is fixed too.)
+- **The study found a bug in NEAT**: species collapsed into one and stopped protecting new topologies. With a dynamic compatibility threshold and stagnation culling, NEAT went from 19/30 to 26/30 seeds solved. (It also found that two GA selection operators never picked the worst agents as parents, and a review of every GA operator before the 2.0.0 release fixed four more bugs; the report documents each one and its effect on the results.)
 
 The full report, with the methodology, every test, a frame-cap sensitivity study and the threats to validity, is in [docs/results/REPORT.md](docs/results/REPORT.md).
 
