@@ -3,7 +3,7 @@
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![JavaFX 17](https://img.shields.io/badge/JavaFX-17-blue)
-![Tests](https://img.shields.io/badge/tests-317%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-318%20passing-brightgreen)
 ![Coverage](.github/badges/jacoco.svg)
 ![Branches](.github/badges/branches.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

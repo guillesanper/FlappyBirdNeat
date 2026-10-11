@@ -81,10 +81,16 @@ public class FlappyBirdGame {
             Pipe pipe = pipes.get(i);
             pipe.update();
 
+            // Un tubo puntúa cuando su borde trasero queda por detrás del pájaro, no cuando sale
+            // de la pantalla (eso ocurría unos 17 frames después y retrasaba el marcador)
+            if (!pipe.isPassed() && pipe.getX() + pipe.getWidth() < BIRD_X_POSITION) {
+                pipe.markPassed();
+                score++;
+            }
+
             // Eliminar tubos fuera de pantalla
             if (pipe.isOffscreen()) {
                 pipes.remove(i);
-                score++;
             }
         }
 

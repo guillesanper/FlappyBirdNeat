@@ -14,6 +14,7 @@ public class Pipe implements Serializable {
     private float gapY;
     private float gapSize;
     private float width;
+    private boolean passed;
     private static final float SPEED = 3;
 
     /**
@@ -35,6 +36,16 @@ public class Pipe implements Serializable {
      */
     public void update() {
         x -= SPEED;
+    }
+
+    /** @return si este tubo ya se contó en la puntuación (el pájaro lo ha dejado atrás) */
+    public boolean isPassed() {
+        return passed;
+    }
+
+    /** Marca el tubo como contado en la puntuación, para no contarlo dos veces. */
+    public void markPassed() {
+        passed = true;
     }
 
     /**
