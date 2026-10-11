@@ -389,8 +389,10 @@ public class SimulationController {
             return null;
         }
 
+        // The snapshot is taken before the generation evolves: its fittest agent is the one that
+        // set the record, while getBestAgent() would still be the best of earlier generations
         EvolvingPopulation bestPopulation = bestGenData.getSavedPopulation();
-        FlappyBirdAgent bestAgent = bestPopulation.getBestAgent();
+        FlappyBirdAgent bestAgent = bestPopulation.fittestAgent();
         FlappyBirdAgent clonedBestAgent = new FlappyBirdAgent(bestAgent);
         clonedBestAgent.setFitness(bestAgent.getFitness());
 

@@ -56,4 +56,21 @@ class BestAgentReplayTest {
 
         assertFalse(controller.isReplayMode());
     }
+
+    @ParameterizedTest
+    @EnumSource(SimulationController.Mode.class)
+    void theReplayedAgentIsTheOneThatSetTheRecord(SimulationController.Mode mode) {
+        SimulationController controller = new SimulationController(20, 800, 600, 7L);
+        controller.setMode(mode);
+        controller.resetSimulation();
+        controller.beginFastSimulation(8);
+        controller.trainFast(8, (done, max) -> {}, Runnable::run);
+
+        EvolvingPopulation replay = controller.createBestAgentOnlyPopulation();
+
+        assertEquals(
+                controller.getHistoryManager().getBestFitnessEver(),
+                replay.getAgents()[0].getFitness(),
+                "the replay must show the agent of the best generation, not the best of the ones before it");
+    }
 }
