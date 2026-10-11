@@ -154,13 +154,13 @@ Requirements: **JDK 21+**. Maven is optional, because the wrapper is included.
 
 # Or build a self-contained jar and run it
 ./mvnw clean package
-java -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar
+java -jar target/FlappyBirdNEAT.jar
 
 # Run the test suite
 ./mvnw test
 
 # Reproduce a run: the app logs its seed at startup
-java -Dseed=42 -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar
+java -Dseed=42 -jar target/FlappyBirdNEAT.jar
 ```
 
 ### Command-line training
@@ -168,7 +168,7 @@ java -Dseed=42 -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar
 With arguments, the same jar trains headless, without loading JavaFX at all:
 
 ```bash
-java -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar --headless --engine neat --seed 42 \
+java -jar target/FlappyBirdNEAT.jar --headless --engine neat --seed 42 \
     --generations 200 --population 50 --out results.csv
 ```
 
