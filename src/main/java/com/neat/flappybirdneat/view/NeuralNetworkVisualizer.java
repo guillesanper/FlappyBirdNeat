@@ -14,6 +14,7 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
 /**
  * Clase que dibuja una representación visual de una red neuronal.
@@ -253,11 +254,15 @@ public class NeuralNetworkVisualizer {
         // === Etiquetas de capas ===
         gc.setFill(Color.BLACK);
         gc.setFont(Font.font("System", FontWeight.BOLD, 14));
-        gc.fillText("Entradas", x + 10, y - 10);
-        gc.fillText("Salidas", x + maxLayer * layerSpacing - 20, y - 10);
+        // Centradas sobre su columna: alineadas a la izquierda con desplazamientos fijos, "Entradas"
+        // y "Ocultos" se solapaban en cuanto la red crecía y las columnas se estrechaban.
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText("Entradas", x, y - 10);
+        gc.fillText("Salidas", x + maxLayer * layerSpacing, y - 10);
         if (maxLayer > 1) {
-            gc.fillText("Ocultos", x + layerSpacing - 25, y - 10);
+            gc.fillText("Ocultos", x + maxLayer * layerSpacing / 2, y - 10);
         }
+        gc.setTextAlign(TextAlignment.LEFT);
 
         // === Conexiones (detrás de los nodos) ===
         for (ConnectionGene connection : genome.getConnections()) {
