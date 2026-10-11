@@ -33,7 +33,8 @@ Get the installer for your system from the **[latest release](https://github.com
 | System | File | Requirements |
 |---|---|---|
 | Windows | `FlappyBirdNEAT-<version>.msi` | Windows 10 or 11, x64 |
-| macOS | `FlappyBirdNEAT-<version>-macos-arm64.dmg` | macOS on Apple silicon (M1 or later); on Intel Macs use the jar |
+| macOS (Apple silicon) | `FlappyBirdNEAT-<version>-macos-arm64.dmg` | Macs with an M1 or later chip |
+| macOS (Intel) | `FlappyBirdNEAT-<version>-macos-x86_64.dmg` | Intel Macs (from the release after 2.0.0; for 2.0.0 use the jar) |
 | Linux (Debian/Ubuntu) | `flappybirdneat_<version>_amd64.deb` | x86-64, Ubuntu 24.04+ or Debian 13+ (`sudo apt install ./flappybirdneat_*.deb`); installs to `/opt/flappybirdneat` |
 | Any (with Java) | `FlappyBirdNEAT-<version>-<platform>.jar` | JDK 21+; pick the jar of your OS (it carries that platform's JavaFX) and run `java -jar` on it |
 
@@ -340,7 +341,8 @@ docs/
 - [x] Published NEAT-vs-GA results across many seeds, with confidence intervals and significance tests ([report](docs/results/REPORT.md))
 - [x] Portable champions: versioned JSON, `--save-champion` / `--watch` / `--demo`, export and load from the UI, bundled NEAT and GA champions
 - [x] Native installers (Windows/macOS/Linux) via `jpackage`, published from `v*` tags, opening on the bundled champion
-- [ ] Code-signed installers (Windows Authenticode, Apple notarization) and an Intel macOS build
+- [x] An Intel macOS build
+- [ ] Code-signed installers (Windows Authenticode, Apple notarization)
 - [ ] Evaluate champions on several pipe sequences during training, so the GA's overfitting shows up in fitness
 
 ## License

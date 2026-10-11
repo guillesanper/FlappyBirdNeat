@@ -1,6 +1,6 @@
 name: Release
 
-# Native installers (deb, msi, dmg) and per-platform fat jars, built on each OS with
+# Native installers (deb, msi, dmg for Apple silicon and Intel) and per-platform fat jars, built on each OS with
 # packaging/jpackage.sh. Pushing a v* tag (e.g. v2.0.0, which must match the pom version) publishes
 # them as a GitHub Release with generated notes. Running it by hand (workflow_dispatch) builds them
 # as workflow artifacts; give it an existing v* tag to build that tag and publish it as well (adding
@@ -31,8 +31,13 @@ jobs:
           - os: windows-latest
             platform: windows
             type: msi
+          # One dmg per Mac architecture: macos-latest is Apple silicon, macos-15-intel is the
+          # Intel (x86_64) image. The platform names the files and must match `uname -m`.
           - os: macos-latest
-            platform: macos
+            platform: macos-arm64
+            type: dmg
+          - os: macos-15-intel
+            platform: macos-x86_64
             type: dmg
     runs-on: ${{ matrix.os }}
     steps:
@@ -81,10 +86,14 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: |
           mkdir dist
+          if [[ "$PLATFORM" == macos-* && "$PLATFORM" != "macos-$(uname -m)" ]]; then
+            echo "Runner architecture $(uname -m) does not match the platform $PLATFORM"
+            exit 1
+          fi
           for file in target/installer/*; do
             name="$(basename "$file")"
-            # jpackage's dmg name does not say which Macs it is for: the runner's architecture
-            if [ "$PLATFORM" = "macos" ]; then name="FlappyBirdNEAT-$VERSION-macos-$(uname -m).dmg"; fi
+            # jpackage's dmg name does not say which Macs it is for
+            if [[ "$PLATFORM" == macos-* ]]; then name="FlappyBirdNEAT-$VERSION-$PLATFORM.dmg"; fi
             cp "$file" "dist/$name"
           done
           cp target/FlappyBirdNEAT.jar "dist/FlappyBirdNEAT-$VERSION-$PLATFORM.jar"
