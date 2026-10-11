@@ -39,7 +39,9 @@ public class HistoryManager {
         currentRun = new RunHistory();
     }
 
+    /** @param generationNumber 1-based number of the generation in its run */
     public void addGenerationData(
+            int generationNumber,
             double bestFitness,
             double avgFitness,
             double minFitness,
@@ -57,6 +59,7 @@ public class HistoryManager {
                 diversity,
                 pop.deepCopy(),
                 new ArrayList<>(savedPipes));
+        data.setGenerationNumber(generationNumber);
         currentRun.addGenerationData(data);
 
         // Registrar el mejor de todos los tiempos

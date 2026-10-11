@@ -106,7 +106,7 @@ final class HistoryBrowser {
         }
         List<GenerationData> generations = run.getGenerationDataList();
         for (int i = 0; i < generations.size(); i++) {
-            // Older histories may lack the generation number
+            // Histories saved before the number was recorded lack it
             if (generations.get(i).getGenerationNumber() == 0) {
                 generations.get(i).setGenerationNumber(i + 1);
             }
@@ -172,7 +172,7 @@ final class HistoryBrowser {
             return;
         }
         GenerationData selectedGen = run.getGenerationDataList().get(selectedGenIndex);
-        int generationNumber = selectedGenIndex + 1;
+        int generationNumber = selectedGen.getGenerationNumber();
 
         pauseLiveLoop.run();
         try {

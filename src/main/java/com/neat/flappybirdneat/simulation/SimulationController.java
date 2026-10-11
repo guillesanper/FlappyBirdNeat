@@ -159,6 +159,7 @@ public class SimulationController {
 
         // Guardar esta generación en el historial
         historyManager.addGenerationData(
+                engine.getGeneration(),
                 bestFitnessThisGen,
                 avgFitness,
                 minFitnessThisGen,
@@ -270,6 +271,7 @@ public class SimulationController {
 
             // Guardar esta generación en el historial
             historyManager.addGenerationData(
+                    engine.getGeneration(),
                     currentBestFitness,
                     avgFitness,
                     currentMinFitness,
