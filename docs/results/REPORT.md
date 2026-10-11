@@ -13,13 +13,15 @@ Over 30 paired seeds, NEAT solved the game in 26/30 runs (87%, 95% Wilson CI 70-
 20/30 (67%, 49-81%) for the best GA configuration (deterministic tournament selection) and 10/30
 (33%, 19-51%) for the GA defaults (roulette, uniform crossover, Gaussian mutation). NEAT solved
 sooner than every GA configuration: a median of 44 generations, against 160 for the tournament GA,
-with Holm-adjusted Mann-Whitney p <0.001 and Cliff's δ between -0.59 and -0.81 for all four
+with Holm-adjusted Mann-Whitney p <0.001 and Cliff's δ between -0.63 and -0.81 for all four
 contrasts. Its success rate is significantly higher than that of the default GA and the
 ranking/non-uniform GA (McNemar, Holm-adjusted p 0.003 and <0.001), but not than that of the
-tournament GA (p 0.109) or the sigma-scaling GA (p 0.070). Lowering the frame cap from 20,000 to
+tournament GA (p 0.109) or the sigma-scaling GA (p 0.062). Lowering the frame cap from 20,000 to
 5,000 frames leaves those conclusions unchanged. The study also found two bugs, both fixed and
 documented here: NEAT species collapsed into one (NEAT solved 19/30 before the fix), and two GA
-selection operators never picked the worst 10% of the population as parents.
+selection operators never picked the worst 10% of the population as parents. A review of the GA
+before the 2.0.0 release fixed four more bugs; only one affects the study, through the
+sigma-scaling GA, whose runs were redone (section 6).
 
 ## 2. Research questions
 
@@ -84,10 +86,11 @@ decaying as (1 - t/T)^2 with T = 200 generations. Ranking selection: β 1.5. Det
 | Stagnation limit, generations without improvement (new) | 15 |
 | Species protected from stagnation (new) | 2 |
 
-**Run environment** (from [`data/manifest.json`](data/manifest.json)): commit `4269278`, clean
-working tree; OpenJDK 21.0.11 (build 21.0.11+10-1-24.04.2-Ubuntu); Intel(R) Xeon(R) Processor @
-2.10GHz, 4 cores; Linux 6.18.44-fc-v80 x86_64. The 150 runs took 505.1 s in total (from
-2026-10-08T13:43:29Z to 2026-10-08T13:51:56Z). Results do not depend on the number of threads: the
+**Run environment** (from [`data/manifest.json`](data/manifest.json)): commit `240d207`, clean
+working tree; OpenJDK 21.0.11 (build 21.0.11+10-1-24.04.2-Ubuntu); Intel(R) Xeon(R) Processor @ 2.80GHz, 4 cores; Linux 6.18.44-fc-v114 x86_64. The 150 runs took 520.3 s in total (from
+2026-10-11T01:27:42Z to 2026-10-11T01:36:25Z). The archives of the four configurations without
+fitness scaling are the ones produced from commit `4269278`; they are byte-identical to the
+reruns from `240d207` (CSV diff excluding `wall_ms`), so they were kept unchanged. Results do not depend on the number of threads: the
 CSV of a run is identical with 1 and 4 threads, apart from the `wall_ms` column.
 
 ## 4. Metrics and statistics
@@ -102,7 +105,7 @@ CSV of a run is identical with 1 and 4 threads, apart from the `wall_ms` column.
   unsolved runs.
 
 **Why success and time to solve are the primary metrics.** The final best is capped at the frame
-cap, and NEAT (26/30), the tournament GA (20/30) and the sigma-scaling GA (17/30) end at the cap in
+cap, and NEAT (26/30), the tournament GA (20/30) and the sigma-scaling GA (16/30) end at the cap in
 at least half of the seeds. Within those runs the final best cannot tell the configurations apart,
 so it loses most of its discriminative power. The success rate and the generations to solve do
 not saturate, so they carry the conclusions; the final best is reported as a secondary metric.
@@ -152,31 +155,33 @@ analysis does not test the GA configurations against each other.
 | GA default (roulette, gaussian) | 10/30 | 33% (19-51%) | >200 [172, >200] (20 unsolved) | 728 | 7,228 (4,025-10,485) | 10/30 |
 | GA tournament | 20/30 | 67% (49-81%) | 160 [99, >200] (10 unsolved) | 20,000 | 13,592 (10,364-16,768) | 20/30 |
 | GA ranking, non-uniform mut. | 9/30 | 30% (17-48%) | >200 [137, >200] (21 unsolved) | 482 | 6,256 (3,179-9,564) | 8/30 |
-| GA roulette, sigma scaling | 17/30 | 57% (39-73%) | 178 [83, >200] (13 unsolved) | 20,000 | 11,821 (8,565-15,072) | 17/30 |
+| GA roulette, sigma scaling | 16/30 | 53% (36-70%) | 184 [129, >200] (14 unsolved) | 20,000 | 10,986 (7,724-14,272) | 16/30 |
 
 | NEAT vs | Final best: MWU p (Holm) | Cliff's δ | Wilcoxon p (Holm), non-zero pairs | Success: McNemar p (Holm), only NEAT / only GA | Time to solve: MWU p (Holm), Cliff's δ | Time to solve: sign test p (Holm), NEAT / GA first |
 |---|---|---|---|---|---|---|
 | GA default (roulette, gaussian) | <0.001 (0.001) | +0.48 (large) | 0.012 (0.036), 23 | <0.001 (0.003), 19 / 3 | <0.001 (<0.001), -0.77 | <0.001 (<0.001), 26 / 3 |
-| GA tournament | 0.117 (0.117) | +0.18 (small) | 0.158 (0.266), 12 | 0.109 (0.109), 8 / 2 | <0.001 (<0.001), -0.63 | <0.001 (<0.001), 24 / 4 |
+| GA tournament | 0.117 (0.117) | +0.18 (small) | 0.158 (0.315), 12 | 0.109 (0.109), 8 / 2 | <0.001 (<0.001), -0.63 | <0.001 (<0.001), 24 / 4 |
 | GA ranking, non-uniform mut. | <0.001 (<0.001) | +0.56 (large) | <0.001 (0.002), 23 | <0.001 (<0.001), 18 / 1 | <0.001 (<0.001), -0.81 | <0.001 (<0.001), 26 / 1 |
-| GA roulette, sigma scaling | 0.032 (0.063) | +0.26 (small) | 0.133 (0.266), 16 | 0.035 (0.070), 12 / 3 | <0.001 (<0.001), -0.59 | 0.008 (0.008), 22 / 7 |
+| GA roulette, sigma scaling | 0.016 (0.033) | +0.29 (small) | 0.198 (0.315), 18 | 0.031 (0.062), 14 / 4 | <0.001 (<0.001), -0.68 | 0.001 (0.001), 24 / 6 |
 
 **Time to solve (primary).** NEAT needs fewer generations than every GA configuration. Against the
 default GA: Holm-adjusted MWU p <0.001, δ -0.77; NEAT solved first on 26 seeds and the GA on 3
 (sign test p <0.001). Against the tournament GA: p <0.001, δ -0.63, NEAT first on 24 seeds and the
 GA on 4 (sign test p <0.001). Against the ranking/non-uniform GA: p <0.001, δ -0.81, 26 / 1 (sign
-test p <0.001). Against the sigma-scaling GA: p <0.001, δ -0.59, 22 / 7 (sign test p 0.008). All
+test p <0.001). Against the sigma-scaling GA: p <0.001, δ -0.68, 24 / 6 (sign test p 0.001). All
 four effects are large.
 
 **Success (primary).** NEAT solves significantly more seeds than the default GA (McNemar adjusted p
 0.003; 19 seeds solved only by NEAT, 3 only by the GA) and than the ranking/non-uniform GA (p
 <0.001; 18 / 1). The differences against the tournament GA (p 0.109; 8 / 2) and the sigma-scaling
-GA (p 0.070; 12 / 3) are not significant after the Holm correction.
+GA (p 0.062; 14 / 4) are not significant after the Holm correction.
 
 **Final best (secondary).** NEAT ends higher than the default GA (MWU adjusted p 0.001, δ +0.48,
 large; Wilcoxon adjusted p 0.036) and the ranking/non-uniform GA (p <0.001, δ +0.56, large;
-Wilcoxon adjusted p 0.002). Against the tournament GA (p 0.117, δ +0.18) and the sigma-scaling GA
-(p 0.063, δ +0.26) the difference is not significant, as expected from the saturation at the cap.
+Wilcoxon adjusted p 0.002). Against the tournament GA (p 0.117, δ +0.18) the difference is not
+significant, as expected from the saturation at the cap. Against the sigma-scaling GA the
+Mann-Whitney test is significant (adjusted p 0.033, δ +0.29, small) but the paired Wilcoxon test is
+not (adjusted p 0.315, 18 non-zero pairs), so the evidence on that contrast is weak.
 
 ## 6. A bug the study found: NEAT species collapse
 
@@ -251,7 +256,52 @@ previous ones (CSV diff excluding `wall_ms`). Only the two affected configuratio
 | GA ranking, non-uniform mut. | 11/30 / 9/30 | >200 [126, >200] / >200 [137, >200] | <0.001 (0.001) / <0.001 (<0.001) |
 
 The implicit truncation slightly helped both configurations, but the conclusions of the contrasts
-do not change. All results in sections 1, 5, 7, 8 and 9 come from the runs after both fixes.
+do not change. All results in sections 1, 5, 7, 8 and 9 come from the runs after all the fixes
+(including those of the next subsection).
+
+### Four more GA bugs, fixed before the 2.0.0 release
+
+A review of every GA operator before tagging the 2.0.0 release found four more bugs, each fixed
+with a regression test that fails before its fix:
+
+- **Stochastic universal sampling** compared each pointer with the start of an interval instead of
+  its end, so it chose the individual after the one holding the pointer, and it only scanned the
+  first `count` individuals, so with elitism the worst agents could never be parents.
+- **Remainder selection** rounded the expected number of copies instead of taking its integer part,
+  dropped an individual whose copies did not fit, filled the rest with a tournament instead of
+  sampling the fractional remainders, and threw `ArrayIndexOutOfBoundsException` when asked for
+  more parents than individuals.
+- **Best agent under fitness scaling.** The GA picked its historical best agent after scaling
+  fitness, so with linear, sigma or Boltzmann scaling it compared scaled values, which change scale
+  every generation, and it restored each agent's fitness by array position after sorting, so agents
+  got each other's fitness.
+- **Boltzmann scaling** overflowed `exp(f / T)` to infinity for high fitness and returned NaN, and
+  **non-uniform mutation** grew again (or became NaN) past its generation horizon.
+
+None of the study's configurations uses stochastic universal, remainder or Boltzmann selection or
+scaling, or reaches the non-uniform horizon (1,000 generations). The best-agent fix does affect the
+sigma-scaling GA: copying a new best agent draws from the seeded generator, and with raw fitness the
+best improves in different generations, so its runs follow a different random stream. The study
+was rerun from commit `240d207`. The 120 runs without fitness scaling are byte-identical to the
+previous ones in both the main and the 5,000-frame study (CSV diff excluding `wall_ms`); only the
+sigma-scaling GA changed (from [`pre-scaling-fix/summary.md`](pre-scaling-fix/summary.md) and
+[`summary.md`](summary.md)):
+
+| GA roulette, sigma scaling | Before | After |
+|---|---|---|
+| Solved | 17/30, 57% (39-73%) | 16/30, 53% (36-70%) |
+| Generations to solve: median [IQR] | 178 [83, >200] | 184 [129, >200] |
+| NEAT vs it, success: McNemar p (Holm), only NEAT / only GA | 0.035 (0.070), 12 / 3 | 0.031 (0.062), 14 / 4 |
+| NEAT vs it, final best: MWU p (Holm), Cliff's δ | 0.032 (0.063), +0.26 | 0.016 (0.033), +0.29 |
+| NEAT vs it, time to solve: Cliff's δ | -0.59 | -0.68 |
+
+Only the random stream of this configuration changed, which on 30 seeds is enough to move one
+seed and the medians. The primary conclusions do not change: NEAT solves sooner with a large effect, and its higher success rate
+against the sigma-scaling GA is still not significant after the Holm correction. The secondary
+final-best Mann-Whitney test against it crosses the 0.05 line (0.063 to 0.033), which shows how
+fragile that secondary result is rather than a real change. The 5,000-frame summary from before
+this fix is kept in
+[`sensitivity-5000/pre-scaling-fix/`](sensitivity-5000/pre-scaling-fix/summary.md).
 
 ## 7. NEAT dynamics after the fix
 
@@ -278,7 +328,9 @@ runs are among them, against 11 of 11 before the fix.
 
 The whole study was repeated with `--max-frames 5000` (about 41 pipes instead of about 166), with
 everything else unchanged: the same 30 seeds, 5 configurations, 200 generations and population 50,
-from the same commit (`4269278`, 284.2 s of runs). The full results, figures and data are in
+from commit `0e2e7a4` (the same code as `240d207`; that commit only adds files under `docs/`),
+286.7 s of runs; as in the main study, the four configurations without scaling keep their
+byte-identical archives from `4269278`. The full results, figures and data are in
 [`sensitivity-5000/`](sensitivity-5000/) ([summary](sensitivity-5000/summary.md)).
 
 | Configuration | Success, 20,000 frames | Success, 5,000 frames | Median generations to solve, 20,000 / 5,000 |
@@ -287,14 +339,14 @@ from the same commit (`4269278`, 284.2 s of runs). The full results, figures and
 | GA default (roulette, gaussian) | 10/30, 33% (19-51%) | 11/30, 37% (22-54%) | >200 / >200 |
 | GA tournament | 20/30, 67% (49-81%) | 21/30, 70% (52-83%) | 160 / 152 |
 | GA ranking, non-uniform mut. | 9/30, 30% (17-48%) | 11/30, 37% (22-54%) | >200 / >200 |
-| GA roulette, sigma scaling | 17/30, 57% (39-73%) | 18/30, 60% (42-75%) | 178 / 137 |
+| GA roulette, sigma scaling | 16/30, 53% (36-70%) | 18/30, 60% (42-75%) | 184 / 184 |
 
 | NEAT vs | Success: McNemar p (Holm), 20,000 / 5,000 | Time to solve: MWU p (Holm), Cliff's δ, 20,000 / 5,000 |
 |---|---|---|
 | GA default (roulette, gaussian) | <0.001 (0.003) / 0.001 (0.004) | <0.001 (<0.001), -0.77 / <0.001 (<0.001), -0.75 |
 | GA tournament | 0.109 (0.109) / 0.180 (0.180) | <0.001 (<0.001), -0.63 / <0.001 (<0.001), -0.61 |
 | GA ranking, non-uniform mut. | <0.001 (<0.001) / <0.001 (0.001) | <0.001 (<0.001), -0.81 / <0.001 (<0.001), -0.79 |
-| GA roulette, sigma scaling | 0.035 (0.070) / 0.057 (0.115) | <0.001 (<0.001), -0.59 / <0.001 (<0.001), -0.58 |
+| GA roulette, sigma scaling | 0.031 (0.062) / 0.077 (0.154) | <0.001 (<0.001), -0.68 / <0.001 (<0.001), -0.65 |
 
 The conclusions do not change. With either cap, NEAT solves sooner than every GA configuration
 (large effects), solves significantly more seeds than the default and the ranking/non-uniform GA,
@@ -312,13 +364,13 @@ of 44 generations, against 160 or more for every GA configuration, and the time-
 are significant with large effects against all four. In how often it solves the game within 200
 generations, it beats the default GA and the ranking/non-uniform GA, but the tournament GA is not
 significantly worse than NEAT in success rate (26/30 against 20/30, McNemar adjusted p 0.109), and
-neither is the sigma-scaling GA (17/30, p 0.070). The honest summary is that NEAT gets there sooner,
+neither is the sigma-scaling GA (16/30, p 0.062). The honest summary is that NEAT gets there sooner,
 and that with 200 generations a well-chosen GA often gets there too; 30 seeds cannot tell whether
 the remaining gap in success rate is real.
 
 **Which GA operators matter.** Descriptively, the two configurations that change how parents are
 chosen without changing the rest of the defaults, tournament selection (20/30) and sigma scaling
-(17/30), solve more seeds than the defaults (10/30), while ranking selection with non-uniform
+(16/30), solve more seeds than the defaults (10/30), while ranking selection with non-uniform
 mutation does not (9/30). This points at selection pressure as the operator that matters most: plain
 roulette on raw survival frames gives the best agents little advantage over average ones until the
 differences in fitness become large. The analysis tests NEAT against each GA, not the GA
@@ -375,7 +427,7 @@ python3 -m venv .venv
 .venv/bin/pip install -r experiments/requirements.txt
 
 # Main study: 30 seeds x 5 configurations, 200 generations, population 50, 20,000 frames
-# (505.1 s of runs on the reference machine; rerunning the same command resumes an interrupted study)
+# (520.3 s of runs on the reference machine; rerunning the same command resumes an interrupted study)
 THREADS=4 OUT_DIR=/tmp/study experiments/run_study.sh
 .venv/bin/python experiments/analyze.py --input /tmp/study/packed --output /tmp/study/analysis
 
@@ -402,6 +454,9 @@ for f in $(git ls-tree --name-only 20cc28f docs/results/data/); do
 done
 .venv/bin/python experiments/analyze.py --input /tmp/pre-ga-fix --output /tmp/pre-ga-fix/analysis
 # docs/results/pre-ga-fix/ holds stats.json and summary.md of that output
+
+# Before the scaling fix: docs/results/pre-scaling-fix/ (and sensitivity-5000/pre-scaling-fix/) hold
+# stats.json and summary.md regenerated from the data in the history of commit 541b51d
 ```
 
 `analyze.py` is deterministic: rerunning it on the same data gives identical `stats.json` and

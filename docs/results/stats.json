@@ -1,15 +1,15 @@
 {
   "manifest": {
-    "commit": "4269278b166806c06d626229f01e11dd3c82da80",
+    "commit": "240d207020207a041b1491a92880c136d91e4e80",
     "working_tree_dirty": false,
     "jdk": "openjdk version \"21.0.11\" 2026-04-21",
     "jdk_runtime": "OpenJDK Runtime Environment (build 21.0.11+10-1-24.04.2-Ubuntu)",
-    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
     "cores": 4,
-    "os": "Linux 6.18.44-fc-v80 x86_64",
-    "started_utc": "2026-10-08T13:43:29Z",
-    "finished_utc": "2026-10-08T13:51:56Z",
-    "total_run_seconds": 505.1,
+    "os": "Linux 6.18.44-fc-v114 x86_64",
+    "started_utc": "2026-10-11T01:27:42Z",
+    "finished_utc": "2026-10-11T01:36:25Z",
+    "total_run_seconds": 520.3,
     "parameters": {
       "seeds": 30,
       "seed_list": "1..30",
@@ -19,7 +19,7 @@
       "threads": 4,
       "stop_on_solve": false
     },
-    "command": "java -jar target/FlappyBirdNEAT-1.0-SNAPSHOT.jar --headless <config args> --seed <seed> --generations 200 --population 50 --max-frames 20000 --threads 4 --out <csv>",
+    "command": "java -jar target/FlappyBirdNEAT.jar --headless <config args> --seed <seed> --generations 200 --population 50 --max-frames 20000 --threads 4 --out <csv>",
     "configs": {
       "neat": "--engine neat",
       "ga-default": "--engine ga --selection roulette --crossover uniform --mutation gaussian --scaling none",
@@ -101,18 +101,18 @@
     "ga-roulette-sigma": {
       "config": "ga-roulette-sigma",
       "runs": 30,
-      "solved": 17,
-      "success_low": 0.3919730700081361,
-      "success_high": 0.7262251442353347,
-      "solve_median": 178.0,
-      "solve_q1": 83.0,
+      "solved": 16,
+      "success_low": 0.361422996198733,
+      "success_high": 0.6976761109230025,
+      "solve_median": 184.0,
+      "solve_q1": 129.0,
       "solve_q3": null,
       "final_best_median": 20000.0,
-      "final_best_mean": 11820.766666666666,
-      "final_best_low": 8564.779166666667,
-      "final_best_high": 15072.115,
-      "final_mean_median": 2245.7799999999997,
-      "saturated": 17,
+      "final_best_mean": 10986.033333333333,
+      "final_best_low": 7723.587500000001,
+      "final_best_high": 14272.454166666666,
+      "final_mean_median": 1531.12,
+      "saturated": 16,
       "best_ever_median": 20000.0
     }
   },
@@ -154,9 +154,9 @@
       "neat_first": 24,
       "ga_first": 4,
       "mwu_p_holm": 0.11729053370298198,
-      "wilcoxon_p_holm": 0.2661598504024344,
+      "wilcoxon_p_holm": 0.3152387648829196,
       "mcnemar_p_holm": 0.109375,
-      "time_mwu_p_holm": 5.253846481725839e-05,
+      "time_mwu_p_holm": 2.6269232408629195e-05,
       "sign_p_holm": 0.0003599822521209717
     },
     {
@@ -182,24 +182,24 @@
     },
     {
       "config": "ga-roulette-sigma",
-      "mwu_p": 0.03167995722073519,
-      "cliffs_delta": 0.2577777777777778,
-      "wilcoxon_p": 0.1330799252012172,
-      "wilcoxon_pairs": 16,
+      "mwu_p": 0.016443507368712144,
+      "cliffs_delta": 0.29333333333333333,
+      "wilcoxon_p": 0.19829861952689098,
+      "wilcoxon_pairs": 18,
       "median_diff": 0.0,
-      "mcnemar_p": 0.03515625,
-      "only_neat_solved": 12,
-      "only_ga_solved": 3,
-      "time_mwu_p": 6.518908504644744e-05,
-      "time_cliffs_delta": -0.5944444444444444,
-      "sign_p": 0.008130058646202087,
-      "neat_first": 22,
-      "ga_first": 7,
-      "mwu_p_holm": 0.06335991444147038,
-      "wilcoxon_p_holm": 0.2661598504024344,
-      "mcnemar_p_holm": 0.0703125,
-      "time_mwu_p_holm": 6.518908504644744e-05,
-      "sign_p_holm": 0.008130058646202087
+      "mcnemar_p": 0.0308837890625,
+      "only_neat_solved": 14,
+      "only_ga_solved": 4,
+      "time_mwu_p": 4.844686801080783e-06,
+      "time_cliffs_delta": -0.6788888888888889,
+      "sign_p": 0.0014309063553810122,
+      "neat_first": 24,
+      "ga_first": 6,
+      "mwu_p_holm": 0.03288701473742429,
+      "wilcoxon_p_holm": 0.3152387648829196,
+      "mcnemar_p_holm": 0.061767578125,
+      "time_mwu_p_holm": 9.689373602161565e-06,
+      "sign_p_holm": 0.0014309063553810122
     }
   ],
   "neat_dynamics": {
@@ -215,6 +215,6 @@
     "final_diversity_median": 0.57205
   },
   "warnings": [
-    "neat (26/30), ga-tournament (20/30), ga-roulette-sigma (17/30) end at the frame cap in at least half of the seeds: the final fitness is censored at 20000 and loses discriminative power, so the success rate and the generations to solve are the primary metrics."
+    "neat (26/30), ga-tournament (20/30), ga-roulette-sigma (16/30) end at the frame cap in at least half of the seeds: the final fitness is censored at 20000 and loses discriminative power, so the success rate and the generations to solve are the primary metrics."
   ]
 }
