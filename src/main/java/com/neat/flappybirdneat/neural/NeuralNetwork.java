@@ -42,6 +42,69 @@ public class NeuralNetwork implements Brain {
     }
 
     /**
+     * Rebuilds a network from saved weights (e.g. a champion file). The arrays are copied.
+     *
+     * @param weightsInputHidden  [inputs][hidden] weights
+     * @param weightsHiddenOutput [hidden][outputs] weights
+     * @throws IllegalArgumentException if the shapes do not match or a value is not finite
+     */
+    public static NeuralNetwork fromWeights(
+            double[][] weightsInputHidden, double[][] weightsHiddenOutput, double[] biasHidden, double[] biasOutput) {
+        int inputs = weightsInputHidden.length;
+        int hidden = biasHidden.length;
+        int outputs = biasOutput.length;
+        if (inputs == 0 || hidden == 0 || outputs == 0) {
+            throw new IllegalArgumentException("Every layer needs at least one neuron");
+        }
+        requireShape("weightsInputHidden", weightsInputHidden, inputs, hidden);
+        requireShape("weightsHiddenOutput", weightsHiddenOutput, hidden, outputs);
+        requireFinite("biasHidden", biasHidden);
+        requireFinite("biasOutput", biasOutput);
+
+        NeuralNetwork network = new NeuralNetwork(inputs, hidden, outputs);
+        for (int i = 0; i < inputs; i++) {
+            network.weightsInputHidden[i] = weightsInputHidden[i].clone();
+        }
+        for (int i = 0; i < hidden; i++) {
+            network.weightsHiddenOutput[i] = weightsHiddenOutput[i].clone();
+        }
+        network.biasHidden = biasHidden.clone();
+        network.biasOutput = biasOutput.clone();
+        return network;
+    }
+
+    /** Network with zero weights, filled in by {@link #fromWeights}. */
+    private NeuralNetwork(int inputSize, int hiddenSize, int outputSize) {
+        this.inputSize = inputSize;
+        this.hiddenSize = hiddenSize;
+        this.outputSize = outputSize;
+        weightsInputHidden = new double[inputSize][hiddenSize];
+        weightsHiddenOutput = new double[hiddenSize][outputSize];
+        biasHidden = new double[hiddenSize];
+        biasOutput = new double[outputSize];
+    }
+
+    private static void requireShape(String name, double[][] matrix, int rows, int columns) {
+        if (matrix.length != rows) {
+            throw new IllegalArgumentException(name + " has " + matrix.length + " rows, expected " + rows);
+        }
+        for (double[] row : matrix) {
+            if (row == null || row.length != columns) {
+                throw new IllegalArgumentException(name + " rows must have " + columns + " values");
+            }
+            requireFinite(name, row);
+        }
+    }
+
+    private static void requireFinite(String name, double[] values) {
+        for (double value : values) {
+            if (!Double.isFinite(value)) {
+                throw new IllegalArgumentException(name + " contains a non-finite value: " + value);
+            }
+        }
+    }
+
+    /**
      * Inicializa los pesos y bias con valores aleatorios
      */
     private void initializeRandomWeights(Random random) {
