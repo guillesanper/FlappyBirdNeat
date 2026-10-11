@@ -47,7 +47,9 @@ public class NonUniformMutation implements MutationStrategy {
     }
 
     public double getCurrentMagnitude() {
-        double t = (double) currentGeneration / maxGenerations;
+        // Pasado maxGenerations, 1 - t sería negativo: (1 - t)^beta volvería a crecer (beta par) o
+        // daría NaN (beta no entero). La magnitud se queda en 0 desde maxGenerations.
+        double t = Math.min(1.0, (double) currentGeneration / maxGenerations);
         return initialMagnitude * Math.pow(1 - t, beta);
     }
 }

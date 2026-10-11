@@ -72,6 +72,22 @@ class ScalingOperatorsTest {
         assertEquals(21.0, agents[2].getFitness(), 1e-9);
     }
 
+    /**
+     * Regresión: exp(f / T) se desbordaba a Infinity con fitness altos (el juego llega a 80000)
+     * y el cociente daba NaN, dejando la ruleta sin probabilidades válidas.
+     */
+    @Test
+    void boltzmannScalingStaysFiniteForHighFitness() {
+        FlappyBirdAgent[] agents = agentsWithFitness(80000, 20000, 500);
+        new BoltzmannScaling(100.0).scaleFitness(agents);
+
+        for (FlappyBirdAgent agent : agents) {
+            assertTrue(Double.isFinite(agent.getFitness()), "fitness escalado no finito: " + agent.getFitness());
+        }
+        assertTrue(agents[0].getFitness() > agents[1].getFitness());
+        assertTrue(agents[1].getFitness() >= agents[2].getFitness());
+    }
+
     @Test
     void boltzmannScalingCoolsTemperatureAfterEachApplication() {
         BoltzmannScaling strategy = new BoltzmannScaling(100.0, 0.9);

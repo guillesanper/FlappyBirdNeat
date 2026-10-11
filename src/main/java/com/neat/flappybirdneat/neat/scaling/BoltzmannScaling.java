@@ -27,24 +27,21 @@ public class BoltzmannScaling implements ScalingStrategy {
 
     @Override
     public void scaleFitness(FlappyBirdAgent[] agents) {
-        int n = agents.length;
-
-        // Calcular media de exp(fitness/T)
+        if (agents.length == 0) return;
+        // exp(f / T) se desborda a Infinity con fitness altos (hasta 80000) o con T ya enfriada,
+        // y el cociente da NaN. Restar el máximo antes de exponenciar no cambia el resultado,
+        // porque exp(-max / T) aparece en el numerador y en la media y se cancela.
+        double max = Arrays.stream(agents)
+                .mapToDouble(FlappyBirdAgent::getFitness)
+                .max()
+                .orElse(0);
         double meanExp = Arrays.stream(agents)
-                .mapToDouble(agent -> Math.exp(agent.getFitness() / temperature))
+                .mapToDouble(agent -> Math.exp((agent.getFitness() - max) / temperature))
                 .average()
                 .orElse(1.0);
-
-        // Evitar división por cero
-        if (meanExp == 0) meanExp = 1.0;
-
-        // Aplicar escalado de Boltzmann
         for (FlappyBirdAgent agent : agents) {
-            double scaledFitness = Math.exp(agent.getFitness() / temperature) / meanExp;
-            agent.setFitness(scaledFitness);
+            agent.setFitness(Math.exp((agent.getFitness() - max) / temperature) / meanExp);
         }
-
-        // Reducir temperatura para próxima generación
         temperature *= coolingFactor;
     }
 
