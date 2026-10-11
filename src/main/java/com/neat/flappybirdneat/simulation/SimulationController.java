@@ -105,6 +105,7 @@ public class SimulationController {
      */
     public void resetSimulation() {
         engine.reset(mode == Mode.NEAT ? EngineType.NEAT : EngineType.GA, operatorsConfig);
+        replayMode = false;
 
         currentGeneration.set(1);
         bestFitness.set(0);
@@ -228,6 +229,7 @@ public class SimulationController {
 
     /** Prepara el estado de un entrenamiento rápido antes de lanzar {@link #trainFast}. */
     void beginFastSimulation(int generations) {
+        replayMode = false;
         running.set(true);
         fastMode = true;
         stopRequested = false;

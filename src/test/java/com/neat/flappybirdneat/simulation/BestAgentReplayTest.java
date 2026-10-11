@@ -30,4 +30,30 @@ class BestAgentReplayTest {
         // with the GA it used to be a random agent that never played
         assertSame(replay.getAgents()[0], replay.getBestAgent());
     }
+
+    @ParameterizedTest
+    @EnumSource(SimulationController.Mode.class)
+    void resettingTheSimulationLeavesReplayMode(SimulationController.Mode mode) {
+        SimulationController controller = trainedController(mode);
+        controller.playBestAgentOnly();
+        assertTrue(controller.isReplayMode());
+
+        // "Detener" then "Reiniciar Simulación": the new population must not be drawn as a replay
+        controller.stopSimulation();
+        controller.resetSimulation();
+
+        assertFalse(controller.isReplayMode());
+    }
+
+    @ParameterizedTest
+    @EnumSource(SimulationController.Mode.class)
+    void startingATrainingLeavesReplayMode(SimulationController.Mode mode) {
+        SimulationController controller = trainedController(mode);
+        controller.playBestAgentOnly();
+        controller.stopSimulation();
+
+        controller.beginFastSimulation(1);
+
+        assertFalse(controller.isReplayMode());
+    }
 }
