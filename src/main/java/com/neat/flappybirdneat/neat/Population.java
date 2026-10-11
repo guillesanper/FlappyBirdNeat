@@ -6,6 +6,8 @@ import com.neat.flappybirdneat.neat.scaling.*;
 import com.neat.flappybirdneat.neat.selection.*;
 import com.neat.flappybirdneat.neural.NeuralNetwork;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class Population implements EvolvingPopulation {
@@ -52,10 +54,14 @@ public class Population implements EvolvingPopulation {
     public void naturalSelection() {
         FlappyBirdAgent[] newAgents = new FlappyBirdAgent[agents.length];
 
-        // Guardar fitness original
-        double[] originalFitness = new double[agents.length];
-        for (int i = 0; i < agents.length; i++) {
-            originalFitness[i] = agents[i].getFitness();
+        // El mejor agente histórico se decide con el fitness real: el escalado cambia de escala en
+        // cada generación (sigma, Boltzmann), así que sus valores no son comparables entre generaciones.
+        setBestAgent();
+
+        // Guardar el fitness original de cada agente (por identidad: el array se reordena abajo)
+        Map<FlappyBirdAgent, Double> originalFitness = new IdentityHashMap<>();
+        for (FlappyBirdAgent agent : agents) {
+            originalFitness.put(agent, agent.getFitness());
         }
 
         // Aplicar escalado si está configurado
@@ -64,14 +70,13 @@ public class Population implements EvolvingPopulation {
         }
 
         // Elitismo
-        setBestAgent();
         Arrays.sort(agents, (a1, a2) -> Double.compare(a2.getFitness(), a1.getFitness()));
 
         int eliteSize = (int) (agents.length * elitismRate);
         for (int i = 0; i < eliteSize; i++) {
             newAgents[i] = new FlappyBirdAgent(4, 8, 1, random);
             brainOf(newAgents[i]).setBrain(brainOf(agents[i]));
-            newAgents[i].setFitness(agents[i].getFitness());
+            newAgents[i].setFitness(originalFitness.get(agents[i]));
         }
 
         // Calcular probabilidades
@@ -102,8 +107,8 @@ public class Population implements EvolvingPopulation {
         }
 
         // Restaurar fitness original
-        for (int i = 0; i < agents.length; i++) {
-            agents[i].setFitness(originalFitness[i]);
+        for (FlappyBirdAgent agent : agents) {
+            agent.setFitness(originalFitness.get(agent));
         }
 
         agents = newAgents;
