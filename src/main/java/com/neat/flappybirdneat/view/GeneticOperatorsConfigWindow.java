@@ -338,6 +338,15 @@ public class GeneticOperatorsConfigWindow {
         }
     }
 
+    /**
+     * Mutación no uniforme con los dos parámetros que pide la ventana: el horizonte de
+     * generaciones y el exponente b de decaimiento. Antes se pasaba b como magnitud inicial y
+     * beta = 0, así que la magnitud no decrecía nunca ((1 - t)^0 = 1).
+     */
+    static NonUniformMutation nonUniformMutation(int maxGenerations, double b) {
+        return new NonUniformMutation(NonUniformMutation.DEFAULT_INITIAL_MAGNITUDE, maxGenerations, b);
+    }
+
     private void applyConfiguration() {
         try {
             // Aplicar Cruce
@@ -386,7 +395,7 @@ public class GeneticOperatorsConfigWindow {
             } else if ("No Uniforme".equals(mutacionType)) {
                 int maxGen = Integer.parseInt(mutacionParam2Field.getText());
                 double b = Double.parseDouble(mutacionParam3Field.getText());
-                population.setMutationStrategy(new NonUniformMutation(b, maxGen, 0.0));
+                population.setMutationStrategy(nonUniformMutation(maxGen, b));
             }
 
             // Aplicar Escalado
@@ -526,20 +535,11 @@ public class GeneticOperatorsConfigWindow {
                 mutacionComboBox.setValue("Uniforme");
             } else if (mutacionClassName.equals("NonUniformMutation")) {
                 mutacionComboBox.setValue("No Uniforme");
-                try {
-                    java.lang.reflect.Field bField = mutacion.getClass().getDeclaredField("b");
-                    bField.setAccessible(true);
-                    double b = bField.getDouble(mutacion);
-                    mutacionParam3Field.setText(String.valueOf(b));
-
-                    java.lang.reflect.Field maxGenField = mutacion.getClass().getDeclaredField("maxGenerations");
-                    maxGenField.setAccessible(true);
-                    int maxGen = maxGenField.getInt(mutacion);
-                    mutacionParam2Field.setText(String.valueOf(maxGen));
-                } catch (Exception e) {
-                    mutacionParam2Field.setText("1000");
-                    mutacionParam3Field.setText("2.0");
-                }
+                // Getters en vez de reflexión: el campo se llama beta, no b, así que la lectura por
+                // reflexión fallaba siempre y la ventana volvía a los valores por defecto
+                NonUniformMutation nonUniform = (NonUniformMutation) mutacion;
+                mutacionParam2Field.setText(String.valueOf(nonUniform.getMaxGenerations()));
+                mutacionParam3Field.setText(String.valueOf(nonUniform.getBeta()));
             }
         }
         updateMutacionParameters();
