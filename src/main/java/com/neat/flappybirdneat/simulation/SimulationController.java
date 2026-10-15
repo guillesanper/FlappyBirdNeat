@@ -423,9 +423,12 @@ public class SimulationController {
     }
 
     /**
-     * Inicia la reproducción del mejor individuo encontrado
+     * Inicia la reproducción del mejor individuo encontrado. No se puede llamar durante un
+     * entrenamiento rápido: su hilo sigue jugando y evolucionando la población hasta acabar la
+     * generación en curso, aunque se haya pedido detenerlo.
      */
     public void playBestAgentOnly() {
+        if (fastMode) throw new IllegalStateException("Stop the training before replaying the best agent");
         GenerationData bestGenData = historyManager.getBestGeneration();
         if (bestGenData == null) {
             LOG.warn("No best generation recorded yet; nothing to replay");

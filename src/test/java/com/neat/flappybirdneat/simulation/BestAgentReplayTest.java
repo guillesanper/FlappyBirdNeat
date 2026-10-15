@@ -73,4 +73,21 @@ class BestAgentReplayTest {
                 replay.getAgents()[0].getFitness(),
                 "the replay must show the agent of the best generation, not the best of the ones before it");
     }
+
+    /**
+     * Stopping a fast training only asks its thread to finish the generation it is playing: until
+     * then it still plays and evolves the population, so a replay must not swap it in the meantime.
+     */
+    @ParameterizedTest
+    @EnumSource(SimulationController.Mode.class)
+    void theBestAgentCannotBeReplayedDuringAFastTraining(SimulationController.Mode mode) {
+        SimulationController controller = trainedController(mode);
+        controller.beginFastSimulation(3);
+        controller.stopSimulation();
+        EvolvingPopulation training = controller.getPopulation();
+
+        assertThrows(IllegalStateException.class, controller::playBestAgentOnly);
+        assertSame(training, controller.getPopulation());
+        assertFalse(controller.isReplayMode());
+    }
 }

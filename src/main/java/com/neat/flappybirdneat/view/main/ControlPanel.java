@@ -459,7 +459,14 @@ final class ControlPanel {
                     "Ejecuta primero una simulación para encontrar el mejor individuo.");
             return;
         }
-        controller.stopSimulation();
+        if (controller.isFastMode()) {
+            Dialogs.show(
+                    Alert.AlertType.WARNING,
+                    "Entrenamiento en curso",
+                    null,
+                    "Detén el entrenamiento antes de ver el mejor individuo.");
+            return;
+        }
 
         double bestFitnessEver = controller.getHistoryManager().getBestFitnessEver();
         if (bestFitnessEver >= SimulationController.getOptimalFitnessThreshold()) {
