@@ -471,7 +471,7 @@ final class ControlPanel {
                             + "¡Este agente ha alcanzado el umbral óptimo!\n"
                             + "Es probablemente el mejor agente posible.\n\n"
                             + "Cambia a la pestaña 'Simulación Visual' para verlo en acción.\n"
-                            + "El agente aparecerá marcado en rojo con un borde dorado brillante.");
+                            + "El agente aparecerá en rojo.");
         } else {
             Dialogs.show(
                     Alert.AlertType.INFORMATION,
@@ -479,7 +479,7 @@ final class ControlPanel {
                     "Mejor fitness encontrado: " + String.format("%.2f", bestFitnessEver),
                     "Se reproducirá el mejor agente encontrado.\n\n"
                             + "Cambia a la pestaña 'Simulación Visual' para verlo en acción.\n"
-                            + "El agente aparecerá marcado en rojo con un borde dorado.");
+                            + "El agente aparecerá en rojo.");
         }
 
         controller.playBestAgentOnly();
