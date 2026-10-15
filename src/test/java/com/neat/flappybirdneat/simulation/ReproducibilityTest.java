@@ -6,7 +6,6 @@ import com.neat.flappybirdneat.benchmark.BenchmarkPresets;
 import com.neat.flappybirdneat.benchmark.BenchmarkResult;
 import com.neat.flappybirdneat.benchmark.BenchmarkRunner;
 import com.neat.flappybirdneat.config.GeneticOperatorsConfig;
-import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.crossover.SinglePointCrossover;
 import com.neat.flappybirdneat.neat.mutation.NonUniformMutation;
 import com.neat.flappybirdneat.neat.scaling.BoltzmannScaling;
@@ -86,8 +85,8 @@ class ReproducibilityTest {
     }
 
     @Test
-    void evolvingAReplayCopyOfASavedGenerationDoesNotPerturbTheRun() {
-        // The replay window evolves an independent copy of a history snapshot.
+    void replayingARecordedGenerationMidRunDoesNotPerturbTheRun() {
+        // The replay sets the training aside in the middle of a generation and puts it back.
         assertEquals(runNeat(5L, false), runNeat(5L, true));
     }
 
@@ -133,24 +132,29 @@ class ReproducibilityTest {
                 new ArrayList<>(controller.getMinFitnessHistory()));
     }
 
-    private static List<Double> runNeat(long seed, boolean evolveReplayMidRun) {
+    private static List<Double> runNeat(long seed, boolean replayMidRun) {
         SimulationController controller = new SimulationController(POPULATION, 800, 600, seed);
         controller.setMode(SimulationController.Mode.NEAT);
         controller.resetSimulation();
         controller.runningProperty().set(true);
         for (int gen = 0; gen < GENERATIONS; gen++) {
-            playOneGeneration(controller);
-            if (evolveReplayMidRun && gen == GENERATIONS / 2) {
-                EvolvingPopulation snapshot = controller
+            if (replayMidRun && gen == GENERATIONS / 2) {
+                for (int frame = 0; frame < 40; frame++) {
+                    controller.updateFrame();
+                }
+                controller.playGeneration(controller
                         .getHistoryManager()
                         .getCurrentRun()
                         .getGenerationDataList()
-                        .get(gen)
-                        .getSavedPopulation();
-                EvolvingPopulation replay = snapshot.deepCopy(controller.derivedRandom(gen));
-                replay.naturalSelection();
-                replay.naturalSelection();
+                        .get(gen - 1));
+                while (!controller.updateFrame()) {
+                    // Until every replayed agent dies
+                }
+                controller.restartReplay();
+                controller.updateFrame();
+                controller.exitReplayMode();
             }
+            playOneGeneration(controller);
         }
         return new ArrayList<>(controller.getBestFitnessHistory());
     }

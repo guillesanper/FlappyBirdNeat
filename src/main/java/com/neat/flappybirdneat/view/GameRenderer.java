@@ -10,9 +10,8 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 /**
- * Draws a game frame (sky, pipes, birds, ground and score) on a canvas. Shared by the main
- * window's live simulation and by the generation replay window, which only differ in the
- * overlays described by {@link Options}.
+ * Draws a game frame (sky, pipes, birds, ground and score) on a canvas, in the game's logical
+ * coordinates, with the overlays described by {@link Options}.
  */
 public final class GameRenderer {
 
@@ -42,11 +41,6 @@ public final class GameRenderer {
         public static Options liveSimulation(
                 boolean showAllAgents, boolean replayMode, boolean singleAgent, String replayBanner) {
             return new Options(showAllAgents, singleAgent, replayMode ? replayBanner : null, true);
-        }
-
-        /** Replay window of a saved generation. */
-        public static Options generationReplay(boolean showAllAgents) {
-            return new Options(showAllAgents, false, null, false);
         }
     }
 
@@ -101,7 +95,7 @@ public final class GameRenderer {
         }
     }
 
-    /** Darkens the frame and writes "paused" on top (replay window). */
+    /** Darkens the frame and writes "paused" on top. */
     public void renderPausedOverlay(GraphicsContext gc) {
         gc.setFill(new Color(0, 0, 0, 0.3));
         gc.fillRect(0, 0, width, height);
