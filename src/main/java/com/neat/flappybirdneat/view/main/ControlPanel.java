@@ -121,11 +121,11 @@ final class ControlPanel {
         Label statusLabel = boldLabel();
         statusLabel
                 .textProperty()
-                .bind(Bindings.when(controller.runningProperty())
+                .bind(Bindings.when(controller.trainingProperty())
                         .then("⚡ Estado: SIMULACIÓN RÁPIDA EN CURSO...")
                         .otherwise("⏸ Estado: Pausado"));
         controller
-                .runningProperty()
+                .trainingProperty()
                 .addListener(
                         (obs, wasRunning, running) -> statusLabel.setTextFill(running ? Color.GREEN : Color.ORANGE));
 
@@ -162,7 +162,7 @@ final class ControlPanel {
         ComboBox<String> modeComboBox = new ComboBox<>();
         modeComboBox.getItems().addAll(FIXED_MLP, NEAT);
         modeComboBox.setValue(FIXED_MLP);
-        modeComboBox.disableProperty().bind(controller.runningProperty());
+        modeComboBox.disableProperty().bind(controller.trainingProperty());
         modeComboBox.setOnAction(e -> {
             boolean neatSelected = NEAT.equals(modeComboBox.getValue());
             controller.setMode(neatSelected ? SimulationController.Mode.NEAT : SimulationController.Mode.FIXED_MLP);
@@ -193,7 +193,7 @@ final class ControlPanel {
         stopButton.setStyle(
                 "-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 13px;");
         stopButton.setDisable(true);
-        controller.runningProperty().addListener((obs, wasRunning, running) -> {
+        controller.trainingProperty().addListener((obs, wasRunning, running) -> {
             stopButton.setDisable(!running);
             runButton.setDisable(running);
         });
@@ -374,12 +374,12 @@ final class ControlPanel {
                         controller.currentGenerationProperty()));
 
         // Once this run finishes, offer to replay its best generation (one-shot listener)
-        controller.runningProperty().addListener(new ChangeListener<>() {
+        controller.trainingProperty().addListener(new ChangeListener<>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean wasRunning, Boolean running) {
                 if (wasRunning && !running) {
                     actions.offerBestGenerationReplay();
-                    controller.runningProperty().removeListener(this);
+                    controller.trainingProperty().removeListener(this);
                 }
             }
         });
@@ -387,7 +387,7 @@ final class ControlPanel {
 
     /** While a simulation is running, refreshes the charts once per second. */
     private void refreshChartsWhileRunning() {
-        controller.runningProperty().addListener((obs, wasRunning, running) -> {
+        controller.trainingProperty().addListener((obs, wasRunning, running) -> {
             if (!running) {
                 return;
             }
@@ -399,7 +399,7 @@ final class ControlPanel {
                     if (now - lastUpdate > 1_000_000_000) {
                         actions.refreshStatistics();
                         lastUpdate = now;
-                        if (!controller.runningProperty().get()) {
+                        if (!controller.trainingProperty().get()) {
                             stop();
                         }
                     }

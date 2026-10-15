@@ -64,6 +64,9 @@ public class SimulationController {
     private final ObjectProperty<GenerationData> replayedGeneration = new SimpleObjectProperty<>();
     // Si se está mostrando un replay (mejor agente, campeón o generación) en vez del entrenamiento
     private final BooleanProperty replaying = new SimpleBooleanProperty(false);
+    // Si hay un entrenamiento rápido en curso. No es lo mismo que running, que también está activo
+    // mientras se muestra un replay (mueve el bucle de juego)
+    private final BooleanProperty training = new SimpleBooleanProperty(false);
 
     // Datos para gráficos
     private final List<Double> bestFitnessHistory = new ArrayList<>();
@@ -255,6 +258,7 @@ public class SimulationController {
     void beginFastSimulation(int generations) {
         // Se entrena la población del entrenamiento, no la del replay que se estuviera viendo
         if (replayMode) exitReplayMode();
+        training.set(true);
         running.set(true);
         fastMode = true;
         stopRequested = false;
@@ -394,10 +398,12 @@ public class SimulationController {
         final boolean reachedOptimal = finalGlobalBestFitness >= OPTIMAL_FITNESS_THRESHOLD;
 
         ui.execute(() -> {
-            // fastMode antes que running: los que escuchan el fin del entrenamiento (p. ej. la oferta
-            // de reproducir su mejor generación) deben verlo ya terminado
+            // Orden: fastMode, running y por último training. Quien escucha el fin del entrenamiento
+            // (la oferta de reproducir su mejor generación) debe verlo ya terminado, y el replay que
+            // arranque desde ahí no debe pararlo un running.set(false) posterior
             fastMode = false;
             running.set(false);
+            training.set(false);
             progress.update(1, 1); // Completar la barra de progreso
 
             if (!reachedOptimal) {
@@ -687,6 +693,11 @@ public class SimulationController {
     /** @return la generación guardada que se está reproduciendo, o null fuera de ese replay */
     public ReadOnlyObjectProperty<GenerationData> replayedGenerationProperty() {
         return replayedGeneration;
+    }
+
+    /** @return si hay un entrenamiento rápido en curso (no un replay ni el juego en vivo) */
+    public ReadOnlyBooleanProperty trainingProperty() {
+        return training;
     }
 
     /** @return si se muestra un replay (mejor agente, campeón o generación) en vez del entrenamiento */
