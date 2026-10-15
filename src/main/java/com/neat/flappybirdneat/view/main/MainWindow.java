@@ -46,7 +46,10 @@ public final class MainWindow implements MainWindowActions {
         VBox statsPanel = new VBox(10, controlPanel.getView(), charts.getView());
         statsPanel.setPadding(new Insets(15));
 
-        historyBrowser = new HistoryBrowser(controller, this::pauseGameLoop, this::resumeGameLoop);
+        historyBrowser = new HistoryBrowser(controller, () -> {
+            settings.setShowAllAgents(true); // A generation is replayed with all its agents
+            showSimulationTab();
+        });
         SimulationPanel simulationPanel =
                 new SimulationPanel(controller, canvasWidth, canvasHeight, settings, networkWindow, historyBrowser);
 
@@ -109,7 +112,7 @@ public final class MainWindow implements MainWindowActions {
 
     @Override
     public void offerBestGenerationReplay() {
-        historyBrowser.offerBestGenerationReplay(this::showSimulationTab);
+        historyBrowser.offerBestGenerationReplay();
     }
 
     @Override
@@ -128,13 +131,5 @@ public final class MainWindow implements MainWindowActions {
         if (!networkWindow.isShowing()) {
             networkWindow.showNextTo(stage);
         }
-    }
-
-    private void pauseGameLoop() {
-        gameLoop.stop();
-    }
-
-    private void resumeGameLoop() {
-        gameLoop.start();
     }
 }

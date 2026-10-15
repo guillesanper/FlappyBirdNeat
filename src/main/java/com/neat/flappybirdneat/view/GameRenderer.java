@@ -33,13 +33,15 @@ public final class GameRenderer {
     public record Options(boolean showAllAgents, boolean highlightAll, String replayBanner, boolean bestOnlyNotice) {
 
         /**
-         * Main window: live training, or the replay of the best agent ever found or of a champion.
+         * Main window: live training, or a replay (of a recorded generation, of the best agent ever
+         * found or of a champion).
          *
+         * @param singleAgent  the population has a single agent, drawn as the best one
          * @param replayBanner banner shown while replaying (ignored outside replay mode)
          */
         public static Options liveSimulation(
                 boolean showAllAgents, boolean replayMode, boolean singleAgent, String replayBanner) {
-            return new Options(showAllAgents, replayMode || singleAgent, replayMode ? replayBanner : null, true);
+            return new Options(showAllAgents, singleAgent, replayMode ? replayBanner : null, true);
         }
 
         /** Replay window of a saved generation. */

@@ -5,7 +5,6 @@ import com.neat.flappybirdneat.history.HistoryManager;
 import com.neat.flappybirdneat.history.RunHistory;
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.Dialogs;
-import com.neat.flappybirdneat.view.FlappyBirdGameUI;
 import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.scene.control.Alert;
@@ -15,38 +14,30 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Browser of the recorded runs (the current one and previous ones) and their generations, from
- * which any generation can be replayed in its own window.
+ * Browser of the recorded runs (the current one and previous ones) and their generations, any of
+ * which can be replayed in the simulation tab.
  */
 final class HistoryBrowser {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HistoryBrowser.class);
-
     private final SimulationController controller;
-    private final Runnable pauseLiveLoop;
-    private final Runnable resumeLiveLoop;
+    private final Runnable onGenerationReplay;
     private final ComboBox<String> runComboBox = new ComboBox<>();
     private final TableView<GenerationData> generationTable = new TableView<>();
 
     /**
-     * @param pauseLiveLoop  pauses the main window's game loop while a replay window is open
-     * @param resumeLiveLoop resumes it once the replay window is closed
+     * @param onGenerationReplay shows the simulation tab once a generation replay has started
      */
-    HistoryBrowser(SimulationController controller, Runnable pauseLiveLoop, Runnable resumeLiveLoop) {
+    HistoryBrowser(SimulationController controller, Runnable onGenerationReplay) {
         this.controller = controller;
-        this.pauseLiveLoop = pauseLiveLoop;
-        this.resumeLiveLoop = resumeLiveLoop;
+        this.onGenerationReplay = onGenerationReplay;
 
         runComboBox.setPromptText("Seleccionar ejecución");
         runComboBox.setPrefWidth(200);
         runComboBox.setOnAction(e -> showSelectedRun());
 
-        generationTable.setPrefHeight(200);
+        generationTable.setPrefHeight(160);
         TableColumn<GenerationData, Integer> genNumberCol = new TableColumn<>("Gen");
         genNumberCol.setCellValueFactory(new PropertyValueFactory<>("generationNumber"));
         TableColumn<GenerationData, Double> bestFitnessCol = new TableColumn<>("Mejor Fitness");
@@ -115,10 +106,10 @@ final class HistoryBrowser {
     }
 
     /**
-     * After a training run: finds its best generation and, if the user accepts, switches to the
-     * simulation tab and replays it.
+     * After a training run: finds its best generation and, if the user accepts, replays it in the
+     * simulation tab.
      */
-    void offerBestGenerationReplay(Runnable showSimulationTab) {
+    void offerBestGenerationReplay() {
         RunHistory currentRun = controller.getHistoryManager().getCurrentRun();
         if (currentRun == null || currentRun.getGenerationDataList().isEmpty()) {
             return;
@@ -149,7 +140,6 @@ final class HistoryBrowser {
         final int bestIndex = bestGenerationIndex;
         alert.showAndWait().ifPresent(response -> {
             if (response == watchButton) {
-                showSimulationTab.run();
                 runComboBox.getSelectionModel().select(runComboBox.getItems().size() - 1);
                 showSelectedRun();
                 if (bestIndex < generationTable.getItems().size()) {
@@ -161,7 +151,7 @@ final class HistoryBrowser {
         });
     }
 
-    /** Opens a replay window for the generation selected in the table. */
+    /** Replays the generation selected in the table in the simulation tab, in a loop. */
     void playSelectedGeneration() {
         int selectedGenIndex = generationTable.getSelectionModel().getSelectedIndex();
         if (selectedGenIndex < 0) {
@@ -171,37 +161,15 @@ final class HistoryBrowser {
         if (run == null || selectedGenIndex >= run.getGenerationDataList().size()) {
             return;
         }
-        GenerationData selectedGen = run.getGenerationDataList().get(selectedGenIndex);
-        int generationNumber = selectedGen.getGenerationNumber();
-
-        pauseLiveLoop.run();
-        try {
-            Stage replayStage = new Stage();
-            replayStage.setTitle("Simulación de Generación " + generationNumber);
-            new FlappyBirdGameUI()
-                    .prepareStage(
-                            replayStage,
-                            selectedGen.getSavedPopulation(),
-                            generationNumber,
-                            controller.derivedRandom(generationNumber));
-            replayStage.setOnHidden(e -> resumeLiveLoop.run());
-            replayStage.show();
-
+        if (controller.isFastMode()) {
             Dialogs.show(
-                    Alert.AlertType.INFORMATION,
-                    "Reproducción Histórica",
+                    Alert.AlertType.WARNING,
+                    "Entrenamiento en curso",
                     null,
-                    "Reproduciendo generación " + generationNumber + " con fitness "
-                            + String.format("%.2f", selectedGen.getBestFitness())
-                            + "\n\nSe abrirá una nueva ventana con la simulación visual.");
-        } catch (Exception e) {
-            resumeLiveLoop.run();
-            LOG.error("Could not open the replay of generation {}", generationNumber, e);
-            Dialogs.show(
-                    Alert.AlertType.ERROR,
-                    "Error",
-                    "Error al cargar la simulación",
-                    "No se pudo iniciar la simulación visual: " + e.getMessage());
+                    "Detén el entrenamiento antes de reproducir una generación.");
+            return;
         }
+        controller.playGeneration(run.getGenerationDataList().get(selectedGenIndex));
+        onGenerationReplay.run();
     }
 }

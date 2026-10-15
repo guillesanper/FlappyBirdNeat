@@ -373,13 +373,14 @@ final class ControlPanel {
                         },
                         controller.currentGenerationProperty()));
 
-        // Once this run finishes, offer to replay its best generation (one-shot listener)
-        controller.runningProperty().addListener(new ChangeListener<>() {
+        // Once this run's thread is done (not just asked to stop), offer to replay its best
+        // generation, which needs the engine (one-shot listener)
+        controller.fastModeProperty().addListener(new ChangeListener<>() {
             @Override
-            public void changed(ObservableValue<? extends Boolean> observable, Boolean wasRunning, Boolean running) {
-                if (wasRunning && !running) {
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean wasTraining, Boolean training) {
+                if (wasTraining && !training) {
+                    controller.fastModeProperty().removeListener(this);
                     actions.offerBestGenerationReplay();
-                    controller.runningProperty().removeListener(this);
                 }
             }
         });

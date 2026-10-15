@@ -90,20 +90,32 @@ final class SimulationPanel {
         Button playSelectedGenButton = new Button("Reproducir generación seleccionada");
         playSelectedGenButton.setOnAction(e -> historyBrowser.playSelectedGeneration());
 
-        // Mientras se ve un campeón, sus datos; si no, la generación y el mejor fitness del
-        // entrenamiento en vivo (antes se mostraban también con un campeón, sin relación con él)
+        Button pauseButton = new Button("⏸ Pausar");
+        pauseButton.setOnAction(e -> {
+            settings.setPaused(!settings.isPaused());
+            pauseButton.setText(settings.isPaused() ? "▶ Continuar" : "⏸ Pausar");
+            draw();
+        });
+
+        // Ends any replay (generation, best agent or champion) and puts the training back
+        Button exitReplayButton = new Button("⏹ Volver al entrenamiento");
+        exitReplayButton.visibleProperty().bind(controller.replayModeProperty());
+        exitReplayButton.managedProperty().bind(exitReplayButton.visibleProperty());
+        exitReplayButton.setOnAction(e -> {
+            controller.exitReplayMode();
+            draw();
+        });
+
+        // Lo que se está mostrando: un campeón, una generación grabada o el entrenamiento en vivo
+        // (la generación y el mejor fitness del entrenamiento no tienen relación con un replay)
         Label infoLabel = new Label();
         infoLabel
                 .textProperty()
                 .bind(Bindings.createStringBinding(
-                        () -> controller.watchedChampionProperty().get() != null
-                                ? ChampionSummary.describe(
-                                        controller.watchedChampionProperty().get())
-                                : String.format(
-                                        "Generación: %d%nMejor Fitness: %.2f",
-                                        controller.currentGenerationProperty().get(),
-                                        controller.bestFitnessProperty().get()),
+                        this::describeShownAgents,
                         controller.watchedChampionProperty(),
+                        controller.replayedGenerationProperty(),
+                        controller.aliveCountProperty(),
                         controller.currentGenerationProperty(),
                         controller.bestFitnessProperty()));
 
@@ -117,6 +129,8 @@ final class SimulationPanel {
         VBox controlsPanel = new VBox(
                 10,
                 speedBox,
+                pauseButton,
+                exitReplayButton,
                 showAllCheckbox,
                 showNetworkButton,
                 resetViewButton,
@@ -147,6 +161,23 @@ final class SimulationPanel {
 
         view = new HBox(15, gameArea, sidebar);
         view.setPadding(new Insets(15));
+    }
+
+    private String describeShownAgents() {
+        if (controller.watchedChampionProperty().get() != null) {
+            return ChampionSummary.describe(controller.watchedChampionProperty().get());
+        }
+        if (controller.replayedGenerationProperty().get() != null) {
+            return GenerationReplaySummary.describe(
+                    controller.replayedGenerationProperty().get(),
+                    controller.aliveCountProperty().get(),
+                    controller.getPopulation().getAgents().length,
+                    controller.isReplayPipesOriginal());
+        }
+        return String.format(
+                "Generación: %d%nMejor Fitness: %.2f",
+                controller.currentGenerationProperty().get(),
+                controller.bestFitnessProperty().get());
     }
 
     /**
@@ -180,12 +211,15 @@ final class SimulationPanel {
                 gc,
                 controller.getGame(),
                 population.getAgents(),
-                population.getBestAgent(),
+                controller.getHighlightedAgent(),
                 GameRenderer.Options.liveSimulation(
                         settings.isShowAllAgents(),
                         controller.isReplayMode(),
                         population.getAgents().length == 1,
                         controller.getReplayBanner()));
+        if (settings.isPaused()) {
+            renderer.renderPausedOverlay(gc);
+        }
         gc.restore();
     }
 }

@@ -9,9 +9,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Frame loop of the main window. During headless training it only refreshes the statistics once
- * per second; otherwise it steps the live game at 60 fps times the chosen speed, draws it, moves
- * on to the next generation when every agent is dead (or restarts the best-agent replay), and
- * feeds the network window.
+ * per second; otherwise it steps the live game at 60 fps times the chosen speed (unless paused),
+ * draws it, moves on to the next generation when every agent is dead (or starts the replay over),
+ * and feeds the network window.
  */
 final class GameLoop extends AnimationTimer {
 
@@ -57,21 +57,21 @@ final class GameLoop extends AnimationTimer {
         }
         lastUpdate = now;
 
+        if (settings.isPaused()) {
+            drawFrame.run();
+            return;
+        }
+
         boolean allDead = controller.updateFrame();
         drawFrame.run();
 
         if (allDead) {
             if (controller.isReplayMode()) {
-                // Replaying the best agent: restart it instead of evolving
-                controller.getGame().reset();
-                for (FlappyBirdAgent agent : controller.getPopulation().getAgents()) {
-                    agent.reset();
-                }
+                // A replay never evolves: it starts over
                 LOG.info(
-                        "Best agent died with fitness {}; restarting the replay",
-                        String.format(
-                                "%.2f",
-                                controller.getPopulation().getAgents()[0].getFitness()));
+                        "Replay over (best fitness {}); starting it again",
+                        String.format("%.2f", controller.getHighlightedAgent().getFitness()));
+                controller.restartReplay();
             } else {
                 controller.nextGeneration();
                 onProgress.run();
@@ -79,7 +79,7 @@ final class GameLoop extends AnimationTimer {
         }
 
         if (networkWindow.isShowing()) {
-            FlappyBirdAgent bestAgent = controller.getPopulation().getBestAgent();
+            FlappyBirdAgent bestAgent = controller.getHighlightedAgent();
             if (!bestAgent.isDead()) {
                 networkWindow.update(bestAgent, controller.getGame().getNextPipe(bestAgent));
             }
