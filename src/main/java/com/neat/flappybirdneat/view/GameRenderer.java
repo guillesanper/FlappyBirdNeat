@@ -10,9 +10,9 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 /**
- * Draws a game frame (sky, pipes, birds, ground and score) on a canvas. Shared by the main
- * window's live simulation and by the generation replay window, which only differ in the
- * overlays described by {@link Options}.
+ * Draws a game frame (sky, pipes, birds, ground and score) on a canvas, for the live simulation
+ * and for every replay shown in the simulation tab; they only differ in the overlays described by
+ * {@link Options}.
  */
 public final class GameRenderer {
 
@@ -36,7 +36,8 @@ public final class GameRenderer {
     public record Options(boolean showAllAgents, boolean highlightAll, String replayBanner, boolean bestOnlyNotice) {
 
         /**
-         * Main window: live training, or the replay of the best agent ever found or of a champion.
+         * Simulation tab: live training, or the replay of a recorded generation, of the best agent ever
+         * found or of a champion.
          *
          * @param replayBanner banner shown while replaying (ignored outside replay mode)
          */
@@ -45,11 +46,6 @@ public final class GameRenderer {
             // Solo se resalta a todos cuando hay un único agente (mejor agente o campeón); el replay de
             // una generación muestra la bandada con su líder, como el entrenamiento
             return new Options(showAllAgents, singleAgent, replayMode ? replayBanner : null, true);
-        }
-
-        /** Replay window of a saved generation. */
-        public static Options generationReplay(boolean showAllAgents) {
-            return new Options(showAllAgents, false, null, false);
         }
     }
 
@@ -105,7 +101,7 @@ public final class GameRenderer {
         }
     }
 
-    /** Darkens the frame and writes "paused" on top (replay window). */
+    /** Darkens the frame and writes "paused" on top. */
     public void renderPausedOverlay(GraphicsContext gc) {
         gc.setFill(new Color(0, 0, 0, 0.3));
         gc.fillRect(0, 0, width, height);
