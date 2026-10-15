@@ -19,8 +19,10 @@ public final class GameRenderer {
     private static final double BIRD_X = 50;
     private static final double BIRD_SIZE = 30;
     private static final double GROUND_HEIGHT = 20;
-    private static final Color AGENT_FILL = new Color(1, 1, 0, 0.3);
-    private static final Color HALO_GLOW = new Color(1, 0.84, 0, 0.5);
+    // Todos los pájaros comparten dibujo (cuerpo, ojo y pico); solo cambian color y opacidad
+    private static final Color BEST_BODY = Color.RED;
+    private static final Color AGENT_BODY = Color.GOLD;
+    private static final double AGENT_ALPHA = 0.35;
     private static final Color OVERLAY = new Color(0, 0, 0, 0.7);
 
     /**
@@ -28,16 +30,10 @@ public final class GameRenderer {
      *
      * @param showAllAgents   draw the non-best agents (semi-transparent), not just the best one
      * @param highlightAll    draw every live agent as "the best" (replay of a single agent)
-     * @param bestHalo        surround the highlighted bird with a golden halo
      * @param replayBanner    text of the replay banner shown at the top, or null for none
      * @param bestOnlyNotice  show the "showing the best agent" notice when other agents are hidden
      */
-    public record Options(
-            boolean showAllAgents,
-            boolean highlightAll,
-            boolean bestHalo,
-            String replayBanner,
-            boolean bestOnlyNotice) {
+    public record Options(boolean showAllAgents, boolean highlightAll, String replayBanner, boolean bestOnlyNotice) {
 
         /**
          * Main window: live training, or the replay of the best agent ever found or of a champion.
@@ -46,12 +42,12 @@ public final class GameRenderer {
          */
         public static Options liveSimulation(
                 boolean showAllAgents, boolean replayMode, boolean singleAgent, String replayBanner) {
-            return new Options(showAllAgents, replayMode || singleAgent, true, replayMode ? replayBanner : null, true);
+            return new Options(showAllAgents, replayMode || singleAgent, replayMode ? replayBanner : null, true);
         }
 
         /** Replay window of a saved generation. */
         public static Options generationReplay(boolean showAllAgents) {
-            return new Options(showAllAgents, false, false, null, false);
+            return new Options(showAllAgents, false, null, false);
         }
     }
 
@@ -72,15 +68,18 @@ public final class GameRenderer {
         for (Pipe pipe : game.getPipes()) {
             drawPipe(gc, pipe);
         }
-        for (FlappyBirdAgent agent : agents) {
-            if (agent.isDead()) {
-                continue;
+        // Primero la bandada, translúcida, y encima los destacados: si no, el mejor podía quedar
+        // tapado por los agentes que van después de él en el array
+        if (options.showAllAgents() && !options.highlightAll()) {
+            for (FlappyBirdAgent agent : agents) {
+                if (!agent.isDead() && agent != best) {
+                    drawBird(gc, agent.getY(), AGENT_BODY, AGENT_ALPHA);
+                }
             }
-            if (agent == best || options.highlightAll()) {
-                drawBestBird(gc, agent.getY(), options.bestHalo());
-            } else if (options.showAllAgents()) {
-                gc.setFill(AGENT_FILL);
-                gc.fillOval(BIRD_X, agent.getY(), BIRD_SIZE, BIRD_SIZE);
+        }
+        for (FlappyBirdAgent agent : agents) {
+            if (!agent.isDead() && (agent == best || options.highlightAll())) {
+                drawBird(gc, agent.getY(), BEST_BODY, 1.0);
             }
         }
         if (options.replayBanner() != null) {
@@ -137,28 +136,23 @@ public final class GameRenderer {
         gc.fillRect(pipe.getX() - 3, gapBottom, pipe.getWidth() + 6, 20);
     }
 
-    private void drawBestBird(GraphicsContext gc, double y, boolean halo) {
-        gc.setFill(Color.RED);
+    /** El mismo pájaro para todos los agentes: cuerpo del color dado, ojo y pico. */
+    private void drawBird(GraphicsContext gc, double y, Color body, double alpha) {
+        gc.save();
+        gc.setGlobalAlpha(alpha);
+        gc.setFill(body);
         gc.fillOval(BIRD_X, y, BIRD_SIZE, BIRD_SIZE);
 
-        // Eye
+        // Ojo
         gc.setFill(Color.WHITE);
         gc.fillOval(65, y + 8, 8, 8);
         gc.setFill(Color.BLACK);
         gc.fillOval(67, y + 10, 4, 4);
 
-        // Beak
+        // Pico
         gc.setFill(Color.ORANGE);
         gc.fillPolygon(new double[] {80, 90, 80}, new double[] {y + 15, y + 18, y + 21}, 3);
-
-        if (halo) {
-            gc.setStroke(Color.GOLD);
-            gc.setLineWidth(3);
-            gc.strokeOval(45, y - 5, 40, 40);
-            gc.setStroke(HALO_GLOW);
-            gc.setLineWidth(6);
-            gc.strokeOval(42, y - 8, 46, 46);
-        }
+        gc.restore();
     }
 
     private void drawGround(GraphicsContext gc) {
