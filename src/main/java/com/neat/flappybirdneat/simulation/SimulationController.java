@@ -394,8 +394,10 @@ public class SimulationController {
         final boolean reachedOptimal = finalGlobalBestFitness >= OPTIMAL_FITNESS_THRESHOLD;
 
         ui.execute(() -> {
-            running.set(false);
+            // fastMode antes que running: los que escuchan el fin del entrenamiento (p. ej. la oferta
+            // de reproducir su mejor generación) deben verlo ya terminado
             fastMode = false;
+            running.set(false);
             progress.update(1, 1); // Completar la barra de progreso
 
             if (!reachedOptimal) {
@@ -609,8 +611,13 @@ public class SimulationController {
      * Detiene la simulación rápida
      */
     public void stopSimulation() {
-        stopRequested = true;
-        running.set(false);
+        if (fastMode) {
+            // El hilo del entrenamiento termina la generación en curso y entonces marca el fin
+            // (fastMode y running a false); hasta entonces sigue usando el motor
+            stopRequested = true;
+        } else {
+            running.set(false);
+        }
     }
 
     /**

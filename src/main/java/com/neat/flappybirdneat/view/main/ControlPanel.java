@@ -459,6 +459,15 @@ final class ControlPanel {
                     "Ejecuta primero una simulación para encontrar el mejor individuo.");
             return;
         }
+        // El entrenamiento rápido usa el motor en otro hilo hasta que termina su generación
+        if (controller.isFastMode()) {
+            Dialogs.show(
+                    Alert.AlertType.WARNING,
+                    "Entrenamiento en curso",
+                    null,
+                    "Detén el entrenamiento antes de reproducir el mejor individuo.");
+            return;
+        }
         controller.stopSimulation();
 
         double bestFitnessEver = controller.getHistoryManager().getBestFitnessEver();
