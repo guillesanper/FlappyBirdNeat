@@ -3,7 +3,7 @@
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![JavaFX 17](https://img.shields.io/badge/JavaFX-17-blue)
-![Tests](https://img.shields.io/badge/tests-318%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-340%20passing-brightgreen)
 ![Coverage](.github/badges/jacoco.svg)
 ![Branches](.github/badges/branches.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -24,7 +24,7 @@ There are no ML libraries involved. The neural networks, both evolution engines 
 - **Portable champions:** trained agents are saved as versioned JSON (a NEAT genome or the MLP's weights, plus the seed, generation and commit that produced them), replayed from the command line or the UI, and shipped with the app: double-click the installer's app and a trained NEAT agent is already playing.
 - **Experiment tooling:** a headless command line that trains without opening a window and writes one CSV row per generation, generation history and replay in the UI, and a benchmark mode that compares operator configurations across repeated seeded runs.
 - **Parallel and still deterministic:** each agent plays its own copy of the game over the same pipes, so a generation is evaluated across all CPU cores, and the result is bit-for-bit the same with 1 or 8 threads.
-- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (309 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
+- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (340 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
 
 ## Download
 
@@ -52,8 +52,11 @@ The installed launcher also takes the command-line options below (for example `/
 | ![Neural network visualizer](docs/media/network.png) | ![Fitness distribution and genetic diversity](docs/media/statistics.png) |
 | Inputs on the left, hidden activations in the middle, and the jump/no-jump output on the right, all updating every frame. | Fitness distribution of the current generation and how genetic diversity collapses as the population converges. |
 
+![Replay of a recorded generation in the simulation tab](docs/media/generation-replay.png)
+*Simulation tab: any recorded generation can be replayed exactly as it was played in training, with the same agents on the same pipes, in a loop. The leading bird is red and the rest of the flock translucent yellow. The game scales with the window, and "Volver al entrenamiento" brings the training back where it was.*
+
 ![Control panel](docs/media/control-panel.png)
-*Control panel: pick the engine, train headless for N generations and track best/average fitness. This run reached the 80,000 fitness stopping threshold at generation 19.*
+*Control panel: pick the engine, train headless for N generations and track the best, average and minimum fitness of every generation.*
 
 ## How it works
 
@@ -165,7 +168,7 @@ A few design decisions behind it:
 - **The engine is abstracted away from the game.** `FlappyBirdGame` and `FlappyBirdAgent` only know about the `Brain` interface (`double[] feedForward(double[])`), and the simulation only knows about `EvolvingPopulation`. Switching between the GA and NEAT is a dropdown in the UI, not a code change.
 - **Operators are strategies built by factories** (`SelectionFactory`, `CrossoverFactory`, `MutationFactory`, `ScalingFactory`). Adding a new selection method means writing one class; `Population` doesn't change.
 - **The training core knows nothing about JavaFX.** `TrainingEngine` owns the seed, the population and the game; `SimulationController` is a thin adapter that turns it into observable properties, chart series and history snapshots for the UI, and the CLI drives the engine directly. `Main` chooses between the CLI and the UI before any JavaFX class is touched, and a test runs the CLI in an isolated class loader to prove that no `javafx.*` class is ever requested.
-- **Every run is reproducible from one seed.** `TrainingEngine` and `BenchmarkRunner` own a global seed, and there is no `new Random()` anywhere else: the populations and the networks receive the generator, and operator strategies get it as a call argument instead of storing it, so one strategy instance can be shared without coupling runs. The pipes of generation *g* come from a seed derived from the global seed and *g* (a SplitMix64-style mix), not from the evolution generator, so every agent can replay exactly the same pipes, and the GA and NEAT face the same course for the same seed. Replays draw from derived generators, so opening one never perturbs training. The app logs its seed at startup (`-Dseed=N` to reproduce it), and end-to-end tests check identical curves for the same seed, including pinned values for seed 42.
+- **Every run is reproducible from one seed.** `TrainingEngine` and `BenchmarkRunner` own a global seed, and there is no `new Random()` anywhere else: the populations and the networks receive the generator, and operator strategies get it as a call argument instead of storing it, so one strategy instance can be shared without coupling runs. The pipes of generation *g* come from a seed derived from the global seed and *g* (a SplitMix64-style mix), not from the evolution generator, so every agent can replay exactly the same pipes, and the GA and NEAT face the same course for the same seed. Each recorded generation keeps the seed of its pipes, so replaying it shows exactly the run that was recorded; a replay sets the training population aside and never perturbs it. The app logs its seed at startup (`-Dseed=N` to reproduce it), and end-to-end tests check identical curves for the same seed, including pinned values for seed 42.
 - **Parallelism without nondeterminism.** A generation's agents are spread over a `ForkJoinPool` (platform threads: the work is CPU-bound, which is not what virtual threads are for). Each agent, its brain (including the activations the visualizer reads) and its game belong to exactly one task; statistics, selection and reproduction then run sequentially in agent order. Tests check that 1, 2, 4 and 8 threads give identical results for both engines, that no two agents ever share a brain, and that stepping every bird through the shared on-screen game frame by frame gives the same generation as the parallel batch.
 
 ## Getting started
