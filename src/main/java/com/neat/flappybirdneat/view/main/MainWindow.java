@@ -20,6 +20,9 @@ import javafx.stage.Stage;
  */
 public final class MainWindow implements MainWindowActions {
 
+    private static final double MIN_WIDTH = 800;
+    private static final double MIN_HEIGHT = 500;
+
     private final Node simulationView;
     private final SimulationController controller;
     private final NeuralNetworkWindow networkWindow = new NeuralNetworkWindow(600, 400);
@@ -74,6 +77,9 @@ public final class MainWindow implements MainWindowActions {
         tabPane.setPrefSize(simulationView.prefWidth(-1), simulationView.prefHeight(-1) + headerHeight);
         stage.setScene(scene);
         stage.show();
+        // El juego se escala con la ventana; por debajo de este tamaño quedaría ilegible
+        stage.setMinWidth(MIN_WIDTH);
+        stage.setMinHeight(MIN_HEIGHT);
         gameLoop.start();
 
         stage.setOnCloseRequest(e -> {

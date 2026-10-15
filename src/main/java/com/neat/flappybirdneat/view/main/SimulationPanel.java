@@ -8,12 +8,17 @@ import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /**
@@ -26,7 +31,12 @@ final class SimulationPanel {
     private final LiveViewSettings settings;
     private final Canvas canvas;
     private final GameRenderer renderer;
-    private final VBox view;
+    private final HBox view;
+    // El juego se dibuja siempre en coordenadas lógicas (canvasWidth x canvasHeight) y se escala
+    // para llenar el espacio disponible sin deformarse
+    private final double logicalWidth;
+    private final double logicalHeight;
+    private double scale = 1.0;
 
     SimulationPanel(
             SimulationController controller,
@@ -39,6 +49,8 @@ final class SimulationPanel {
         this.settings = settings;
         this.canvas = new Canvas(canvasWidth, canvasHeight);
         this.renderer = new GameRenderer(canvasWidth, canvasHeight);
+        this.logicalWidth = canvasWidth;
+        this.logicalHeight = canvasHeight;
 
         Label speedLabel = new Label("Velocidad de Simulación:");
         Slider speedSlider = new Slider(1, 10, 1);
@@ -116,8 +128,42 @@ final class SimulationPanel {
                 toggleAgentsButton);
         controlsPanel.setPadding(new Insets(10));
 
-        view = new VBox(10, new HBox(15, canvas, controlsPanel));
+        // Zona del juego: crece con la ventana; el canvas se escala y se centra en ella. Su tamaño
+        // preferido es el lógico, así que la ventana abre con el juego a escala 1.
+        Pane gameArea = new Pane(canvas);
+        gameArea.setMinSize(0, 0);
+        gameArea.setPrefSize(logicalWidth, logicalHeight);
+        gameArea.widthProperty().addListener((obs, oldVal, newVal) -> fitCanvas(gameArea));
+        gameArea.heightProperty().addListener((obs, oldVal, newVal) -> fitCanvas(gameArea));
+        HBox.setHgrow(gameArea, Priority.ALWAYS);
+
+        // Barra lateral de ancho fijo; con la ventana baja se desplaza en vez de cortarse
+        ScrollPane sidebar = new ScrollPane(controlsPanel);
+        sidebar.setFitToWidth(true);
+        sidebar.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        sidebar.setMinWidth(Region.USE_PREF_SIZE);
+        sidebar.setStyle("-fx-background-color: transparent;");
+
+        view = new HBox(15, gameArea, sidebar);
         view.setPadding(new Insets(15));
+    }
+
+    /**
+     * Escala que hace caber el juego de tamaño lógico en el espacio disponible sin deformarlo.
+     *
+     * @return 0 si no hay espacio
+     */
+    static double fitScale(double availableWidth, double availableHeight, double logicalWidth, double logicalHeight) {
+        if (availableWidth <= 0 || availableHeight <= 0) return 0;
+        return Math.min(availableWidth / logicalWidth, availableHeight / logicalHeight);
+    }
+
+    private void fitCanvas(Pane gameArea) {
+        scale = fitScale(gameArea.getWidth(), gameArea.getHeight(), logicalWidth, logicalHeight);
+        canvas.setWidth(logicalWidth * scale);
+        canvas.setHeight(logicalHeight * scale);
+        canvas.relocate((gameArea.getWidth() - canvas.getWidth()) / 2, (gameArea.getHeight() - canvas.getHeight()) / 2);
+        draw();
     }
 
     Node getView() {
@@ -126,9 +172,13 @@ final class SimulationPanel {
 
     /** Draws the current state of the live game. */
     void draw() {
+        if (scale <= 0) return;
         EvolvingPopulation population = controller.getPopulation();
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.save();
+        gc.setTransform(scale, 0, 0, scale, 0, 0);
         renderer.render(
-                canvas.getGraphicsContext2D(),
+                gc,
                 controller.getGame(),
                 population.getAgents(),
                 Leader.of(population.getAgents()),
@@ -137,5 +187,6 @@ final class SimulationPanel {
                         controller.isReplayMode(),
                         population.getAgents().length == 1,
                         controller.getReplayBanner()));
+        gc.restore();
     }
 }
