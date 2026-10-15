@@ -3,6 +3,7 @@ package com.neat.flappybirdneat.view.main;
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.ChartBandUtil;
 import java.util.List;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.chart.LineChart;
@@ -26,6 +27,10 @@ final class FitnessCharts {
     private final XYChart.Series<Number, Number> avgFitnessSeries = new XYChart.Series<>();
     private final XYChart.Series<Number, Number> bestAbsoluteSeries = new XYChart.Series<>();
     private final Polygon minMaxBand = new Polygon();
+    // Curvas de la última actualización, para recolocar la banda cuando cambie la escala
+    private List<Double> bandUpper = List.of();
+    private List<Double> bandLower = List.of();
+    private boolean bandRefreshPending = false;
 
     private final XYChart.Series<Number, Number> diversitySeries = new XYChart.Series<>();
     private final LineChart<Number, Number> speciesCountChart;
@@ -35,6 +40,19 @@ final class FitnessCharts {
 
     FitnessCharts() {
         fitnessChart = createFitnessChart();
+        // La banda está en píxeles: si los ejes se reescalan (autoescalado, tamaño de la ventana)
+        // sin datos nuevos, hay que recolocarla o queda desalineada respecto a las curvas
+        NumberAxis xAxis = (NumberAxis) fitnessChart.getXAxis();
+        NumberAxis yAxis = (NumberAxis) fitnessChart.getYAxis();
+        for (javafx.beans.Observable o : List.of(
+                xAxis.scaleProperty(),
+                xAxis.lowerBoundProperty(),
+                yAxis.scaleProperty(),
+                yAxis.lowerBoundProperty(),
+                fitnessChart.widthProperty(),
+                fitnessChart.heightProperty())) {
+            o.addListener(change -> scheduleBandRefresh());
+        }
         LineChart<Number, Number> diversityChart = metricChart("Diversidad", "Diversidad Genética", diversitySeries);
         speciesCountChart = metricChart("Nº de especies", "Nº de Especies (modo NEAT)", speciesCountSeries);
 
@@ -90,6 +108,16 @@ final class FitnessCharts {
         return chart;
     }
 
+    /** Recoloca la banda tras el siguiente layout, cuando los ejes ya tienen su escala final. */
+    private void scheduleBandRefresh() {
+        if (bandRefreshPending) return;
+        bandRefreshPending = true;
+        Platform.runLater(() -> {
+            bandRefreshPending = false;
+            ChartBandUtil.update(fitnessChart, minMaxBand, bandUpper, bandLower);
+        });
+    }
+
     private static LineChart<Number, Number> metricChart(
             String yLabel, String title, XYChart.Series<Number, Number> series) {
         NumberAxis xAxis = new NumberAxis();
@@ -128,7 +156,9 @@ final class FitnessCharts {
             replacePoints(bestAbsoluteSeries, absoluteHistory);
         }
 
-        ChartBandUtil.update(fitnessChart, minMaxBand, bestHistory, controller.getMinFitnessHistory());
+        bandUpper = bestHistory;
+        bandLower = controller.getMinFitnessHistory();
+        ChartBandUtil.update(fitnessChart, minMaxBand, bandUpper, bandLower);
 
         replacePoints(diversitySeries, controller.getDiversityHistory());
 
