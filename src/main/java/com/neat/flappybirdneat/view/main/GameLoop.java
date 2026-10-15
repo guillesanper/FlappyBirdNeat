@@ -79,9 +79,9 @@ final class GameLoop extends AnimationTimer {
         }
 
         if (networkWindow.isShowing()) {
-            FlappyBirdAgent bestAgent = controller.getPopulation().getBestAgent();
-            if (!bestAgent.isDead()) {
-                networkWindow.update(bestAgent, controller.getGame().getNextPipe(bestAgent));
+            FlappyBirdAgent leader = Leader.of(controller.getPopulation().getAgents());
+            if (leader != null) {
+                networkWindow.update(leader, controller.getGame().getNextPipe(leader));
             }
         }
     }

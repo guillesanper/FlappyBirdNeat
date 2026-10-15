@@ -131,7 +131,7 @@ final class SimulationPanel {
                 canvas.getGraphicsContext2D(),
                 controller.getGame(),
                 population.getAgents(),
-                population.getBestAgent(),
+                Leader.of(population.getAgents()),
                 GameRenderer.Options.liveSimulation(
                         settings.isShowAllAgents(),
                         controller.isReplayMode(),
