@@ -373,13 +373,14 @@ final class ControlPanel {
                         },
                         controller.currentGenerationProperty()));
 
-        // Once this run finishes, offer to replay its best generation (one-shot listener)
-        controller.runningProperty().addListener(new ChangeListener<>() {
+        // Once this run's thread is done (not just asked to stop), offer to replay its best
+        // generation, which needs the engine (one-shot listener)
+        controller.fastModeProperty().addListener(new ChangeListener<>() {
             @Override
-            public void changed(ObservableValue<? extends Boolean> observable, Boolean wasRunning, Boolean running) {
-                if (wasRunning && !running) {
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean wasTraining, Boolean training) {
+                if (wasTraining && !training) {
+                    controller.fastModeProperty().removeListener(this);
                     actions.offerBestGenerationReplay();
-                    controller.runningProperty().removeListener(this);
                 }
             }
         });
@@ -459,7 +460,14 @@ final class ControlPanel {
                     "Ejecuta primero una simulación para encontrar el mejor individuo.");
             return;
         }
-        controller.stopSimulation();
+        if (controller.isFastMode()) {
+            Dialogs.show(
+                    Alert.AlertType.WARNING,
+                    "Entrenamiento en curso",
+                    null,
+                    "Detén el entrenamiento antes de ver el mejor individuo.");
+            return;
+        }
 
         double bestFitnessEver = controller.getHistoryManager().getBestFitnessEver();
         if (bestFitnessEver >= SimulationController.getOptimalFitnessThreshold()) {
@@ -471,7 +479,7 @@ final class ControlPanel {
                             + "¡Este agente ha alcanzado el umbral óptimo!\n"
                             + "Es probablemente el mejor agente posible.\n\n"
                             + "Cambia a la pestaña 'Simulación Visual' para verlo en acción.\n"
-                            + "El agente aparecerá marcado en rojo con un borde dorado brillante.");
+                            + "El agente aparecerá en rojo.");
         } else {
             Dialogs.show(
                     Alert.AlertType.INFORMATION,
@@ -479,7 +487,7 @@ final class ControlPanel {
                     "Mejor fitness encontrado: " + String.format("%.2f", bestFitnessEver),
                     "Se reproducirá el mejor agente encontrado.\n\n"
                             + "Cambia a la pestaña 'Simulación Visual' para verlo en acción.\n"
-                            + "El agente aparecerá marcado en rojo con un borde dorado.");
+                            + "El agente aparecerá en rojo.");
         }
 
         controller.playBestAgentOnly();

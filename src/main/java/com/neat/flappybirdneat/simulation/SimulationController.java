@@ -11,6 +11,7 @@ import com.neat.flappybirdneat.config.GeneticOperatorsConfig;
 import com.neat.flappybirdneat.game.FlappyBirdGame;
 import com.neat.flappybirdneat.history.GenerationData;
 import com.neat.flappybirdneat.history.HistoryManager;
+import com.neat.flappybirdneat.history.RunHistory;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.neat.FlappyBirdAgent;
 import com.neat.flappybirdneat.neat.Population;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.concurrent.Task;
@@ -30,7 +32,7 @@ import org.slf4j.LoggerFactory;
 /**
  * UI adapter over {@link TrainingEngine}: exposes the training state as JavaFX observable
  * properties, keeps the per-generation chart series and history snapshots, runs fast training on
- * a background task and handles the best-agent replay. The training itself (seeded generator,
+ * a background task and handles the replays (best agent, champion or a recorded generation). The training itself (seeded generator,
  * population, game) lives in the engine, which has no JavaFX dependencies.
  */
 public class SimulationController {
@@ -45,6 +47,7 @@ public class SimulationController {
     private static final long CHAMPION_SALT = -2;
 
     private static final String BEST_AGENT_BANNER = "★ REPRODUCIENDO MEJOR AGENTE ★";
+    private static final String GENERATION_BANNER = "▶ REPLAY · Generación %d";
 
     /** Modo de evolución: MLP de topología fija (operadores configurables) o NEAT real. */
     public enum Mode {
@@ -60,6 +63,10 @@ public class SimulationController {
     private final BooleanProperty running = new SimpleBooleanProperty(false);
     // Campeón que se está viendo (--demo, --watch, "Ver campeón"); null durante el entrenamiento
     private final ObjectProperty<Champion> watchedChampion = new SimpleObjectProperty<>();
+    // Replay en curso (mejor agente, campeón o generación): la población de entrenamiento está apartada
+    private final BooleanProperty replayMode = new SimpleBooleanProperty(false);
+    // Generación grabada que se está reproduciendo; null en los demás replays y en el entrenamiento
+    private final ObjectProperty<GenerationData> replayedGeneration = new SimpleObjectProperty<>();
 
     // Datos para gráficos
     private final List<Double> bestFitnessHistory = new ArrayList<>();
@@ -76,12 +83,20 @@ public class SimulationController {
     private GeneticOperatorsConfig operatorsConfig;
 
     // Parámetros de simulación
-    private boolean fastMode = false;
+    // Entrenamiento rápido en curso: baja cuando su hilo ha terminado de verdad, no al pedir detenerlo
+    private final BooleanProperty fastMode = new SimpleBooleanProperty(false);
     // Escrito desde el hilo de la UI y leído desde el del entrenamiento rápido
     private volatile boolean stopRequested = false;
     private int targetGenerations = 0;
-    private boolean replayMode = false; // Indica si estamos reproduciendo el mejor agente
     private String replayBanner = BEST_AGENT_BANNER;
+    // Población y juego de entrenamiento apartados durante un replay (null fuera de un replay)
+    private TrainingEngine.Snapshot trainingSnapshot;
+    private boolean trainingWasRunning;
+    // Tubos de cada vuelta del replay de una generación (null en los demás replays)
+    private Supplier<Random> replayPipes;
+    private boolean replayPipesOriginal = true;
+    // Agente dibujado en rojo en el replay de una generación: el que marcó su mejor fitness
+    private FlappyBirdAgent replayedFittest;
     private Mode mode = Mode.FIXED_MLP;
     private final long seed;
 
@@ -95,7 +110,7 @@ public class SimulationController {
         this.populationSize = populationSize;
         this.seed = seed;
         this.engine = new TrainingEngine(populationSize, canvasWidth, canvasHeight, seed);
-        this.historyManager = new HistoryManager();
+        this.historyManager = new HistoryManager(seed);
         this.operatorsConfig = new GeneticOperatorsConfig();
 
         resetSimulation();
@@ -118,8 +133,9 @@ public class SimulationController {
      */
     public void resetSimulation() {
         engine.reset(mode == Mode.NEAT ? EngineType.NEAT : EngineType.GA, operatorsConfig);
-        replayMode = false;
-        watchedChampion.set(null);
+        // La población apartada por un replay ya no sirve: se empieza de cero
+        trainingSnapshot = null;
+        clearReplayState();
 
         currentGeneration.set(1);
         bestFitness.set(0);
@@ -218,7 +234,7 @@ public class SimulationController {
      */
     public void runFastSimulation(int generations) {
         // fastMode sigue activo mientras una ejecución detenida termina su generación en curso
-        if (running.get() || fastMode) return;
+        if (running.get() || fastMode.get()) return;
 
         beginFastSimulation(generations);
 
@@ -244,10 +260,10 @@ public class SimulationController {
 
     /** Prepara el estado de un entrenamiento rápido antes de lanzar {@link #trainFast}. */
     void beginFastSimulation(int generations) {
-        replayMode = false;
-        watchedChampion.set(null);
+        // Se entrena la población de entrenamiento, no la de un replay
+        exitReplayMode();
         running.set(true);
-        fastMode = true;
+        fastMode.set(true);
         stopRequested = false;
         targetGenerations = generations;
 
@@ -384,7 +400,7 @@ public class SimulationController {
 
         ui.execute(() -> {
             running.set(false);
-            fastMode = false;
+            fastMode.set(false);
             progress.update(1, 1); // Completar la barra de progreso
 
             if (!reachedOptimal) {
@@ -423,9 +439,12 @@ public class SimulationController {
     }
 
     /**
-     * Inicia la reproducción del mejor individuo encontrado
+     * Inicia la reproducción del mejor individuo encontrado. No se puede llamar durante un
+     * entrenamiento rápido: su hilo sigue jugando y evolucionando la población hasta acabar la
+     * generación en curso, aunque se haya pedido detenerlo.
      */
     public void playBestAgentOnly() {
+        if (fastMode.get()) throw new IllegalStateException("Stop the training before replaying the best agent");
         GenerationData bestGenData = historyManager.getBestGeneration();
         if (bestGenData == null) {
             LOG.warn("No best generation recorded yet; nothing to replay");
@@ -435,18 +454,8 @@ public class SimulationController {
         // Crear población con solo el mejor agente (resetea también el juego)
         EvolvingPopulation bestAgentPop = createBestAgentOnlyPopulation();
         if (bestAgentPop != null) {
-            engine.replacePopulation(bestAgentPop);
-
-            // Reiniciar el agente pero preservar su cerebro
-            for (FlappyBirdAgent agent : bestAgentPop.getAgents()) {
-                agent.reset();
-            }
-
-            fastMode = false;
-            replayMode = true; // IMPORTANTE: Activar modo replay para que no evolucione
-            watchedChampion.set(null);
+            startReplay(bestAgentPop, null);
             replayBanner = BEST_AGENT_BANNER;
-            running.set(true);
 
             LOG.info("Replaying best agent (fitness {})", String.format("%.2f", historyManager.getBestFitnessEver()));
         }
@@ -458,15 +467,13 @@ public class SimulationController {
      * fast training.
      */
     public void watchChampion(Champion champion) {
-        if (fastMode) throw new IllegalStateException("Stop the training before watching a champion");
+        if (fastMode.get()) throw new IllegalStateException("Stop the training before watching a champion");
         FlappyBirdAgent agent = champion.newAgent();
         Random random = derivedRandom(CHAMPION_SALT);
         EvolvingPopulation single = champion.engine() == EngineType.NEAT
                 ? NeatPopulation.singleAgent(agent, AGENT_INPUTS, AGENT_OUTPUTS, random, engine.getNeatConfig())
                 : Population.singleAgent(agent, random);
-        engine.replacePopulation(single);
-
-        replayMode = true;
+        startReplay(single, null);
         watchedChampion.set(champion);
         // Short enough not to cover the score, drawn at the top centre
         replayBanner = String.format(
@@ -474,14 +481,95 @@ public class SimulationController {
                 "★ CAMPEÓN %s · gen %d ★",
                 champion.engine() == EngineType.NEAT ? "NEAT" : "MLP",
                 champion.metadata().generation());
-        aliveCount.set(1);
-        running.set(true);
         LOG.info(
                 "Watching a {} champion (seed {}, generation {}, fitness {})",
                 champion.engine(),
                 champion.metadata().seed(),
                 champion.metadata().generation(),
                 String.format("%.0f", champion.metadata().fitness()));
+    }
+
+    /**
+     * Replays a recorded generation in a loop, faithfully: a copy of its population, unevolved, on
+     * the pipes it faced in training (derived from its run's seed and its number), so it lasts
+     * exactly as long as it did. Runs recorded without a seed get deterministic pipes that are not
+     * the original ones. The training population is set aside until {@link #exitReplayMode()}; must
+     * not be called during a fast training.
+     */
+    public void playGeneration(GenerationData generation) {
+        if (fastMode.get()) throw new IllegalStateException("Stop the training before replaying a generation");
+        int number = generation.getGenerationNumber();
+        RunHistory run = historyManager.runOf(generation);
+        Long runSeed = run == null ? null : run.getSeed();
+
+        EvolvingPopulation replay = generation.getSavedPopulation().deepCopy();
+        // Fitness of the snapshot are those of the training: the fittest one is drawn in red
+        FlappyBirdAgent fittest = replay.fittestAgent();
+        Supplier<Random> pipes;
+        if (runSeed != null) {
+            long pipeSeed = TrainingEngine.pipeSeed(runSeed, number);
+            pipes = () -> new Random(pipeSeed);
+        } else {
+            pipes = () -> derivedRandom(number);
+            LOG.warn("The run of generation {} has no recorded seed: its replay uses other pipes", number);
+        }
+        startReplay(replay, pipes.get());
+        replayPipes = pipes;
+        replayPipesOriginal = runSeed != null;
+        replayedFittest = fittest;
+        replayedGeneration.set(generation);
+        replayBanner = String.format(Locale.ROOT, GENERATION_BANNER, number);
+        LOG.info(
+                "Replaying generation {} (best fitness {} in training)",
+                number,
+                String.format("%.2f", generation.getBestFitness()));
+    }
+
+    /**
+     * Starts the next lap of the current replay once every agent has died. A recorded generation
+     * goes back to the same pipes; the best agent and champions keep the game's generator, so they
+     * face new pipes on every lap.
+     */
+    public void restartReplay() {
+        if (replayPipes != null) {
+            engine.replacePopulation(engine.getPopulation(), replayPipes.get());
+        } else {
+            engine.getGame().reset();
+        }
+        for (FlappyBirdAgent agent : engine.getPopulation().getAgents()) {
+            agent.reset();
+        }
+        aliveCount.set(engine.aliveCount());
+    }
+
+    /** Swaps a replay population in, setting the training one aside unless a replay already did. */
+    private void startReplay(EvolvingPopulation replay, Random pipes) {
+        if (!replayMode.get()) {
+            trainingSnapshot = engine.snapshot();
+            trainingWasRunning = running.get();
+        }
+        if (pipes == null) {
+            engine.replacePopulation(replay);
+        } else {
+            engine.replacePopulation(replay, pipes);
+        }
+        // Agents start from scratch, keeping their brains
+        for (FlappyBirdAgent agent : replay.getAgents()) {
+            agent.reset();
+        }
+        clearReplayState();
+        replayMode.set(true); // Los replays no evolucionan
+        aliveCount.set(engine.aliveCount());
+        running.set(true);
+    }
+
+    private void clearReplayState() {
+        replayMode.set(false);
+        watchedChampion.set(null);
+        replayedGeneration.set(null);
+        replayPipes = null;
+        replayPipesOriginal = true;
+        replayedFittest = null;
     }
 
     /**
@@ -517,18 +605,49 @@ public class SimulationController {
     }
 
     /**
-     * @return true si estamos en modo replay (reproduciendo el mejor agente)
+     * @return true durante un replay (mejor agente, campeón o generación grabada)
      */
     public boolean isReplayMode() {
+        return replayMode.get();
+    }
+
+    /** @return whether a replay is on, for the controls that only make sense during one */
+    public ReadOnlyBooleanProperty replayModeProperty() {
         return replayMode;
     }
 
+    /** @return the recorded generation being replayed, or null */
+    public ReadOnlyObjectProperty<GenerationData> replayedGenerationProperty() {
+        return replayedGeneration;
+    }
+
+    /** @return false when the replayed generation's run has no seed, so its pipes are not the original ones */
+    public boolean isReplayPipesOriginal() {
+        return replayPipesOriginal;
+    }
+
     /**
-     * Desactiva el modo replay
+     * @return the agent to draw in red and to show in the network window: in a generation replay,
+     *     the one that set the generation's best fitness; otherwise the population's best agent
+     */
+    public FlappyBirdAgent getHighlightedAgent() {
+        return replayedFittest != null
+                ? replayedFittest
+                : engine.getPopulation().getBestAgent();
+    }
+
+    /**
+     * Ends the replay (if any) and puts the training population back with its game, exactly as it
+     * was when the first replay set it aside.
      */
     public void exitReplayMode() {
-        replayMode = false;
-        watchedChampion.set(null);
+        if (trainingSnapshot != null) {
+            engine.restore(trainingSnapshot);
+            trainingSnapshot = null;
+            running.set(trainingWasRunning);
+            aliveCount.set(engine.aliveCount());
+        }
+        clearReplayState();
     }
 
     /**
@@ -646,6 +765,11 @@ public class SimulationController {
     }
 
     public boolean isFastMode() {
+        return fastMode.get();
+    }
+
+    /** @return whether a fast training is running; it turns false once its thread is done */
+    public ReadOnlyBooleanProperty fastModeProperty() {
         return fastMode;
     }
 }

@@ -19,10 +19,18 @@ public class HistoryManager {
     private RunHistory currentRun;
     private double bestFitnessEver;
     private GenerationData bestGeneration;
+    // Global seed recorded in every run started from now on (null if unknown)
+    private final Long seed;
 
     public HistoryManager() {
+        this(null);
+    }
+
+    /** @param seed global seed of the runs this manager records, or null if unknown */
+    public HistoryManager(Long seed) {
+        this.seed = seed;
         runHistories = new ArrayList<>();
-        currentRun = new RunHistory();
+        currentRun = new RunHistory(seed);
         bestFitnessEver = 0.0;
         bestGeneration = null;
     }
@@ -36,7 +44,7 @@ public class HistoryManager {
                 runHistories.remove(0); // Eliminar la ejecución más antigua
             }
         }
-        currentRun = new RunHistory();
+        currentRun = new RunHistory(seed);
     }
 
     /** @param generationNumber 1-based number of the generation in its run */
@@ -101,6 +109,15 @@ public class HistoryManager {
 
     public RunHistory getCurrentRun() {
         return currentRun;
+    }
+
+    /** @return the run a recorded generation belongs to, or null if it is not in the history */
+    public RunHistory runOf(GenerationData generation) {
+        if (currentRun.getGenerationDataList().contains(generation)) return currentRun;
+        for (RunHistory run : runHistories) {
+            if (run.getGenerationDataList().contains(generation)) return run;
+        }
+        return null;
     }
 
     // Métodos para guardar y cargar historiales

@@ -299,13 +299,37 @@ public class TrainingEngine implements AutoCloseable {
     }
 
     /**
-     * Swaps in another population, e.g. a single-agent replay of the best agent. The game is reset
-     * and the swapped-in population is never evolved by the caller.
+     * Swaps in another population, e.g. a single-agent replay of the best agent, on a new game with
+     * the pipes of the current generation. The swapped-in population is never evolved by the caller.
      */
     public void replacePopulation(EvolvingPopulation replacement) {
+        replacePopulation(replacement, pipeRandom());
+    }
+
+    /**
+     * Swaps in another population on a new game whose pipes come from {@code pipes}, e.g. a
+     * generation replayed on the pipes it faced in training. The previous game object is left
+     * untouched, so a {@link #snapshot()} taken before can still be restored.
+     */
+    public void replacePopulation(EvolvingPopulation replacement, Random pipes) {
         population = replacement;
-        game.reset(pipeRandom());
+        game = new FlappyBirdGame(canvasWidth, canvasHeight, pipes);
         framesPlayed = 0;
+    }
+
+    /** The training state a replay sets aside: the population and its game, as far as it was played. */
+    public record Snapshot(EvolvingPopulation population, FlappyBirdGame game, int framesPlayed) {}
+
+    /** @return the current population and game, to {@link #restore} after a replay */
+    public Snapshot snapshot() {
+        return new Snapshot(population, game, framesPlayed);
+    }
+
+    /** Puts back a population and game set aside with {@link #snapshot()}, exactly as they were. */
+    public void restore(Snapshot snapshot) {
+        population = snapshot.population();
+        game = snapshot.game();
+        framesPlayed = snapshot.framesPlayed();
     }
 
     public EvolvingPopulation getPopulation() {

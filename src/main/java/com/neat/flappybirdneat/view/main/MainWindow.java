@@ -20,6 +20,10 @@ import javafx.stage.Stage;
  */
 public final class MainWindow implements MainWindowActions {
 
+    // Below this the game would be tiny next to the fixed-width sidebar
+    private static final double MIN_WIDTH = 800;
+    private static final double MIN_HEIGHT = 500;
+
     private final Node simulationView;
     private final SimulationController controller;
     private final NeuralNetworkWindow networkWindow = new NeuralNetworkWindow(600, 400);
@@ -42,7 +46,10 @@ public final class MainWindow implements MainWindowActions {
         VBox statsPanel = new VBox(10, controlPanel.getView(), charts.getView());
         statsPanel.setPadding(new Insets(15));
 
-        historyBrowser = new HistoryBrowser(controller, this::pauseGameLoop, this::resumeGameLoop);
+        historyBrowser = new HistoryBrowser(controller, () -> {
+            settings.setShowAllAgents(true); // A generation is replayed with all its agents
+            showSimulationTab();
+        });
         SimulationPanel simulationPanel =
                 new SimulationPanel(controller, canvasWidth, canvasHeight, settings, networkWindow, historyBrowser);
 
@@ -62,10 +69,9 @@ public final class MainWindow implements MainWindowActions {
     public void show(Stage stage) {
         this.stage = stage;
         stage.setTitle("Flappy Bird NEAT - Evolución Gráfica");
-        // La ventana se ajusta al panel de simulación más la cabecera de pestañas. Fijarla al tamaño
-        // del canvas recortaba el juego (la cabecera y el padding del panel también ocupan sitio: se
-        // perdían el suelo y la barra lateral), y el tamaño preferido de las pestañas lo marca la de
-        // estadísticas, mucho mayor.
+        // La ventana se abre al tamaño del panel de simulación (juego a escala 1) más la cabecera de
+        // pestañas: el tamaño preferido de las pestañas lo marca la de estadísticas, mucho mayor. Luego
+        // se puede redimensionar: el juego escala para ocupar el espacio libre.
         Scene scene = new Scene(tabPane);
         tabPane.applyCss();
         tabPane.layout();
@@ -73,6 +79,8 @@ public final class MainWindow implements MainWindowActions {
         double headerHeight = header == null ? 0 : header.prefHeight(-1);
         tabPane.setPrefSize(simulationView.prefWidth(-1), simulationView.prefHeight(-1) + headerHeight);
         stage.setScene(scene);
+        stage.setMinWidth(MIN_WIDTH);
+        stage.setMinHeight(MIN_HEIGHT);
         stage.show();
         gameLoop.start();
 
@@ -104,7 +112,11 @@ public final class MainWindow implements MainWindowActions {
 
     @Override
     public void offerBestGenerationReplay() {
-        historyBrowser.offerBestGenerationReplay(this::showSimulationTab);
+        // The game loop refreshes them once per second while training: a shorter training, or its
+        // last generations, would otherwise be missing from the history
+        refreshStatistics();
+        historyBrowser.refresh();
+        historyBrowser.offerBestGenerationReplay();
     }
 
     @Override
@@ -123,13 +135,5 @@ public final class MainWindow implements MainWindowActions {
         if (!networkWindow.isShowing()) {
             networkWindow.showNextTo(stage);
         }
-    }
-
-    private void pauseGameLoop() {
-        gameLoop.stop();
-    }
-
-    private void resumeGameLoop() {
-        gameLoop.start();
     }
 }

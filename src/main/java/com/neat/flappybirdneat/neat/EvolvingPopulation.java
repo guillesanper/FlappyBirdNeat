@@ -50,7 +50,6 @@ public interface EvolvingPopulation {
     /**
      * Copia profunda independiente que evoluciona con su propio generador (y, en NEAT, con su
      * propio registro de innovaciones), de modo que evolucionarla no altera la ejecución original.
-     * La usan las repeticiones visuales de generaciones guardadas.
      */
     EvolvingPopulation deepCopy(Random random);
 }
