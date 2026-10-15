@@ -39,8 +39,11 @@ public class HistoryManager {
         currentRun = new RunHistory();
     }
 
-    /** @param generationNumber 1-based number of the generation in its run */
-    public void addGenerationData(
+    /**
+     * @param generationNumber 1-based number of the generation in its run
+     * @return the recorded generation
+     */
+    public GenerationData addGenerationData(
             int generationNumber,
             double bestFitness,
             double avgFitness,
@@ -85,6 +88,7 @@ public class HistoryManager {
                 }
             }
         }
+        return data;
     }
 
     public GenerationData getBestGeneration() {

@@ -52,6 +52,11 @@ final class GameLoop extends AnimationTimer {
             return;
         }
 
+        // En pausa no avanza nada; el panel ya dibujó el fotograma con el aviso de pausa
+        if (settings.isPaused()) {
+            return;
+        }
+
         if (now - lastUpdate < ONE_SECOND_NANOS / (60L * settings.getGameSpeed())) {
             return;
         }
@@ -62,16 +67,10 @@ final class GameLoop extends AnimationTimer {
 
         if (allDead) {
             if (controller.isReplayMode()) {
-                // Replaying the best agent: restart it instead of evolving
-                controller.getGame().reset();
-                for (FlappyBirdAgent agent : controller.getPopulation().getAgents()) {
-                    agent.reset();
-                }
-                LOG.info(
-                        "Best agent died with fitness {}; restarting the replay",
-                        String.format(
-                                "%.2f",
-                                controller.getPopulation().getAgents()[0].getFitness()));
+                // Replay: vuelve a empezar en vez de evolucionar (con los mismos tubos si es el de
+                // una generación)
+                LOG.info("Replay finished; restarting it");
+                controller.restartReplay();
             } else {
                 controller.nextGeneration();
                 onProgress.run();

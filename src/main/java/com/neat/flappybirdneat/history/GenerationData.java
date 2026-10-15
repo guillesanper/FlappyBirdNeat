@@ -18,6 +18,9 @@ public class GenerationData implements Serializable {
     private EvolvingPopulation savedPopulation;
     private int generationNumber;
     private List<Pipe> savedPipes;
+    // Semilla de la secuencia de tubos que jugó esta generación (TrainingEngine.pipeSeed), para
+    // reproducirla tal cual; null si no se registró
+    private Long pipeSeed;
 
     public GenerationData(
             double bestFitness,
@@ -36,6 +39,15 @@ public class GenerationData implements Serializable {
         this.diversity = diversity;
         this.savedPopulation = population;
         this.savedPipes = savedPipes;
+    }
+
+    /** @return la semilla de los tubos que jugó esta generación, o null si no se registró */
+    public Long getPipeSeed() {
+        return pipeSeed;
+    }
+
+    public void setPipeSeed(long pipeSeed) {
+        this.pipeSeed = pipeSeed;
     }
 
     public List<Pipe> getSavedPipes() {

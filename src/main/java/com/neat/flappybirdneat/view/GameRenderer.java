@@ -42,7 +42,9 @@ public final class GameRenderer {
          */
         public static Options liveSimulation(
                 boolean showAllAgents, boolean replayMode, boolean singleAgent, String replayBanner) {
-            return new Options(showAllAgents, replayMode || singleAgent, replayMode ? replayBanner : null, true);
+            // Solo se resalta a todos cuando hay un único agente (mejor agente o campeón); el replay de
+            // una generación muestra la bandada con su líder, como el entrenamiento
+            return new Options(showAllAgents, singleAgent, replayMode ? replayBanner : null, true);
         }
 
         /** Replay window of a saved generation. */

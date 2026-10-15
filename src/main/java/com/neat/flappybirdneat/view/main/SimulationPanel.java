@@ -1,9 +1,11 @@
 package com.neat.flappybirdneat.view.main;
 
+import com.neat.flappybirdneat.history.GenerationData;
 import com.neat.flappybirdneat.neat.EvolvingPopulation;
 import com.neat.flappybirdneat.simulation.SimulationController;
 import com.neat.flappybirdneat.view.GameRenderer;
 import com.neat.flappybirdneat.view.NeuralNetworkWindow;
+import java.util.Locale;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -95,16 +97,29 @@ final class SimulationPanel {
         infoLabel
                 .textProperty()
                 .bind(Bindings.createStringBinding(
-                        () -> controller.watchedChampionProperty().get() != null
-                                ? ChampionSummary.describe(
-                                        controller.watchedChampionProperty().get())
-                                : String.format(
-                                        "Generación: %d%nMejor Fitness: %.2f",
-                                        controller.currentGenerationProperty().get(),
-                                        controller.bestFitnessProperty().get()),
+                        this::sidebarInfo,
                         controller.watchedChampionProperty(),
+                        controller.replayedGenerationProperty(),
+                        controller.aliveCountProperty(),
                         controller.currentGenerationProperty(),
                         controller.bestFitnessProperty()));
+
+        // Pausa la simulación visible (entrenamiento en vivo o replay)
+        Button pauseButton = new Button("Pausar");
+        pauseButton.setOnAction(e -> {
+            settings.setPaused(!settings.isPaused());
+            pauseButton.setText(settings.isPaused() ? "▶ Continuar" : "Pausar");
+            draw();
+        });
+
+        // Solo durante un replay: vuelve a la población que se estaba entrenando
+        Button backToTrainingButton = new Button("■ Volver al entrenamiento");
+        backToTrainingButton.visibleProperty().bind(controller.replayingProperty());
+        backToTrainingButton.managedProperty().bind(controller.replayingProperty());
+        backToTrainingButton.setOnAction(e -> {
+            controller.exitReplayMode();
+            draw();
+        });
 
         Button toggleAgentsButton = new Button("Alternar vista (todos/mejor)");
         toggleAgentsButton.setOnAction(e -> {
@@ -116,6 +131,8 @@ final class SimulationPanel {
         VBox controlsPanel = new VBox(
                 10,
                 speedBox,
+                pauseButton,
+                backToTrainingButton,
                 showAllCheckbox,
                 showNetworkButton,
                 resetViewButton,
@@ -166,6 +183,36 @@ final class SimulationPanel {
         draw();
     }
 
+    /** Texto de la barra lateral: el campeón, la generación reproducida o el entrenamiento en vivo. */
+    private String sidebarInfo() {
+        if (controller.watchedChampionProperty().get() != null) {
+            return ChampionSummary.describe(controller.watchedChampionProperty().get());
+        }
+        GenerationData replayed = controller.replayedGenerationProperty().get();
+        if (replayed != null) {
+            return generationReplayInfo(
+                    replayed.getGenerationNumber(),
+                    replayed.getBestFitness(),
+                    controller.aliveCountProperty().get(),
+                    controller.getPopulation().getAgents().length);
+        }
+        return String.format(
+                "Generación: %d%nMejor Fitness: %.2f",
+                controller.currentGenerationProperty().get(),
+                controller.bestFitnessProperty().get());
+    }
+
+    /** Tres líneas, como el resumen del campeón: el panel lateral no tiene altura para más. */
+    static String generationReplayInfo(int generation, double trainingBestFitness, int alive, int total) {
+        return String.format(
+                Locale.ROOT,
+                "Replay · generación %d%nMejor fitness en el entrenamiento: %.0f%nVivos: %d/%d",
+                generation,
+                trainingBestFitness,
+                alive,
+                total);
+    }
+
     Node getView() {
         return view;
     }
@@ -187,6 +234,9 @@ final class SimulationPanel {
                         controller.isReplayMode(),
                         population.getAgents().length == 1,
                         controller.getReplayBanner()));
+        if (settings.isPaused()) {
+            renderer.renderPausedOverlay(gc);
+        }
         gc.restore();
     }
 }

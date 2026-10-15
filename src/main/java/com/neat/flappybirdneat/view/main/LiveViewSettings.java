@@ -7,6 +7,7 @@ package com.neat.flappybirdneat.view.main;
 final class LiveViewSettings {
     private int gameSpeed = 1;
     private boolean showAllAgents = true;
+    private boolean paused = false;
 
     int getGameSpeed() {
         return gameSpeed;
@@ -22,5 +23,14 @@ final class LiveViewSettings {
 
     void setShowAllAgents(boolean showAllAgents) {
         this.showAllAgents = showAllAgents;
+    }
+
+    /** Pausa la simulación visible (entrenamiento en vivo o replay); el entrenamiento rápido no. */
+    boolean isPaused() {
+        return paused;
+    }
+
+    void setPaused(boolean paused) {
+        this.paused = paused;
     }
 }

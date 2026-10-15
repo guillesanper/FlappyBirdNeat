@@ -60,6 +60,10 @@ public class SimulationController {
     private final BooleanProperty running = new SimpleBooleanProperty(false);
     // Campeón que se está viendo (--demo, --watch, "Ver campeón"); null durante el entrenamiento
     private final ObjectProperty<Champion> watchedChampion = new SimpleObjectProperty<>();
+    // Generación guardada que se está reproduciendo; null fuera de ese replay
+    private final ObjectProperty<GenerationData> replayedGeneration = new SimpleObjectProperty<>();
+    // Si se está mostrando un replay (mejor agente, campeón o generación) en vez del entrenamiento
+    private final BooleanProperty replaying = new SimpleBooleanProperty(false);
 
     // Datos para gráficos
     private final List<Double> bestFitnessHistory = new ArrayList<>();
@@ -81,6 +85,10 @@ public class SimulationController {
     private volatile boolean stopRequested = false;
     private int targetGenerations = 0;
     private boolean replayMode = false; // Indica si estamos reproduciendo el mejor agente
+    // Población del entrenamiento mientras dura un replay, para restaurarla al salir de él
+    private EvolvingPopulation trainingPopulation;
+    // Tubos fijos del replay de una generación (los mismos en cada vuelta); null en los demás replays
+    private Long replayPipeSeed;
     private String replayBanner = BEST_AGENT_BANNER;
     private Mode mode = Mode.FIXED_MLP;
     private final long seed;
@@ -118,8 +126,7 @@ public class SimulationController {
      */
     public void resetSimulation() {
         engine.reset(mode == Mode.NEAT ? EngineType.NEAT : EngineType.GA, operatorsConfig);
-        replayMode = false;
-        watchedChampion.set(null);
+        clearReplayState();
 
         currentGeneration.set(1);
         bestFitness.set(0);
@@ -172,16 +179,18 @@ public class SimulationController {
         double diversityThisGen = stats.diversity();
 
         // Guardar esta generación en el historial
-        historyManager.addGenerationData(
-                engine.getGeneration(),
-                bestFitnessThisGen,
-                avgFitness,
-                minFitnessThisGen,
-                aliveCount.get(),
-                speciesCountThisGen,
-                diversityThisGen,
-                engine.getPopulation(),
-                engine.getGame().getPipes());
+        historyManager
+                .addGenerationData(
+                        engine.getGeneration(),
+                        bestFitnessThisGen,
+                        avgFitness,
+                        minFitnessThisGen,
+                        aliveCount.get(),
+                        speciesCountThisGen,
+                        diversityThisGen,
+                        engine.getPopulation(),
+                        engine.getGame().getPipes())
+                .setPipeSeed(TrainingEngine.pipeSeed(seed, engine.getGeneration()));
 
         // Guardar historial para gráficos
         bestFitnessHistory.add(bestFitnessThisGen);
@@ -244,8 +253,8 @@ public class SimulationController {
 
     /** Prepara el estado de un entrenamiento rápido antes de lanzar {@link #trainFast}. */
     void beginFastSimulation(int generations) {
-        replayMode = false;
-        watchedChampion.set(null);
+        // Se entrena la población del entrenamiento, no la del replay que se estuviera viendo
+        if (replayMode) exitReplayMode();
         running.set(true);
         fastMode = true;
         stopRequested = false;
@@ -285,16 +294,18 @@ public class SimulationController {
             final double currentDiversity = stats.diversity();
 
             // Guardar esta generación en el historial
-            historyManager.addGenerationData(
-                    engine.getGeneration(),
-                    currentBestFitness,
-                    avgFitness,
-                    currentMinFitness,
-                    alive,
-                    currentSpeciesCount,
-                    currentDiversity,
-                    engine.getPopulation(),
-                    engine.getGame().getPipes());
+            historyManager
+                    .addGenerationData(
+                            engine.getGeneration(),
+                            currentBestFitness,
+                            avgFitness,
+                            currentMinFitness,
+                            alive,
+                            currentSpeciesCount,
+                            currentDiversity,
+                            engine.getPopulation(),
+                            engine.getGame().getPipes())
+                    .setPipeSeed(TrainingEngine.pipeSeed(seed, engine.getGeneration()));
 
             if (currentBestFitness > globalBestFitness) {
                 globalBestFitness = currentBestFitness;
@@ -435,18 +446,12 @@ public class SimulationController {
         // Crear población con solo el mejor agente (resetea también el juego)
         EvolvingPopulation bestAgentPop = createBestAgentOnlyPopulation();
         if (bestAgentPop != null) {
-            engine.replacePopulation(bestAgentPop);
-
             // Reiniciar el agente pero preservar su cerebro
             for (FlappyBirdAgent agent : bestAgentPop.getAgents()) {
                 agent.reset();
             }
-
-            fastMode = false;
-            replayMode = true; // IMPORTANTE: Activar modo replay para que no evolucione
-            watchedChampion.set(null);
+            enterReplay(bestAgentPop);
             replayBanner = BEST_AGENT_BANNER;
-            running.set(true);
 
             LOG.info("Replaying best agent (fitness {})", String.format("%.2f", historyManager.getBestFitnessEver()));
         }
@@ -464,9 +469,7 @@ public class SimulationController {
         EvolvingPopulation single = champion.engine() == EngineType.NEAT
                 ? NeatPopulation.singleAgent(agent, AGENT_INPUTS, AGENT_OUTPUTS, random, engine.getNeatConfig())
                 : Population.singleAgent(agent, random);
-        engine.replacePopulation(single);
-
-        replayMode = true;
+        enterReplay(single);
         watchedChampion.set(champion);
         // Short enough not to cover the score, drawn at the top centre
         replayBanner = String.format(
@@ -474,8 +477,6 @@ public class SimulationController {
                 "★ CAMPEÓN %s · gen %d ★",
                 champion.engine() == EngineType.NEAT ? "NEAT" : "MLP",
                 champion.metadata().generation());
-        aliveCount.set(1);
-        running.set(true);
         LOG.info(
                 "Watching a {} champion (seed {}, generation {}, fitness {})",
                 champion.engine(),
@@ -524,11 +525,84 @@ public class SimulationController {
     }
 
     /**
-     * Desactiva el modo replay
+     * Reproduce una generación guardada tal como se jugó en el entrenamiento: sus mismos agentes
+     * sobre su misma secuencia de tubos, en bucle (ver {@link #restartReplay()}) y sin evolucionar.
+     * Si la generación no registró la semilla de sus tubos, se usan los que tendría con la semilla
+     * actual.
+     */
+    public void playGeneration(GenerationData generation) {
+        if (fastMode) throw new IllegalStateException("Stop the training before replaying a generation");
+        EvolvingPopulation replay = generation.getSavedPopulation().deepCopy();
+        for (FlappyBirdAgent agent : replay.getAgents()) {
+            agent.reset();
+        }
+        enterReplay(replay);
+        replayPipeSeed = generation.getPipeSeed() != null
+                ? generation.getPipeSeed()
+                : TrainingEngine.pipeSeed(seed, generation.getGenerationNumber());
+        engine.getGame().reset(new Random(replayPipeSeed));
+        replayedGeneration.set(generation);
+        replayBanner = "▶ REPLAY · Generación " + generation.getGenerationNumber();
+        LOG.info(
+                "Replaying generation {} (best fitness {})",
+                generation.getGenerationNumber(),
+                String.format("%.2f", generation.getBestFitness()));
+    }
+
+    /**
+     * Vuelve a empezar el replay en curso cuando han muerto todos sus agentes. El replay de una
+     * generación repite sus mismos tubos; el del mejor agente y el de un campeón siguen con tubos
+     * nuevos.
+     */
+    public void restartReplay() {
+        if (replayPipeSeed != null) {
+            engine.getGame().reset(new Random(replayPipeSeed));
+        } else {
+            engine.getGame().reset();
+        }
+        for (FlappyBirdAgent agent : engine.getPopulation().getAgents()) {
+            agent.reset();
+        }
+        aliveCount.set(engine.getPopulation().getAgents().length);
+    }
+
+    /**
+     * Sale del replay y vuelve al entrenamiento: restaura la población que se estaba entrenando
+     * (la generación en curso empieza de nuevo) y desactiva el modo replay.
      */
     public void exitReplayMode() {
-        replayMode = false;
+        if (trainingPopulation != null) {
+            for (FlappyBirdAgent agent : trainingPopulation.getAgents()) {
+                agent.reset();
+            }
+            engine.replacePopulation(trainingPopulation);
+            aliveCount.set(trainingPopulation.getAgents().length);
+        }
+        clearReplayState();
+    }
+
+    /** Pone una población de replay en lugar de la del entrenamiento, que se guarda para luego. */
+    private void enterReplay(EvolvingPopulation replay) {
+        // Al pasar de un replay a otro se conserva la población del entrenamiento, no la del replay
+        if (!replayMode) trainingPopulation = engine.getPopulation();
+        engine.replacePopulation(replay);
+        replayMode = true;
+        replaying.set(true);
+        replayPipeSeed = null;
         watchedChampion.set(null);
+        replayedGeneration.set(null);
+        fastMode = false;
+        aliveCount.set(replay.getAgents().length);
+        running.set(true);
+    }
+
+    private void clearReplayState() {
+        replayMode = false;
+        replaying.set(false);
+        trainingPopulation = null;
+        replayPipeSeed = null;
+        watchedChampion.set(null);
+        replayedGeneration.set(null);
     }
 
     /**
@@ -601,6 +675,16 @@ public class SimulationController {
     /** @return el campeón que se está viendo, o null si se muestra el entrenamiento */
     public ReadOnlyObjectProperty<Champion> watchedChampionProperty() {
         return watchedChampion;
+    }
+
+    /** @return la generación guardada que se está reproduciendo, o null fuera de ese replay */
+    public ReadOnlyObjectProperty<GenerationData> replayedGenerationProperty() {
+        return replayedGeneration;
+    }
+
+    /** @return si se muestra un replay (mejor agente, campeón o generación) en vez del entrenamiento */
+    public ReadOnlyBooleanProperty replayingProperty() {
+        return replaying;
     }
 
     public BooleanProperty runningProperty() {
