@@ -3,7 +3,7 @@
 [![CI](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml/badge.svg)](https://github.com/guillesanper/FlappyBirdNeat/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![JavaFX 17](https://img.shields.io/badge/JavaFX-17-blue)
-![Tests](https://img.shields.io/badge/tests-318%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-349%20passing-brightgreen)
 ![Coverage](.github/badges/jacoco.svg)
 ![Branches](.github/badges/branches.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -24,7 +24,7 @@ There are no ML libraries involved. The neural networks, both evolution engines 
 - **Portable champions:** trained agents are saved as versioned JSON (a NEAT genome or the MLP's weights, plus the seed, generation and commit that produced them), replayed from the command line or the UI, and shipped with the app: double-click the installer's app and a trained NEAT agent is already playing.
 - **Experiment tooling:** a headless command line that trains without opening a window and writes one CSV row per generation, a generation history whose generations replay faithfully in the UI (same agents, same pipes, in a loop), and a benchmark mode that compares operator configurations across repeated seeded runs.
 - **Parallel and still deterministic:** each agent plays its own copy of the game over the same pipes, so a generation is evaluated across all CPU cores, and the result is bit-for-bit the same with 1 or 8 threads.
-- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (309 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
+- **Seeded and tested:** every run is determined by a single global seed, so the same seed gives the same fitness curve every time. That property is covered by end-to-end tests, along with the operators, the NEAT genome, the simulation loop and the CLI (349 JUnit tests with JaCoCo coverage, run in CI on Linux, Windows and macOS on every push).
 
 ## Download
 
