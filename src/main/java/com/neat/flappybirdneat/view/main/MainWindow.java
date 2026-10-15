@@ -112,6 +112,10 @@ public final class MainWindow implements MainWindowActions {
 
     @Override
     public void offerBestGenerationReplay() {
+        // The game loop refreshes them once per second while training: a shorter training, or its
+        // last generations, would otherwise be missing from the history
+        refreshStatistics();
+        historyBrowser.refresh();
         historyBrowser.offerBestGenerationReplay();
     }
 
