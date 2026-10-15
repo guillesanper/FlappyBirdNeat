@@ -8,25 +8,36 @@ import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 /**
  * "Simulación Visual" tab: the game canvas, the live view controls (speed, which agents to show,
- * network window) and the run history browser.
+ * network window) and the run history browser. The game fills the space the sidebar leaves free:
+ * the canvas is scaled uniformly (never stretched) and centred, while the game itself keeps
+ * drawing in its logical coordinates.
  */
 final class SimulationPanel {
 
+    private static final double SIDEBAR_WIDTH = 300;
+
     private final SimulationController controller;
     private final LiveViewSettings settings;
+    private final double worldWidth;
+    private final double worldHeight;
     private final Canvas canvas;
     private final GameRenderer renderer;
-    private final VBox view;
+    private final HBox view;
+    private double scale = 1;
 
     SimulationPanel(
             SimulationController controller,
@@ -37,6 +48,8 @@ final class SimulationPanel {
             HistoryBrowser historyBrowser) {
         this.controller = controller;
         this.settings = settings;
+        this.worldWidth = canvasWidth;
+        this.worldHeight = canvasHeight;
         this.canvas = new Canvas(canvasWidth, canvasHeight);
         this.renderer = new GameRenderer(canvasWidth, canvasHeight);
 
@@ -116,19 +129,55 @@ final class SimulationPanel {
                 toggleAgentsButton);
         controlsPanel.setPadding(new Insets(10));
 
-        view = new VBox(10, new HBox(15, canvas, controlsPanel));
+        // The sidebar keeps its width and scrolls when the window is too short for it
+        ScrollPane sidebar = new ScrollPane(controlsPanel);
+        sidebar.setFitToWidth(true);
+        sidebar.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        sidebar.setMinWidth(SIDEBAR_WIDTH);
+        sidebar.setPrefWidth(SIDEBAR_WIDTH);
+        sidebar.setMaxWidth(SIDEBAR_WIDTH);
+
+        // The game takes the rest; the canvas is resized to fit it and centred
+        Pane gameArea = new Pane(canvas);
+        gameArea.setPrefSize(canvasWidth, canvasHeight);
+        gameArea.setMinSize(0, 0);
+        gameArea.widthProperty().addListener((obs, oldWidth, newWidth) -> fitCanvas(gameArea));
+        gameArea.heightProperty().addListener((obs, oldHeight, newHeight) -> fitCanvas(gameArea));
+        HBox.setHgrow(gameArea, Priority.ALWAYS);
+
+        view = new HBox(15, gameArea, sidebar);
         view.setPadding(new Insets(15));
+    }
+
+    /**
+     * Largest uniform scale at which a {@code worldWidth} × {@code worldHeight} game fits in the
+     * available space (0 when there is none).
+     */
+    static double fitScale(double availableWidth, double availableHeight, double worldWidth, double worldHeight) {
+        double fit = Math.min(availableWidth / worldWidth, availableHeight / worldHeight);
+        return fit > 0 ? fit : 0;
+    }
+
+    private void fitCanvas(Pane gameArea) {
+        scale = fitScale(gameArea.getWidth(), gameArea.getHeight(), worldWidth, worldHeight);
+        canvas.setWidth(worldWidth * scale);
+        canvas.setHeight(worldHeight * scale);
+        canvas.relocate((gameArea.getWidth() - canvas.getWidth()) / 2, (gameArea.getHeight() - canvas.getHeight()) / 2);
+        draw();
     }
 
     Node getView() {
         return view;
     }
 
-    /** Draws the current state of the live game. */
+    /** Draws the current state of the live game, scaled to the canvas. */
     void draw() {
         EvolvingPopulation population = controller.getPopulation();
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.save();
+        gc.setTransform(scale, 0, 0, scale, 0, 0);
         renderer.render(
-                canvas.getGraphicsContext2D(),
+                gc,
                 controller.getGame(),
                 population.getAgents(),
                 population.getBestAgent(),
@@ -137,5 +186,6 @@ final class SimulationPanel {
                         controller.isReplayMode(),
                         population.getAgents().length == 1,
                         controller.getReplayBanner()));
+        gc.restore();
     }
 }

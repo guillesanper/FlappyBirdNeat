@@ -20,6 +20,10 @@ import javafx.stage.Stage;
  */
 public final class MainWindow implements MainWindowActions {
 
+    // Below this the game would be tiny next to the fixed-width sidebar
+    private static final double MIN_WIDTH = 800;
+    private static final double MIN_HEIGHT = 500;
+
     private final Node simulationView;
     private final SimulationController controller;
     private final NeuralNetworkWindow networkWindow = new NeuralNetworkWindow(600, 400);
@@ -62,10 +66,9 @@ public final class MainWindow implements MainWindowActions {
     public void show(Stage stage) {
         this.stage = stage;
         stage.setTitle("Flappy Bird NEAT - Evolución Gráfica");
-        // La ventana se ajusta al panel de simulación más la cabecera de pestañas. Fijarla al tamaño
-        // del canvas recortaba el juego (la cabecera y el padding del panel también ocupan sitio: se
-        // perdían el suelo y la barra lateral), y el tamaño preferido de las pestañas lo marca la de
-        // estadísticas, mucho mayor.
+        // La ventana se abre al tamaño del panel de simulación (juego a escala 1) más la cabecera de
+        // pestañas: el tamaño preferido de las pestañas lo marca la de estadísticas, mucho mayor. Luego
+        // se puede redimensionar: el juego escala para ocupar el espacio libre.
         Scene scene = new Scene(tabPane);
         tabPane.applyCss();
         tabPane.layout();
@@ -73,6 +76,8 @@ public final class MainWindow implements MainWindowActions {
         double headerHeight = header == null ? 0 : header.prefHeight(-1);
         tabPane.setPrefSize(simulationView.prefWidth(-1), simulationView.prefHeight(-1) + headerHeight);
         stage.setScene(scene);
+        stage.setMinWidth(MIN_WIDTH);
+        stage.setMinHeight(MIN_HEIGHT);
         stage.show();
         gameLoop.start();
 
