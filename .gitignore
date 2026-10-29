@@ -16,7 +16,6 @@ dependency-reduced-pom.xml
 *.userlibraries
 out/
 .shelf/
-.claude
 
 ### Eclipse ###
 .apt_generated
